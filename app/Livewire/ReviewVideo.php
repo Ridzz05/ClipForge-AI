@@ -20,6 +20,13 @@ class ReviewVideo extends Component
 
     public ?string $error = null;
 
+    // --- State Editor ---
+    public ?int $editingId = null; // null: idle, -1: new custom, >0: editing existing
+    public int $editStartMs = 0;
+    public int $editEndMs = 0;
+    public int $editHookScore = 80;
+    public string $editRationale = '';
+
     /** Preset CTA options from the campaign brief; operator can also type one. */
     public function ctaPresets(): array
     {
@@ -38,6 +45,87 @@ class ReviewVideo extends Component
         $this->video = $video;
         // Seed with the configured default CTA so the field isn't empty.
         $this->ctaText = (string) config('autoclip.render.cta_text', '');
+    }
+
+    public function selectCandidate(int $id): void
+    {
+        $candidate = $this->candidate($id);
+        if (!$candidate) return;
+
+        $this->editingId = $candidate->id;
+        $this->editStartMs = $candidate->start_ms;
+        $this->editEndMs = $candidate->end_ms;
+        $this->editHookScore = $candidate->hook_score;
+        $this->editRationale = $candidate->score_rationale ?? '';
+        
+        $this->dispatch('candidate-selected', [
+            'startMs' => $this->editStartMs,
+            'endMs' => $this->editEndMs
+        ]);
+    }
+
+    public function closeEditor(): void
+    {
+        $this->editingId = null;
+        $this->error = null;
+    }
+
+    public function saveCandidate(): void
+    {
+        if (!$this->editingId) return;
+
+        $candidate = $this->candidate($this->editingId);
+        if (!$candidate) return;
+
+        if ($this->editStartMs >= $this->editEndMs) {
+            $this->error = "Waktu mulai harus lebih kecil dari waktu selesai.";
+            return;
+        }
+
+        $candidate->update([
+            'start_ms' => $this->editStartMs,
+            'end_ms' => $this->editEndMs,
+            'hook_score' => $this->editHookScore,
+            'score_rationale' => $this->editRationale,
+        ]);
+
+        $this->error = null;
+        $this->flash = "Klip #{$candidate->id} berhasil diperbarui.";
+        $this->closeEditor();
+    }
+
+    public function createCustomCandidate(): void
+    {
+        $this->editingId = -1; // -1 represents new custom clip
+        $this->editStartMs = 0;
+        $this->editEndMs = min(30000, (int)(($this->video->duration_seconds ?? 0) * 1000));
+        $this->editHookScore = 100;
+        $this->editRationale = 'Klip kustom dibuat secara manual';
+        
+        $this->dispatch('candidate-selected', [
+            'startMs' => $this->editStartMs,
+            'endMs' => $this->editEndMs
+        ]);
+    }
+
+    public function saveCustomCandidate(): void
+    {
+        if ($this->editStartMs >= $this->editEndMs) {
+            $this->error = "Waktu mulai harus lebih kecil dari waktu selesai.";
+            return;
+        }
+
+        $candidate = $this->video->clipCandidates()->create([
+            'start_ms' => $this->editStartMs,
+            'end_ms' => $this->editEndMs,
+            'hook_score' => $this->editHookScore,
+            'score_rationale' => $this->editRationale,
+            'status' => ClipCandidate::STATUS_PENDING,
+        ]);
+
+        $this->error = null;
+        $this->flash = "Klip kustom baru #{$candidate->id} berhasil dibuat.";
+        $this->closeEditor();
     }
 
     public function approve(int $candidateId, ClipReviewService $review): void

@@ -8,7 +8,7 @@
             </a>
             <h1 class="page-title" style="margin-top:8px;">Review &amp; Edit Kandidat</h1>
             <p class="page-sub" style="margin-bottom:0; display: flex; align-items: center; gap: 8px;">
-                <span class="muted" style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ $video->source_ref ?? '—' }}</span>
+                <span class="muted" style="max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ $video->source_ref ?? '—' }}</span>
                 @if($video->duration_seconds)
                     <span style="color: var(--border);">|</span>
                     <span class="muted font-semibold">{{ gmdate($video->duration_seconds >= 3600 ? 'H:i:s' : 'i:s', $video->duration_seconds) }}</span>
@@ -17,11 +17,16 @@
                 <span style="color: var(--accent-start); font-weight: 600;">{{ $candidates->count() }} Kandidat Terdeteksi</span>
             </p>
         </div>
-        @if($poll)
-            <span class="badge badge-amber" style="box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);">
-                <span class="spin"></span>&nbsp;Mengekspor &amp; Merender Klip
-            </span>
-        @endif
+        <div class="row" style="gap: 12px;">
+            <button type="button" class="btn btn-sm btn-primary" wire:click="createCustomCandidate" style="padding: 8px 16px; box-shadow: 0 4px 15px rgba(129, 140, 248, 0.2);">
+                ➕ Buat Klip Kustom
+            </button>
+            @if($poll)
+                <span class="badge badge-amber" style="box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);">
+                    <span class="spin"></span>&nbsp;Mengekspor &amp; Merender Klip
+                </span>
+            @endif
+        </div>
     </div>
 
     @if($flash)<div class="flash">{{ $flash }}</div>@endif
@@ -30,19 +35,95 @@
     <!-- Split Workspace -->
     <div class="grid" style="grid-template-columns: 420px 1fr; gap: 28px; align-items: start;">
         
-        <!-- Left Side: Sticky Media Player -->
+        <!-- Left Side: Sticky Workspace Panel -->
         <div style="position: sticky; top: 92px;" class="grid">
-            <div class="panel" style="padding: 16px;">
-                <h4 style="margin: 0 0 12px; font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.2px; text-transform: uppercase; color: var(--muted);">Video Sumber Asli</h4>
-                <div style="border-radius: 12px; overflow: hidden; background: #000; box-shadow: 0 8px 24px rgba(0,0,0,0.5); border: 1px solid var(--border);">
-                    <video controls preload="metadata" style="width:100%; display: block; aspect-ratio: 16/9;" src="/videos/{{ $video->id }}/source">
-                        Browser Anda tidak mendukung HTML5 video.
-                    </video>
+            @if($editingId === null)
+                <!-- View Mode: Sticky Media Player -->
+                <div class="panel" style="padding: 16px;">
+                    <h4 style="margin: 0 0 12px; font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.2px; text-transform: uppercase; color: var(--muted);">Video Sumber Asli</h4>
+                    <div style="border-radius: 12px; overflow: hidden; background: #000; box-shadow: 0 8px 24px rgba(0,0,0,0.5); border: 1px solid var(--border);">
+                        <video controls id="editor-video" preload="metadata" style="width:100%; display: block; aspect-ratio: 16/9;" src="/videos/{{ $video->id }}/source">
+                            Browser Anda tidak mendukung HTML5 video.
+                        </video>
+                    </div>
+                    <p class="muted" style="font-size: 12px; line-height: 1.5; margin: 12px 0 0;">
+                        Gunakan pemutar di atas untuk meninjau bagian stempel waktu di kanan. Untuk mengedit stempel waktu klip secara akurat, klik tombol **Edit** pada kartu klip yang bersangkutan.
+                    </p>
                 </div>
-                <p class="muted" style="font-size: 12px; line-height: 1.5; margin: 12px 0 0;">
-                    Gunakan pemutar di atas untuk meninjau bagian stempel waktu di bawah. Hasil render video vertikal (9:16) dapat diunduh di tab **Exports**.
-                </p>
-            </div>
+            @else
+                <!-- Edit Mode: Sticky Clip Editor Workspace -->
+                <div class="panel grid" style="gap: 16px; padding: 18px; border-color: var(--accent-start);">
+                    <h4 style="margin: 0; font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 800; letter-spacing: -0.1px; color: var(--accent-start); display: flex; align-items: center; gap: 6px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        {{ $editingId === -1 ? 'Buat Klip Kustom' : 'Edit Rentang Klip #' . $editingId }}
+                    </h4>
+                    
+                    <div style="border-radius: 10px; overflow: hidden; background: #000; border: 1px solid var(--border); position: relative;">
+                        <video id="editor-video" controls preload="metadata" style="width:100%; display: block; aspect-ratio: 16/9;" src="/videos/{{ $video->id }}/source">
+                        </video>
+                    </div>
+
+                    <!-- Quick In/Out Buttons -->
+                    <div class="row" style="gap: 8px; justify-content: center;">
+                        <button type="button" class="btn btn-sm" onclick="setStartToCurrent()" style="flex: 1; padding: 8px 10px; font-size: 11px;" title="Gunakan posisi player saat ini sebagai stempel waktu awal">
+                            📍 Set Awal (In)
+                        </button>
+                        <button type="button" class="btn btn-sm" onclick="setEndToCurrent()" style="flex: 1; padding: 8px 10px; font-size: 11px;" title="Gunakan posisi player saat ini sebagai stempel waktu akhir">
+                            🏁 Set Akhir (Out)
+                        </button>
+                    </div>
+
+                    <!-- Seek & Preview Actions -->
+                    <div class="row" style="gap: 8px; justify-content: center;">
+                        <button type="button" class="btn btn-sm btn-green" onclick="playPreview()" style="flex: 2; padding: 8px 12px; font-size: 11px;">
+                            ▶ Putar Preview Klip
+                        </button>
+                        <button type="button" class="btn btn-sm" onclick="jumpToStart()" style="flex: 1; padding: 8px; font-size: 11px;" title="Lompat ke marker awal">
+                            ⏮ Awal
+                        </button>
+                        <button type="button" class="btn btn-sm" onclick="jumpToEnd()" style="flex: 1; padding: 8px; font-size: 11px;" title="Lompat ke marker akhir">
+                            ⏭ Akhir
+                        </button>
+                    </div>
+
+                    <!-- Start / End Millisecond Fields -->
+                    <div class="row" style="gap: 12px;">
+                        <div style="flex: 1;">
+                            <label class="muted" style="font-size: 11px; font-weight: 700; display: block; margin-bottom: 4px; text-transform: uppercase;">Start (ms)</label>
+                            <input type="number" wire:model.live="editStartMs" style="width:100%; padding: 8px 10px; border-radius: 8px; background: var(--panel-2-solid); border: 1px solid var(--border); color: var(--text); font-family: inherit; font-size: 13px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label class="muted" style="font-size: 11px; font-weight: 700; display: block; margin-bottom: 4px; text-transform: uppercase;">End (ms)</label>
+                            <input type="number" wire:model.live="editEndMs" style="width:100%; padding: 8px 10px; border-radius: 8px; background: var(--panel-2-solid); border: 1px solid var(--border); color: var(--text); font-family: inherit; font-size: 13px;">
+                        </div>
+                    </div>
+
+                    <!-- Hook Score slider -->
+                    <div>
+                        <div class="row between" style="margin-bottom: 4px;">
+                            <label class="muted" style="font-size: 11px; font-weight: 700; text-transform: uppercase;">Hook Score</label>
+                            <span style="font-weight: 800; color: var(--accent-start); font-size: 13px;">{{ $editHookScore }}%</span>
+                        </div>
+                        <input type="range" min="0" max="100" wire:model="editHookScore" style="width:100%; accent-color: var(--accent-start); cursor: pointer;">
+                    </div>
+
+                    <!-- Rationale textarea -->
+                    <div>
+                        <label class="muted" style="font-size: 11px; font-weight: 700; display: block; margin-bottom: 4px; text-transform: uppercase;">Deskripsi / Rationale</label>
+                        <textarea wire:model="editRationale" rows="3" style="width:100%; padding: 8px 12px; border-radius: 8px; background: var(--panel-2-solid); border: 1px solid var(--border); color: var(--text); font-family: inherit; font-size: 13px; resize: vertical; line-height: 1.4;"></textarea>
+                    </div>
+
+                    <!-- Save / Cancel Buttons -->
+                    <div class="row" style="gap: 10px; margin-top: 6px;">
+                        <button type="button" class="btn btn-sm" wire:click="closeEditor" style="flex: 1;">
+                            Batal
+                        </button>
+                        <button type="button" class="btn btn-sm btn-primary" wire:click="{{ $editingId === -1 ? 'saveCustomCandidate' : 'saveCandidate' }}" style="flex: 1;">
+                            Simpan
+                        </button>
+                    </div>
+                </div>
+            @endif
         </div>
 
         <!-- Right Side: Configuration & Candidates -->
@@ -130,6 +211,10 @@
                             <!-- Actions -->
                             <div class="row" style="gap: 8px;">
                                 @if(in_array($c->status, ['pending','rejected']))
+                                    <!-- Edit Trigger Button -->
+                                    <button class="btn btn-sm" wire:click="selectCandidate({{ $c->id }})" title="Edit stempel waktu klip ini secara manual">
+                                        ✏️ Edit
+                                    </button>
                                     <button class="btn btn-green" style="padding: 8px 16px; font-size: 12px;"
                                             wire:click="approve({{ $c->id }})"
                                             wire:loading.attr="disabled" wire:target="approve({{ $c->id }})">
@@ -164,5 +249,75 @@
             </div>
         </div>
     </div>
+
+    <!-- Video Editor Script Binding -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let previewInterval = null;
+
+            // Listen for candidate loading events from Livewire
+            window.addEventListener('candidate-selected', (event) => {
+                const startMs = event.detail.startMs;
+                const video = document.getElementById('editor-video');
+                if (video) {
+                    video.currentTime = startMs / 1000;
+                }
+            });
+
+            window.setStartToCurrent = () => {
+                const video = document.getElementById('editor-video');
+                if (video) {
+                    const currentMs = Math.round(video.currentTime * 1000);
+                    Livewire.dispatch('set-start-ms', { ms: currentMs });
+                    @this.set('editStartMs', currentMs);
+                }
+            };
+
+            window.setEndToCurrent = () => {
+                const video = document.getElementById('editor-video');
+                if (video) {
+                    const currentMs = Math.round(video.currentTime * 1000);
+                    @this.set('editEndMs', currentMs);
+                }
+            };
+
+            window.jumpToStart = () => {
+                const video = document.getElementById('editor-video');
+                if (video) {
+                    const startMs = @this.get('editStartMs');
+                    video.currentTime = startMs / 1000;
+                }
+            };
+
+            window.jumpToEnd = () => {
+                const video = document.getElementById('editor-video');
+                if (video) {
+                    const endMs = @this.get('editEndMs');
+                    video.currentTime = endMs / 1000;
+                }
+            };
+
+            window.playPreview = () => {
+                const video = document.getElementById('editor-video');
+                if (video) {
+                    const startMs = @this.get('editStartMs');
+                    const endMs = @this.get('editEndMs');
+                    video.currentTime = startMs / 1000;
+                    video.play();
+
+                    if (previewInterval) clearInterval(previewInterval);
+
+                    previewInterval = setInterval(() => {
+                        const currentMs = video.currentTime * 1000;
+                        if (currentMs >= endMs) {
+                            video.pause();
+                            clearInterval(previewInterval);
+                        }
+                    }, 50);
+                }
+            };
+        });
+    </script>
 </div>
+
 </div>
