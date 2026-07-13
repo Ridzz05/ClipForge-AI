@@ -29,4 +29,9 @@ class Video extends Model
     {
         return $this->hasOne(Transcript::class);
     }
+
+    public function clipCandidates(): HasMany
+    {
+        return $this->hasMany(ClipCandidate::class);
+    }
 }
