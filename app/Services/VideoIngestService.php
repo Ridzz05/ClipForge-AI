@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\IngestValidationException;
+use App\Jobs\TranscribeJob;
 use App\Models\PipelineJob;
 use App\Models\Video;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -84,6 +85,9 @@ class VideoIngestService
             'status' => 'done',
             'attempts' => 1,
         ]);
+
+        // Kick off Stage 2 asynchronously so ingest returns immediately.
+        TranscribeJob::dispatch($video->id);
 
         return $video;
     }

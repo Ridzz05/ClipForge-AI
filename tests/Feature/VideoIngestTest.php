@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\TranscribeJob;
 use App\Models\PipelineJob;
 use App\Models\Video;
 use App\Services\FfprobeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
 use Tests\CreatesFakeMedia;
@@ -20,6 +22,8 @@ class VideoIngestTest extends TestCase
     {
         parent::setUp();
         Storage::fake('local');
+        // Stage 2 dispatch is out of scope here; assert it, don't run it.
+        Queue::fake();
     }
 
     /** Bind a fake ffprobe so tests don't need the real binary installed. */
@@ -57,6 +61,9 @@ class VideoIngestTest extends TestCase
             'stage' => 'ingest',
             'status' => 'done',
         ]);
+
+        // Stage 2 is kicked off asynchronously for the new video.
+        Queue::assertPushed(TranscribeJob::class, fn ($job) => $job->videoId === $video->id);
     }
 
     public function test_non_video_content_is_rejected_by_magic_bytes(): void
@@ -83,6 +90,8 @@ class VideoIngestTest extends TestCase
         $this->assertSame(0, Video::count());
         // The rejected file must not linger on disk (retention discipline).
         $this->assertEmpty(Storage::disk('local')->allFiles());
+        // A rejected upload must not trigger downstream work.
+        Queue::assertNotPushed(TranscribeJob::class);
     }
 
     /**
