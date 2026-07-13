@@ -47,13 +47,26 @@ class CaptionRenderer
      * @param  array<int, array{word:string, start_ms:int, end_ms:int}>  $words
      * @param  int  $playResX  render width (px)
      * @param  int  $playResY  render height (px)
+     * @param  string  $ctaText  optional fixed CTA burned at the top for the whole clip
+     * @param  int  $clipDurationMs  clip length, used for the CTA's end time
      */
-    public function renderAss(array $words, string $style, int $playResX, int $playResY): string
-    {
+    public function renderAss(
+        array $words,
+        string $style,
+        int $playResX,
+        int $playResY,
+        string $ctaText = '',
+        int $clipDurationMs = 0,
+    ): string {
         $tpl = $this->templates[$style] ?? $this->templates['default'];
 
         $header = $this->header($tpl, $playResX, $playResY);
         $events = $this->events($words);
+
+        $cta = $this->ctaEvent($ctaText, $clipDurationMs);
+        if ($cta !== '') {
+            $events = $events === '' ? $cta : $events."\n".$cta;
+        }
 
         return $header."\n".$events."\n";
     }
@@ -88,6 +101,28 @@ class CaptionRenderer
             1,                   // Encoding
         ]);
 
+        // Fixed CTA style: top-centre (align 8), bold, larger, high-contrast —
+        // makes the "game is OUT" call-to-action unmissable (campaign rule).
+        $ctaStyle = implode(',', [
+            'CTA',
+            $tpl['Fontname'],
+            (int) $tpl['Fontsize'] + 4,
+            '&H00FFFFFF',        // white
+            '&H000000FF',
+            '&H00000000',        // black outline
+            '&H64000000',
+            1,                   // Bold
+            0, 0, 0,
+            100, 100,
+            0, 0,
+            1,
+            3, 1,                // thicker outline
+            8,                   // top-centre
+            10, 10,
+            50,                  // MarginV from top
+            1,
+        ]);
+
         return <<<ASS
         [Script Info]
         ScriptType: v4.00+
@@ -98,10 +133,28 @@ class CaptionRenderer
         [V4+ Styles]
         Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
         Style: {$style}
+        Style: {$ctaStyle}
 
         [Events]
         Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         ASS;
+    }
+
+    /**
+     * A single Dialogue line for the fixed CTA, spanning the whole clip. Returns
+     * '' when there is no CTA text. The text is sanitised like captions, so a
+     * hostile CTA can't inject ASS override tags (spec section 6).
+     */
+    private function ctaEvent(string $ctaText, int $clipDurationMs): string
+    {
+        $text = $this->sanitize($ctaText);
+        if ($text === '') {
+            return '';
+        }
+
+        $end = $this->toAssTime(max(1, $clipDurationMs));
+
+        return "Dialogue: 0,{$this->toAssTime(0)},{$end},CTA,,0,0,0,,{$text}";
     }
 
     /**

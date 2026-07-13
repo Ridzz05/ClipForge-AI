@@ -13,14 +13,31 @@ class ReviewVideo extends Component
 {
     public Video $video;
 
+    /** On-screen CTA to burn onto approved clips (campaign requirement). */
+    public string $ctaText = '';
+
     public ?string $flash = null;
 
     public ?string $error = null;
+
+    /** Preset CTA options from the campaign brief; operator can also type one. */
+    public function ctaPresets(): array
+    {
+        return [
+            "IT'S OUT. IT'S ACTUALLY OUT.",
+            "we got new Backyard Baseball before GTA 6 💀",
+            "Pablo Sanchez is back and he's still HIM",
+            "bought my childhood back on Steam today",
+            "dropped everything to play Backyard Baseball. no regrets",
+        ];
+    }
 
     /** Route-model-bound in the route definition. */
     public function mount(Video $video): void
     {
         $this->video = $video;
+        // Seed with the configured default CTA so the field isn't empty.
+        $this->ctaText = (string) config('autoclip.render.cta_text', '');
     }
 
     public function approve(int $candidateId, ClipReviewService $review): void
@@ -31,7 +48,7 @@ class ReviewVideo extends Component
         }
 
         try {
-            $export = $review->approve($candidate);
+            $export = $review->approve($candidate, $this->ctaText);
         } catch (\RuntimeException $e) {
             $this->error = $e->getMessage();
 

@@ -86,6 +86,47 @@ class CaptionRendererTest extends TestCase
         $this->assertStringNotContainsString('Dialogue:', $ass);
     }
 
+    // --- Campaign CTA overlay --------------------------------------------
+
+    public function test_cta_overlay_is_burned_spanning_the_clip(): void
+    {
+        $ass = $this->renderer->renderAss(
+            $this->words, 'default', 1080, 1920,
+            ctaText: "IT'S OUT. IT'S ACTUALLY OUT.",
+            clipDurationMs: 30_000,
+        );
+
+        // A dedicated CTA style and a Dialogue line using it, spanning 0..30s.
+        $this->assertStringContainsString('Style: CTA,', $ass);
+        $this->assertStringContainsString(",CTA,,0,0,0,,IT'S OUT. IT'S ACTUALLY OUT.", $ass);
+        $this->assertStringContainsString('0:00:30.00', $ass); // clip end
+    }
+
+    public function test_no_cta_line_when_text_empty(): void
+    {
+        $ass = $this->renderer->renderAss($this->words, 'default', 1080, 1920, ctaText: '', clipDurationMs: 30_000);
+        $this->assertStringNotContainsString(',CTA,,', $ass);
+    }
+
+    public function test_cta_text_cannot_inject_ass_override_tags(): void
+    {
+        // CTA text is operator input; still sanitised like captions.
+        $ass = $this->renderer->renderAss(
+            $this->words, 'default', 1080, 1920,
+            ctaText: "{\\pos(0,0)}hack\nme", clipDurationMs: 10_000,
+        );
+
+        $events = $this->dialogueBlock($ass);
+        $this->assertStringNotContainsString('{', $events);
+        $this->assertStringNotContainsString('}', $events);
+        // The CTA collapsed to a single line (newline flattened).
+        $ctaLines = array_filter(
+            explode("\n", $ass),
+            fn ($l) => str_contains($l, ',CTA,,'),
+        );
+        $this->assertCount(1, $ctaLines);
+    }
+
     private function dialogueBlock(string $ass): string
     {
         $pos = strpos($ass, '[Events]');

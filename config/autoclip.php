@@ -80,6 +80,10 @@ return [
         'width' => (int) env('AUTOCLIP_RENDER_WIDTH', 1080),
         'height' => (int) env('AUTOCLIP_RENDER_HEIGHT', 1920),
         'caption_style' => env('AUTOCLIP_CAPTION_STYLE', 'default'),
+        // Default on-screen CTA burned onto every clip (campaign requirement:
+        // clips must carry a call-to-action). Empty disables the overlay.
+        // Per-export cta_text overrides this.
+        'cta_text' => env('AUTOCLIP_CTA_TEXT', ''),
         // Optional watermark PNG (absolute path); null disables the overlay.
         'watermark_path' => env('AUTOCLIP_WATERMARK_PATH'),
         'disk' => env('AUTOCLIP_EXPORT_DISK', 'local'),

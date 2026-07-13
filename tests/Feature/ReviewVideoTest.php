@@ -58,6 +58,19 @@ class ReviewVideoTest extends TestCase
         Queue::assertPushed(\App\Jobs\ReframeJob::class);
     }
 
+    public function test_approve_persists_the_chosen_cta_on_the_export(): void
+    {
+        [$video, $candidate] = $this->videoWithCandidate();
+
+        Livewire::test(ReviewVideo::class, ['video' => $video])
+            ->set('ctaText', "Pablo Sanchez is back and he's still HIM")
+            ->call('approve', $candidate->id)
+            ->assertHasNoErrors();
+
+        $export = Export::where('clip_candidate_id', $candidate->id)->firstOrFail();
+        $this->assertSame("Pablo Sanchez is back and he's still HIM", $export->cta_text);
+    }
+
     public function test_reject_marks_candidate_rejected_without_export(): void
     {
         [$video, $candidate] = $this->videoWithCandidate();

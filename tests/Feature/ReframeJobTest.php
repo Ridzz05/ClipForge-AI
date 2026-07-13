@@ -85,7 +85,8 @@ class ReframeJobTest extends TestCase
 
         return Export::create([
             'clip_candidate_id' => $candidate->id, 'aspect_ratio' => '9:16',
-            'caption_style' => 'default', 'status' => Export::STATUS_QUEUED,
+            'caption_style' => 'default', 'cta_text' => "IT'S OUT. IT'S ACTUALLY OUT.",
+            'status' => Export::STATUS_QUEUED,
         ]);
     }
 
@@ -115,6 +116,11 @@ class ReframeJobTest extends TestCase
 
         // An ASS caption file was generated for the clip.
         Storage::disk('local')->assertExists("exports/{$export->id}/captions.ass");
+
+        // The campaign CTA was burned into that ASS file.
+        $ass = Storage::disk('local')->get("exports/{$export->id}/captions.ass");
+        $this->assertStringContainsString('Style: CTA,', $ass);
+        $this->assertStringContainsString("IT'S OUT. IT'S ACTUALLY OUT.", $ass);
 
         $this->assertDatabaseHas('pipeline_jobs', [
             'stage' => 'reframe', 'status' => 'done',

@@ -75,14 +75,19 @@ class ReframeJob implements ShouldQueue
         $panPath = $planner->panPath($dims['width'], $dims['height'], $centers);
         $panX = $this->medianX($panPath);
 
-        // 3. Captions for this clip, timestamps rebased to clip start.
+        // 3. Captions for this clip, timestamps rebased to clip start, plus a
+        //    fixed on-screen CTA (campaign requirement) spanning the whole clip.
         $assRelative = "exports/{$export->id}/captions.ass";
         $exportDisk = Storage::disk((string) config('autoclip.render.disk'));
+        $clipDurationMs = $candidate->end_ms - $candidate->start_ms;
+        $ctaText = $export->cta_text ?? (string) config('autoclip.render.cta_text', '');
         $exportDisk->put($assRelative, $captions->renderAss(
             $this->wordsForClip($video->id, $candidate->start_ms, $candidate->end_ms),
             $export->caption_style,
             $renderW,
             $renderH,
+            $ctaText,
+            $clipDurationMs,
         ));
         $assPath = $exportDisk->path($assRelative);
 

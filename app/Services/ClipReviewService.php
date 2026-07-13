@@ -16,11 +16,13 @@ use RuntimeException;
 class ClipReviewService
 {
     /**
+     * @param  string|null  $ctaText  optional on-screen CTA burned onto the clip;
+     *                                 falls back to the configured default when null
      * @return Export the export queued for rendering
      *
      * @throws RuntimeException if the candidate was already exported
      */
-    public function approve(ClipCandidate $candidate): Export
+    public function approve(ClipCandidate $candidate, ?string $ctaText = null): Export
     {
         if ($candidate->status === ClipCandidate::STATUS_EXPORTED) {
             throw new RuntimeException('Candidate already exported.');
@@ -28,10 +30,15 @@ class ClipReviewService
 
         $candidate->update(['status' => ClipCandidate::STATUS_APPROVED]);
 
+        $cta = $ctaText !== null && trim($ctaText) !== ''
+            ? trim($ctaText)
+            : (string) config('autoclip.render.cta_text', '');
+
         $export = Export::create([
             'clip_candidate_id' => $candidate->id,
             'aspect_ratio' => '9:16',
             'caption_style' => (string) config('autoclip.render.caption_style'),
+            'cta_text' => $cta,
             'status' => Export::STATUS_QUEUED,
         ]);
 

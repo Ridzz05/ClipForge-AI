@@ -35,6 +35,29 @@
 
         {{-- Candidates --}}
         <div class="grid" style="gap:12px;">
+            {{-- CTA overlay (campaign requirement: every clip needs on-screen CTA) --}}
+            <div class="panel">
+                <label class="muted" style="font-weight:600; display:block; margin-bottom:6px;">
+                    On-screen CTA (di-burn ke klip yang di-approve)
+                </label>
+                <input type="text" wire:model="ctaText" maxlength="120"
+                       placeholder="mis. IT'S OUT. IT'S ACTUALLY OUT."
+                       style="width:100%; padding:9px 12px; border-radius:8px; background:var(--panel-2);
+                              border:1px solid var(--border); color:var(--text); font-family:inherit; font-size:14px;">
+                <div class="row" style="gap:6px; flex-wrap:wrap; margin-top:10px;">
+                    @foreach($this->ctaPresets() as $preset)
+                        <button type="button" class="btn btn-sm"
+                                wire:click="$set('ctaText', @js($preset))"
+                                style="font-weight:500;">{{ $preset }}</button>
+                    @endforeach
+                </div>
+                @if(trim($ctaText) === '')
+                    <p class="muted" style="font-size:12px; margin:8px 0 0; color:var(--amber);">
+                        Kosong = klip tanpa CTA. Campaign mewajibkan CTA di setiap klip.
+                    </p>
+                @endif
+            </div>
+
             @forelse($candidates as $c)
                 @php
                     $dur = ($c->end_ms - $c->start_ms) / 1000;
