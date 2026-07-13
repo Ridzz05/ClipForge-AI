@@ -119,6 +119,10 @@ class ReframeJobTest extends TestCase
         $this->assertDatabaseHas('pipeline_jobs', [
             'stage' => 'reframe', 'status' => 'done',
         ]);
+
+        // Hands off to Stage 5 (watermark + deliver) for the same export.
+        Queue::assertPushed(\App\Jobs\ExportDeliverJob::class,
+            fn ($job) => $job->exportId === $export->id);
     }
 
     public function test_ffmpeg_invoked_with_argument_array(): void

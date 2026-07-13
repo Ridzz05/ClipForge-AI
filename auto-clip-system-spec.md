@@ -203,15 +203,28 @@ on which exported clips got used.
 
 ## 8. Definition of Done (Phase 1)
 
-- [ ] Upload endpoint validates and stores video, creates `videos` row
-- [ ] Transcription job produces word-level timestamped transcript
-- [ ] Scoring job returns validated, schema-checked clip candidates
-- [ ] Reframe/caption/watermark job produces a 9:16 exported file per
-      approved candidate
-- [ ] All ffmpeg calls use argument arrays, verified with a malicious
-      filename test case
-- [ ] Job queue survives a worker crash mid-stage (retry, not data loss)
-- [ ] Max duration/size limits enforced and tested
+- [x] Upload endpoint validates and stores video, creates `videos` row
+      — `VideoIngestService`, `VideoIngestTest`
+- [x] Transcription job produces word-level timestamped transcript
+      — `TranscribeJob` + `services/whisper`, `TranscribeTest`
+- [x] Scoring job returns validated, schema-checked clip candidates
+      — `ScoreHighlightsJob` + `HighlightSchema`, `ScoreHighlightsTest`
+- [x] Reframe/caption/watermark job produces a 9:16 exported file per
+      approved candidate — `ReframeJob` + `ExportDeliverJob`,
+      `ReframeJobTest` / `ExportDeliverTest`
+- [x] All ffmpeg calls use argument arrays, verified with a malicious
+      filename test case — `FfmpegService`, `ReframeCommandBuilderTest` +
+      `WatermarkCommandBuilderTest` (hostile-path cases)
+- [x] Job queue survives a worker crash mid-stage (retry, not data loss)
+      — all jobs `tries=3` + idempotent transactional writes; asserted in
+      `TranscribeTest` (idempotency, atomic rollback, retry-config)
+- [x] Max duration/size limits enforced and tested
+      — `config/autoclip.php` caps, `VideoIngestTest` (over-duration reject)
+
+**Phase 1 status:** complete. Full test suite: 83 passing. External binaries
+(ffmpeg) and self-hosted services (whisper, ollama, MediaPipe) are faked in
+tests, so the suite runs with no runtime deps; see each `services/*/README.md`
+to run them for real.
 
 ---
 

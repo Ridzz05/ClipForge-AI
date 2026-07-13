@@ -17,9 +17,9 @@ Ingest → Transcribe → Score highlights → Reframe & caption → Export & de
 |---|---|---|
 | 1 Ingest | ✅ | Upload, magic-byte validation, ffprobe duration cap, UUID storage |
 | 2 Transcribe | ✅ | faster-whisper service, word-level timestamps, crash-safe job |
-| 3 Score highlights | ⬜ | Ollama (qwen2.5), schema-validated JSON |
-| 4 Reframe & caption | ⬜ | MediaPipe + ffmpeg |
-| 5 Export & deliver | ⬜ | Watermark, render, download |
+| 3 Score highlights | ✅ | Ollama (qwen2.5), strict schema-validated JSON |
+| 4 Reframe & caption | ✅ | MediaPipe pan + ffmpeg crop/scale, burned ASS captions |
+| 5 Export & deliver | ✅ | Watermark overlay, render, manual download (Phase 1) |
 
 ## Prerequisites
 

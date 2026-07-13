@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ClipCandidateReviewController;
+use App\Http\Controllers\ExportDownloadController;
 use App\Http\Controllers\VideoUploadController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,3 +15,7 @@ Route::post('/candidates/{candidate}/approve', [ClipCandidateReviewController::c
     ->name('candidates.approve');
 Route::post('/candidates/{candidate}/reject', [ClipCandidateReviewController::class, 'reject'])
     ->name('candidates.reject');
+
+// Stage 5 — manual download of a finished export (Phase 1: no bot yet).
+Route::get('/exports/{export}/download', [ExportDownloadController::class, 'show'])
+    ->name('exports.download');
