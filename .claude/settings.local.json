@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/dev/**)",
+      "Bash(php -v)",
+      "Bash(composer --version)",
+      "Bash(ffmpeg -version)",
+      "Bash(ffprobe -version)",
+      "Bash(ollama --version)",
+      "Bash(php artisan *)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit -q -m 'Initial Laravel 13 scaffold + auto-clip spec *)"
+    ]
+  }
+}
