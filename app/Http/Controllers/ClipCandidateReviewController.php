@@ -2,35 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\ReframeJob;
 use App\Models\ClipCandidate;
-use App\Models\Export;
+use App\Services\ClipReviewService;
 use Illuminate\Http\JsonResponse;
+use RuntimeException;
 
 /**
  * Human review gate (spec section 4/5.5). A candidate must be explicitly
  * approved before any render happens — matching the "Rizki as reviewer" role
- * rather than autonomous publishing. Approval creates an Export row and
- * dispatches the reframe/caption job.
+ * rather than autonomous publishing. Delegates to ClipReviewService so the API
+ * and the Livewire UI share one implementation.
  */
 class ClipCandidateReviewController extends Controller
 {
+    public function __construct(private readonly ClipReviewService $review) {}
+
     public function approve(ClipCandidate $candidate): JsonResponse
     {
-        if ($candidate->status === ClipCandidate::STATUS_EXPORTED) {
-            return response()->json(['message' => 'Candidate already exported.'], 409);
+        try {
+            $export = $this->review->approve($candidate);
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 409);
         }
-
-        $candidate->update(['status' => ClipCandidate::STATUS_APPROVED]);
-
-        $export = Export::create([
-            'clip_candidate_id' => $candidate->id,
-            'aspect_ratio' => '9:16',
-            'caption_style' => (string) config('autoclip.render.caption_style'),
-            'status' => Export::STATUS_QUEUED,
-        ]);
-
-        ReframeJob::dispatch($export->id);
 
         return response()->json([
             'candidate_id' => $candidate->id,
@@ -41,7 +34,7 @@ class ClipCandidateReviewController extends Controller
 
     public function reject(ClipCandidate $candidate): JsonResponse
     {
-        $candidate->update(['status' => ClipCandidate::STATUS_REJECTED]);
+        $this->review->reject($candidate);
 
         return response()->json([
             'candidate_id' => $candidate->id,

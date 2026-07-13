@@ -47,7 +47,10 @@
       "Bash(git reset *)",
       "Bash(xargs echo \".venv files staged:\")",
       "Bash(xargs echo \".venv in HEAD:\")",
-      "Bash(xargs echo \"tracked .venv/ files:\")"
+      "Bash(xargs echo \"tracked .venv/ files:\")",
+      "Bash(git commit -q -m 'UI-1: dashboard with upload + live pipeline status *)",
+      "Bash(xargs echo \".venv staged:\")",
+      "Bash(git commit -q -m 'UI-2: review page — player, candidates, approve/reject *)"
     ]
   }
 }
