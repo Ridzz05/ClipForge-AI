@@ -10,7 +10,9 @@
       "Bash(php artisan *)",
       "Bash(git init *)",
       "Bash(git add *)",
-      "Bash(git commit -q -m 'Initial Laravel 13 scaffold + auto-clip spec *)"
+      "Bash(git commit -q -m 'Initial Laravel 13 scaffold + auto-clip spec *)",
+      "Bash(git commit -q -m 'Stage 1: Ingest — upload, magic-byte validation, job-scoped storage *)",
+      "Bash(git commit -q -m 'Stage 2 \\(WIP\\): transcript schema + models *)"
     ]
   }
 }
