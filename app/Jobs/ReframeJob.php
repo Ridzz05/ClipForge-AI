@@ -189,9 +189,15 @@ class ReframeJob implements ShouldQueue
         ]);
 
         if ($export) {
-            PipelineJob::where('video_id', $export->clipCandidate->video_id)
-                ->where('stage', 'reframe')
-                ->update(['status' => 'failed', 'last_error' => $e->getMessage()]);
+            // Upsert: the running row normally exists (handle ran first), but be
+            // robust if failure happened before it was created.
+            $job = PipelineJob::firstOrNew([
+                'video_id' => $export->clipCandidate->video_id,
+                'stage' => 'reframe',
+            ]);
+            $job->status = 'failed';
+            $job->last_error = $e->getMessage();
+            $job->save();
         }
     }
 }
