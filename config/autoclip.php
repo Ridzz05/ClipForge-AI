@@ -16,8 +16,11 @@ return [
         'max_duration_seconds' => (int) env('AUTOCLIP_MAX_DURATION_SECONDS', 3 * 60 * 60),
 
         // Accepted container MIME types, verified by magic bytes (not extension).
+        // Some environments report the ISO Base Media container as
+        // application/mp4 rather than video/mp4 — both are accepted.
         'allowed_mimes' => [
             'video/mp4',
+            'application/mp4',
             'video/quicktime',   // .mov
             'video/x-matroska',  // .mkv
             'video/webm',

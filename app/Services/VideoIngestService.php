@@ -120,7 +120,7 @@ class VideoIngestService
     {
         // Extension derived from detected MIME, never from the client name.
         return match ($file->getMimeType()) {
-            'video/mp4' => 'mp4',
+            'video/mp4', 'application/mp4' => 'mp4',
             'video/quicktime' => 'mov',
             'video/x-matroska' => 'mkv',
             'video/webm' => 'webm',

@@ -45,7 +45,9 @@
       "Bash(git commit -q -m 'UI-0: install Livewire 4, base layout + dashboard shell *)",
       "Bash(xargs echo \".venv files in HEAD commit:\")",
       "Bash(git reset *)",
-      "Bash(xargs echo \".venv files staged:\")"
+      "Bash(xargs echo \".venv files staged:\")",
+      "Bash(xargs echo \".venv in HEAD:\")",
+      "Bash(xargs echo \"tracked .venv/ files:\")"
     ]
   }
 }

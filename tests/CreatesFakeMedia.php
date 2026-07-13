@@ -33,4 +33,28 @@ trait CreatesFakeMedia
         // real content; the file is still moved/copied like a real upload.
         return new UploadedFile($path, $clientName, null, null, true);
     }
+
+    /**
+     * Livewire's component testing (->set('upload', ...)) needs a file built
+     * via the fake factory (it carries the extra props Livewire serializes).
+     * We create it then overwrite its bytes with real magic-byte content so the
+     * ingest service's finfo check still runs for real.
+     */
+    protected function fakeLivewireVideoUpload(
+        string $clientName = 'clip.mp4',
+        string $mime = 'video/mp4',
+    ): UploadedFile {
+        $bytes = match ($mime) {
+            'video/mp4' => "\x00\x00\x00\x20ftypisom\x00\x00\x02\x00isomiso2avc1mp41",
+            'video/quicktime' => "\x00\x00\x00\x14ftypqt  \x00\x00\x00\x00qt  ",
+            'video/webm' => "\x1a\x45\xdf\xa3\x01\x00\x00\x00\x00\x00\x00\x1fwebm",
+            default => "This is plain text, not a video at all.\n",
+        };
+
+        $file = UploadedFile::fake()->createWithContent($clientName, $bytes);
+        // createWithContent writes the exact bytes; finfo will detect the MIME
+        // from these magic bytes just like a real upload.
+        return $file;
+    }
 }
+
