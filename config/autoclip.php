@@ -51,6 +51,24 @@ return [
         'model' => env('AUTOCLIP_OLLAMA_MODEL', 'qwen2.5:7b'),
     ],
 
+    'face' => [
+        'endpoint' => env('AUTOCLIP_FACE_ENDPOINT', 'http://127.0.0.1:9100'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Render output spec (Stage 4/5)
+    |--------------------------------------------------------------------------
+    */
+    'render' => [
+        'width' => (int) env('AUTOCLIP_RENDER_WIDTH', 1080),
+        'height' => (int) env('AUTOCLIP_RENDER_HEIGHT', 1920),
+        'caption_style' => env('AUTOCLIP_CAPTION_STYLE', 'default'),
+        // Optional watermark PNG (absolute path); null disables the overlay.
+        'watermark_path' => env('AUTOCLIP_WATERMARK_PATH'),
+        'disk' => env('AUTOCLIP_EXPORT_DISK', 'local'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Per-job hard timeouts in seconds (resource exhaustion mitigation).

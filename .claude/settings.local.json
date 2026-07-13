@@ -18,7 +18,8 @@
       "Bash(xargs echo \"video routes:\")",
       "Bash(git commit -q -m 'Complete loose ends: env docs, project README, retry-config test *)",
       "Bash(git commit -q -m 'Stage 3 \\(WIP\\): clip_candidates schema + model *)",
-      "Bash(git commit -q -m 'Stage 3: Score highlights — Ollama + strict schema validation *)"
+      "Bash(git commit -q -m 'Stage 3: Score highlights — Ollama + strict schema validation *)",
+      "Bash(git commit -q -m 'Stage 4 \\(WIP\\): reframe/caption services, job, review gate *)"
     ]
   }
 }

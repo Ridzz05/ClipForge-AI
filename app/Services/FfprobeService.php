@@ -79,4 +79,26 @@ class FfprobeService
 
         return (int) floor((float) $duration);
     }
+
+    /**
+     * Source video pixel dimensions from the first video stream.
+     *
+     * @return array{width:int, height:int}
+     */
+    public function dimensions(string $absolutePath): array
+    {
+        $data = $this->probe($absolutePath);
+
+        foreach ($data['streams'] ?? [] as $stream) {
+            if (($stream['codec_type'] ?? null) === 'video'
+                && isset($stream['width'], $stream['height'])) {
+                return [
+                    'width' => (int) $stream['width'],
+                    'height' => (int) $stream['height'],
+                ];
+            }
+        }
+
+        throw new RuntimeException('No video stream with dimensions found.');
+    }
 }

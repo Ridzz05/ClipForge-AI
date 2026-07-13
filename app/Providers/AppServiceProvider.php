@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Services\FfprobeService;
+use App\Services\Reframe\FaceTrackingService;
+use App\Services\Reframe\FfmpegService;
 use App\Services\Scoring\OllamaService;
 use App\Services\WhisperService;
 use Illuminate\Http\Client\Factory as HttpFactory;
@@ -25,6 +27,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(
             OllamaService::class,
             fn ($app) => OllamaService::fromConfig($app->make(HttpFactory::class)),
+        );
+
+        $this->app->singleton(FfmpegService::class, fn () => FfmpegService::fromConfig());
+
+        $this->app->singleton(
+            FaceTrackingService::class,
+            fn ($app) => FaceTrackingService::fromConfig($app->make(HttpFactory::class)),
         );
     }
 

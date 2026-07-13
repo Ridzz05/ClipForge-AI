@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ClipCandidate extends Model
 {
@@ -34,6 +35,11 @@ class ClipCandidate extends Model
     public function video(): BelongsTo
     {
         return $this->belongsTo(Video::class);
+    }
+
+    public function exports(): HasMany
+    {
+        return $this->hasMany(Export::class);
     }
 
     public function durationMs(): int
