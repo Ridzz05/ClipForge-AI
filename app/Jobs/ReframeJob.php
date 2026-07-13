@@ -13,6 +13,7 @@ use App\Services\Reframe\ReframeCommandBuilder;
 use App\Services\Reframe\ReframePlanner;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
@@ -39,7 +40,7 @@ class ReframeJob implements ShouldQueue
 
     public function timeout(): int
     {
-        return (int) config('autoclip.timeouts.reframe');
+        return (int) config('autoclip.timeouts.reframe') + 120;
     }
 
     public function handle(
@@ -59,6 +60,8 @@ class ReframeJob implements ShouldQueue
         $video = $candidate->video;
 
         $pipelineJob = $this->markRunning($export, $video->id);
+
+        Log::info('Reframe: start', ['export_id' => $export->id, 'video_id' => $video->id]);
 
         $inputDisk = Storage::disk((string) config('autoclip.ingest.disk'));
         $inputPath = $inputDisk->path($video->storage_path);
@@ -116,6 +119,8 @@ class ReframeJob implements ShouldQueue
             'rendered_at' => now(),
         ]);
         $pipelineJob->update(['status' => 'done', 'last_error' => null]);
+
+        Log::info('Reframe: done', ['export_id' => $export->id, 'output' => $outputRelative]);
 
         // Hand off to Stage 5 (watermark + deliver) if present.
         if (class_exists(\App\Jobs\ExportDeliverJob::class)) {

@@ -195,4 +195,18 @@ class HighlightSchemaTest extends TestCase
         $schema = new HighlightSchema;
         $this->assertSame(15_000, $schema->minClipMs());
     }
+
+    public function test_auto_heals_seconds_to_milliseconds(): void
+    {
+        // LLM mistakenly returns seconds: 10 to 25.
+        // The video is 600 seconds long (600_000 ms).
+        $raw = [
+            ['start_ms' => 10, 'end_ms' => 25, 'hook_score' => 85, 'rationale' => 'hallucinated seconds'],
+        ];
+
+        $out = $this->schema->validate($raw, $this->videoMs);
+        $this->assertCount(1, $out);
+        $this->assertSame(10000, $out[0]['start_ms']);
+        $this->assertSame(25000, $out[0]['end_ms']);
+    }
 }

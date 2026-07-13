@@ -9,6 +9,7 @@ use App\Services\Reframe\FfmpegService;
 use App\Services\Reframe\WatermarkCommandBuilder;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
@@ -54,7 +55,8 @@ class ExportDeliverJob implements ShouldQueue
         $watermarkPath = config('autoclip.render.watermark_path');
 
         if (is_string($watermarkPath) && $watermarkPath !== '' && is_file($watermarkPath)) {
-            $reframedAbs = $disk->path($export->output_path);
+            $oldRelative = $export->output_path;
+            $reframedAbs = $disk->path($oldRelative);
             $finalRelative = "exports/{$export->id}/".Str::uuid().'-final.mp4';
             $finalAbs = $disk->path($finalRelative);
 
@@ -66,13 +68,18 @@ class ExportDeliverJob implements ShouldQueue
             ]);
 
             // The un-watermarked intermediate is no longer needed.
-            $disk->delete($this->relativeOf($reframedAbs, $disk->path('')));
+            $disk->delete($oldRelative);
         }
 
         // Mark the candidate exported (terminal happy state for Phase 1).
         $export->clipCandidate?->update(['status' => ClipCandidate::STATUS_EXPORTED]);
         $export->update(['status' => Export::STATUS_RENDERED, 'rendered_at' => now()]);
         $pipelineJob->update(['status' => 'done', 'last_error' => null]);
+
+        Log::info('Export: delivered', [
+            'export_id' => $export->id,
+            'watermark' => $export->watermark_applied,
+        ]);
     }
 
     private function relativeOf(string $absolute, string $diskRoot): string

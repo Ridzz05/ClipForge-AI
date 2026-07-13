@@ -51,6 +51,21 @@ return [
     */
     'ffmpeg_path' => env('AUTOCLIP_FFMPEG_PATH', 'ffmpeg'),
     'ffprobe_path' => env('AUTOCLIP_FFPROBE_PATH', 'ffprobe'),
+    'ytdlp_path' => env('AUTOCLIP_YTDLP_PATH', 'yt-dlp'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | URL ingest (spec 5.1: accept a public video URL). Downloaded via yt-dlp
+    | with an argument array; SSRF/scheme guards live in YtDlpService.
+    |--------------------------------------------------------------------------
+    */
+    'url_ingest' => [
+        // Cap what yt-dlp will fetch so a huge/long source can't exhaust disk.
+        'max_filesize' => env('AUTOCLIP_URL_MAX_FILESIZE', '2G'),
+        'timeout' => (int) env('AUTOCLIP_URL_TIMEOUT', 1800),
+        // Only these URL schemes are allowed.
+        'allowed_schemes' => ['http', 'https'],
+    ],
 
     /*
     |--------------------------------------------------------------------------

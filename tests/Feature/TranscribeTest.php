@@ -187,7 +187,7 @@ class TranscribeTest extends TestCase
         $job = new TranscribeJob(1);
         $this->assertGreaterThanOrEqual(2, $job->tries);
         $this->assertSame(
-            (int) config('autoclip.timeouts.transcribe'),
+            (int) config('autoclip.timeouts.transcribe') + 120,
             $job->timeout(),
         );
     }

@@ -1,75 +1,110 @@
-# Auto-Clip AI
+# 🎬 ClipForge AI
 
-Self-hosted service that turns long-form video (podcasts, webinars, streams)
-into short vertical captioned clips. See [`auto-clip-system-spec.md`](auto-clip-system-spec.md)
-for the full specification.
+> **ClipForge AI** is a powerful, self-hosted, automated pipeline designed to convert long-form videos (podcasts, webinars, livestreams, raw UGC) into short, vertical (9:16), captioned, and watermark-ready clips suitable for Reels, Shorts, and TikTok. 
 
-Orchestrator: **Laravel 13 + SQLite (WAL)**. Heavy work runs as queued jobs so
-video processing never blocks the request thread and retries independently.
+It functions similarly to services like OpusClip or Vizard, but runs entirely on your own hardware, keeping your data private and avoiding recurring SaaS fees.
 
-## Pipeline
+---
+
+## 🛠️ Architecture & Pipeline Overview
+
+The system is built on **Laravel 13** as the orchestrator, backed by **SQLite (WAL)**, with heavy asynchronous processing running via a robust queued job system. 
 
 ```
-Ingest → Transcribe → Score highlights → Reframe & caption → Export & deliver
+Ingest ──→ Transcribe ──→ Score Highlights ──→ Reframe & Caption ──→ Export & Deliver
 ```
 
-| Stage | Status | Notes |
+| Stage | Responsibility | Key Technology / Stack |
 |---|---|---|
-| 1 Ingest | ✅ | Upload, magic-byte validation, ffprobe duration cap, UUID storage |
-| 2 Transcribe | ✅ | faster-whisper service, word-level timestamps, crash-safe job |
-| 3 Score highlights | ✅ | Ollama (qwen2.5), strict schema-validated JSON |
-| 4 Reframe & caption | ✅ | MediaPipe pan + ffmpeg crop/scale, burned ASS captions |
-| 5 Export & deliver | ✅ | Watermark overlay, render, manual download (Phase 1) |
+| **1. Ingest** | Validates uploaded videos or public URLs, handles security checks (SSRF / magic bytes), and stores files. | Laravel HTTP + `yt-dlp` + `ffprobe` |
+| **2. Transcribe** | Generates word-level timestamped transcripts. | `faster-whisper` (Python microservice) |
+| **3. Score** | Identifies engaging highlights and ranks candidate clip time ranges. | Ollama (`qwen2.5:7b` / `llama3.2:3b`) |
+| **4. Reframe** | Crops video to vertical 9:16 keeping the speaker centered; burns in captions. | MediaPipe (Face tracking) + `ffmpeg` + ASS templates |
+| **5. Export** | Applies watermark overlays and packages the final `.mp4` file for delivery. | `ffmpeg` + Livewire Web Dashboard |
 
-## Prerequisites
+---
 
-- PHP 8.5+, Composer
-- **ffmpeg / ffprobe** on PATH (ingest validation + Stages 4–5)
-- Python 3.11 for the whisper service (`services/whisper/README.md`)
-- Ollama for Stage 3 (once implemented)
+## 🚀 Key Improvements & Audit Fixes
 
-## Setup
+The codebase has been thoroughly audited and hardened with the following enhancements:
+*   **OOM Prevention:** File uploads to internal Python services are now streamed via resource pointers (`fopen`) instead of memory-heavy strings, preventing crashes on videos up to 2 GB.
+*   **Double-Approval Protection:** Prevented duplicate exports and wasted rendering cycles by locking candidate states upon approval.
+*   **Self-Healing Timestamps:** Added automatic detection and correction for cases where the LLM returns seconds instead of milliseconds.
+*   **Windows Directory Separator Fixes:** Resolved string manipulation bugs that left orphan files on Windows systems.
+*   **Context Window Tuning:** Explicitly configured Ollama's `num_ctx` to `4096` in code to prevent massive VAD/KV-cache allocations, keeping model execution fast and light on 16GB RAM devices.
 
+---
+
+## 📋 Prerequisites
+
+Ensure you have the following installed on your machine:
+*   **PHP 8.5+** & **Composer**
+*   **FFmpeg** and **FFprobe** added to your system's PATH
+*   **Python 3.11** (for running the whisper and reframe services)
+*   **Ollama** (running locally on port `11434`)
+
+---
+
+## ⚙️ Setup & Installation
+
+### 1. Clone & Install Laravel Orchestrator
 ```bash
 composer install
-cp .env.example .env          # already present on this machine
+cp .env.example .env
 php artisan key:generate
-php artisan migrate            # creates videos, transcripts, queue tables, etc.
+php artisan migrate
 ```
 
-All Auto-Clip knobs live under `AUTOCLIP_*` in `.env` (caps, service
-endpoints, per-job timeouts) — see `config/autoclip.php`.
+### 2. Configure Environment Variables (`.env`)
+Ensure paths to external binaries match your system setup:
+```env
+AUTOCLIP_FFMPEG_PATH=ffmpeg
+AUTOCLIP_FFPROBE_PATH=ffprobe
+AUTOCLIP_YTDLP_PATH=yt-dlp
+```
 
-## Running
-
-Three processes:
-
+### 3. Pull LLM Model via Ollama
+Ensure Ollama is running and download the default highlight scoring model:
 ```bash
-# 1. Web/API
+ollama pull qwen2.5:7b
+```
+
+### 4. Setup Python Whisper Service
+```bash
+cd services/whisper
+python -m venv .venv
+.venv\Scripts\activate      # Windows (or source .venv/bin/activate on Unix)
+pip install -r requirements.txt
+```
+
+---
+
+## 💻 Running the Services Locally
+
+To run the complete system, launch the following processes in separate terminal sessions:
+
+### 1. Web Application & API
+```bash
 php artisan serve
-
-# 2. Queue worker (processes pipeline jobs; retries on crash)
-php artisan queue:work --tries=3
-
-# 3. Whisper transcription service
-cd services/whisper && python app.py   # see its README for install
 ```
+Access the dashboard at [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
-## Usage (Phase 1)
-
+### 2. Queue Worker (Processes the Pipeline)
 ```bash
-# Ingest a video — returns {id, status, duration_seconds}
-curl -F "video=@sample.mp4" http://127.0.0.1:8000/api/videos
+php artisan queue:work --tries=3
 ```
 
-This validates + stores the file and dispatches transcription. Later stages
-pick up automatically as each job completes.
+### 3. Whisper Transcription Service
+```bash
+cd services/whisper
+.venv\Scripts\activate      # Windows
+python app.py               # Runs on port 9000
+```
 
-## Testing
+---
 
+## 🧪 Testing the Suite
+The project comes with a comprehensive test suite (130 tests) that uses fakes and mocks, allowing you to run verification without any external service dependencies:
 ```bash
 php artisan test
 ```
-
-Tests run against an in-memory SQLite DB and fake the external services
-(whisper, ffprobe), so **no binaries or GPU are required** to run the suite.

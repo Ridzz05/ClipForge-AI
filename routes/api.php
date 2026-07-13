@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Route;
 Route::post('/videos', [VideoUploadController::class, 'store'])
     ->name('videos.store');
 
+// Stage 1 — Ingest via public video URL (yt-dlp download, queued).
+Route::post('/videos/url', [VideoUploadController::class, 'storeUrl'])
+    ->name('videos.store-url');
+
 // Stage 4 — human review gate. Approving a candidate dispatches the reframe
 // /caption render; rejecting drops it.
 Route::post('/candidates/{candidate}/approve', [ClipCandidateReviewController::class, 'approve'])

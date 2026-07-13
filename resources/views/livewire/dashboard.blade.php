@@ -14,8 +14,8 @@
         @if($flash)
             <div class="flash">{{ $flash }}</div>
         @endif
-        @if($error)
-            <div class="flash flash-error">{{ $error }}</div>
+        @if($uploadError)
+            <div class="flash flash-error">{{ $uploadError }}</div>
         @endif
 
         <form wire:submit="save" class="grid" style="gap:14px;">
@@ -35,6 +35,28 @@
                 <span class="muted" wire:loading wire:target="upload">Menyiapkan file&hellip;</span>
                 <span class="muted" style="font-size:13px;">Max 3 jam &middot; MP4/MOV/MKV/WebM/AVI</span>
             </div>
+        </form>
+
+        <div style="border-top:1px solid var(--border); margin:18px 0; text-align:center;">
+            <span class="muted" style="font-size:12px; background:var(--panel); padding:0 10px; position:relative; top:-10px;">ATAU</span>
+        </div>
+
+        <form wire:submit="ingestUrl" class="grid" style="gap:14px; margin-top:-8px;">
+            <label class="muted" style="font-weight:600;">Tempel URL video (YouTube, dll)</label>
+            <div class="row" style="gap:10px;">
+                <input type="url" wire:model="url" placeholder="https://www.youtube.com/watch?v=..."
+                       style="flex:1; padding:9px 12px; border-radius:8px; background:var(--panel-2);
+                              border:1px solid var(--border); color:var(--text); font-family:inherit; font-size:14px;">
+                <button type="submit" class="btn btn-primary"
+                        wire:loading.attr="disabled" wire:target="ingestUrl">
+                    <span wire:loading.remove wire:target="ingestUrl">Ambil dari URL</span>
+                    <span wire:loading wire:target="ingestUrl"><span class="spin"></span>&nbsp;Memproses&hellip;</span>
+                </button>
+            </div>
+            @if($urlError)
+                <span class="flash flash-error">{{ $urlError }}</span>
+            @endif
+            <span class="muted" style="font-size:13px;">Diunduh di background via yt-dlp. Hanya http/https publik.</span>
         </form>
     </div>
 
@@ -103,7 +125,15 @@
                                 @if(in_array($video->status, ['reviewing','done']))
                                     <a href="/videos/{{ $video->id }}/review" class="btn btn-sm btn-primary">Review</a>
                                 @elseif($video->status === 'failed')
-                                    <span class="badge badge-red">Gagal</span>
+                                    @php $reason = $video->failureReason(); @endphp
+                                    <span class="badge badge-red" @if($reason) title="{{ $reason }}" @endif>Gagal</span>
+                                    @if($reason)
+                                        <div class="muted" style="font-size:11px; margin-top:4px; max-width:180px;
+                                             overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+                                             title="{{ $reason }}">
+                                            {{ $reason }}
+                                        </div>
+                                    @endif
                                 @else
                                     <span class="muted" style="font-size:13px;">menunggu&hellip;</span>
                                 @endif
@@ -113,5 +143,10 @@
                 </tbody>
             </table>
         @endif
+    </div>
+
+    {{-- Live pipeline activity timeline (P4) --}}
+    <div style="margin-top:18px;">
+        <livewire:activity-feed />
     </div>
 </div>

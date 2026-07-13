@@ -28,6 +28,10 @@ class ClipReviewService
             throw new RuntimeException('Candidate already exported.');
         }
 
+        if ($candidate->status === ClipCandidate::STATUS_APPROVED) {
+            throw new RuntimeException('Candidate already approved.');
+        }
+
         $candidate->update(['status' => ClipCandidate::STATUS_APPROVED]);
 
         $cta = $ctaText !== null && trim($ctaText) !== ''

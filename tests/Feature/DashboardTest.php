@@ -65,7 +65,7 @@ class DashboardTest extends TestCase
             ->set('upload', $file)
             ->call('save');
 
-        $this->assertNotEmpty($component->get('error'));
+        $this->assertNotEmpty($component->get('uploadError'));
         $this->assertSame(0, Video::count());
     }
 
@@ -83,6 +83,74 @@ class DashboardTest extends TestCase
         Livewire::test(Dashboard::class)
             ->assertSee('webinar.mp4')
             ->assertSee('Review');
+    }
+
+    public function test_url_ingest_dispatches_download_job(): void
+    {
+        Livewire::test(Dashboard::class)
+            ->set('url', 'https://www.youtube.com/watch?v=abc123')
+            ->call('ingestUrl')
+            ->assertHasNoErrors();
+
+        // A tracked video row is created immediately (status=downloading).
+        $video = Video::where('source_type', 'url')->firstOrFail();
+        $this->assertSame('downloading', $video->status);
+        $this->assertSame('https://www.youtube.com/watch?v=abc123', $video->source_ref);
+
+        Queue::assertPushed(\App\Jobs\IngestUrlJob::class,
+            fn ($j) => $j->videoId === $video->id);
+    }
+
+    public function test_url_ingest_rejects_ssrf_url_without_dispatching(): void
+    {
+        $component = Livewire::test(Dashboard::class)
+            ->set('url', 'http://169.254.169.254/latest/meta-data/')
+            ->call('ingestUrl');
+
+        $this->assertNotEmpty($component->get('urlError'));
+        Queue::assertNotPushed(\App\Jobs\IngestUrlJob::class);
+        // No stray video row for a rejected URL.
+        $this->assertSame(0, Video::where('source_type', 'url')->count());
+    }
+
+    public function test_url_ingest_rejects_empty_url(): void
+    {
+        Livewire::test(Dashboard::class)
+            ->set('url', '   ')
+            ->call('ingestUrl');
+
+        Queue::assertNotPushed(\App\Jobs\IngestUrlJob::class);
+    }
+
+    public function test_failed_video_shows_its_failure_reason(): void
+    {
+        Video::create([
+            'source_type' => 'url', 'source_ref' => 'https://x/y', 'status' => 'failed',
+            'last_error' => 'Download failed: video unavailable',
+            'storage_path' => null,
+        ]);
+
+        Livewire::test(Dashboard::class)
+            ->assertSee('Gagal')
+            ->assertSee('Download failed: video unavailable');
+    }
+
+    public function test_failure_reason_falls_back_to_pipeline_job_error(): void
+    {
+        $video = Video::create([
+            'source_type' => 'upload', 'source_ref' => 'x.mp4', 'status' => 'failed',
+            'storage_path' => 'videos/x/source.mp4',
+        ]);
+        // No video.last_error, but a failed pipeline stage carries the reason.
+        \App\Models\PipelineJob::create([
+            'video_id' => $video->id, 'stage' => 'transcribe', 'status' => 'failed',
+            'last_error' => 'Whisper service returned HTTP 500',
+        ]);
+
+        $this->assertSame('Whisper service returned HTTP 500', $video->failureReason());
+
+        Livewire::test(Dashboard::class)
+            ->assertSee('Whisper service returned HTTP 500');
     }
 
     protected function tearDown(): void

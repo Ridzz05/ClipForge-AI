@@ -45,7 +45,7 @@ class FaceTrackingService
                 ->baseUrl($this->endpoint)
                 ->timeout($this->timeout)
                 ->acceptJson()
-                ->attach('file', file_get_contents($absolutePath), basename($absolutePath))
+                ->attach('file', fopen($absolutePath, 'r'), basename($absolutePath))
                 ->post('/track', [
                     'start_ms' => (string) $startMs,
                     'end_ms' => (string) $endMs,

@@ -129,6 +129,13 @@ class HighlightSchema
         $end = (int) round((float) $item['end_ms']);
         $score = (int) round((float) $item['hook_score']);
 
+        // Auto-heal: if the proposed duration is less than 1 second, but multiplying by 1000
+        // fits within the video, the LLM likely returned seconds instead of milliseconds.
+        if (($end - $start) < 1000 && $videoDurationMs > 0 && ($end * 1000) <= $videoDurationMs) {
+            $start *= 1000;
+            $end *= 1000;
+        }
+
         // Bounds: non-negative, ordered, within the video, sane duration.
         if ($start < 0 || $end <= $start) {
             return null;

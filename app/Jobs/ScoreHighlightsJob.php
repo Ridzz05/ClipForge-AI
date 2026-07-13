@@ -45,7 +45,7 @@ class ScoreHighlightsJob implements ShouldQueue
 
     public function timeout(): int
     {
-        return (int) config('autoclip.timeouts.score');
+        return (int) config('autoclip.timeouts.score') + 120;
     }
 
     public function handle(OllamaService $ollama, HighlightSchema $schema): void
@@ -61,11 +61,24 @@ class ScoreHighlightsJob implements ShouldQueue
             // Nothing to score — not an error, just an empty result.
             $this->markReviewing($video);
 
+            $job = PipelineJob::firstOrNew([
+                'video_id' => $video->id,
+                'stage' => 'score',
+            ]);
+            $job->status = 'done';
+            $job->attempts = ($job->attempts ?? 0) + 1;
+            $job->save();
+
             return;
         }
 
         $pipelineJob = $this->markRunning($video);
         $durationMs = (int) (($video->duration_seconds ?? 0) * 1000);
+
+        Log::info('Score: start', [
+            'video_id' => $video->id,
+            'segments' => $transcript->segments->count(),
+        ]);
 
         $candidates = [];
         foreach ($transcript->segments->chunk(self::BATCH_SIZE) as $batch) {
@@ -97,6 +110,11 @@ class ScoreHighlightsJob implements ShouldQueue
         $this->persist($video, $candidates);
         $pipelineJob->update(['status' => 'done', 'last_error' => null]);
         $this->markReviewing($video);
+
+        Log::info('Score: done', [
+            'video_id' => $video->id,
+            'candidates' => count($candidates),
+        ]);
     }
 
     /**

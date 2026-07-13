@@ -17,7 +17,7 @@ class VideoStreamController extends Controller
     {
         $disk = Storage::disk((string) config('autoclip.ingest.disk'));
 
-        if (! $disk->exists($video->storage_path)) {
+        if ($video->storage_path === null || ! $disk->exists($video->storage_path)) {
             return response()->json(['message' => 'Source file missing.'], 404);
         }
 

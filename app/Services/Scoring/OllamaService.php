@@ -52,6 +52,7 @@ class OllamaService
             'stream' => false,
             'options' => [
                 'temperature' => 0.2, // deterministic-ish scoring
+                'num_ctx' => 4096,    // limit context window to save RAM/VRAM on iGPU
             ],
         ]);
 

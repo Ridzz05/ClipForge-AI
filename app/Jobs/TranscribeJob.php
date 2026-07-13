@@ -9,6 +9,7 @@ use App\Services\WhisperService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -36,10 +37,10 @@ class TranscribeJob implements ShouldQueue
         public readonly int $videoId,
     ) {}
 
-    /** Hard timeout mirrors the transcribe budget (resource exhaustion guard). */
+    /** Hard timeout has a safety buffer over the transcribe budget (resource exhaustion guard). */
     public function timeout(): int
     {
-        return (int) config('autoclip.timeouts.transcribe');
+        return (int) config('autoclip.timeouts.transcribe') + 120;
     }
 
     public function handle(WhisperService $whisper): void
@@ -53,6 +54,8 @@ class TranscribeJob implements ShouldQueue
 
         $absolutePath = Storage::disk((string) config('autoclip.ingest.disk'))
             ->path($video->storage_path);
+
+        Log::info('Transcribe: start', ['video_id' => $video->id]);
 
         // Network/CPU-heavy call happens OUTSIDE the transaction so we don't
         // hold a write lock on SQLite for the whole transcription.
@@ -87,6 +90,12 @@ class TranscribeJob implements ShouldQueue
         });
 
         $pipelineJob->update(['status' => 'done', 'last_error' => null]);
+
+        Log::info('Transcribe: done', [
+            'video_id' => $video->id,
+            'segments' => count($result['segments']),
+            'language' => $result['language'],
+        ]);
 
         // Hand off to Stage 3 (Score highlights). Guarded so this stage stays
         // green even before ScoreJob exists.

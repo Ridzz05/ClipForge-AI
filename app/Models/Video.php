@@ -12,6 +12,7 @@ class Video extends Model
         'source_type',
         'source_ref',
         'status',
+        'last_error',
         'duration_seconds',
         'storage_path',
     ];
@@ -42,9 +43,8 @@ class Video extends Model
      */
     public function stageProgress(): array
     {
-        $order = ['ingested', 'transcribing', 'transcribed', 'scoring', 'reviewing', 'done'];
         $stages = [
-            ['key' => 'ingest', 'label' => 'Ingest', 'reached' => ['ingested', 'transcribing', 'transcribed', 'scoring', 'reviewing', 'done']],
+            ['key' => 'ingest', 'label' => 'Ingest', 'reached' => ['ingested', 'transcribing', 'transcribed', 'scoring', 'reviewing', 'done'], 'active' => ['downloading']],
             ['key' => 'transcribe', 'label' => 'Transcribe', 'reached' => ['transcribed', 'scoring', 'reviewing', 'done'], 'active' => ['transcribing']],
             ['key' => 'score', 'label' => 'Score', 'reached' => ['reviewing', 'done'], 'active' => ['scoring']],
             ['key' => 'review', 'label' => 'Review', 'reached' => ['done'], 'active' => ['reviewing']],
@@ -71,6 +71,28 @@ class Video extends Model
     /** Is the pipeline still actively working (so the UI keeps polling)? */
     public function isProcessing(): bool
     {
-        return in_array($this->status, ['ingested', 'transcribing', 'scoring'], true);
+        return in_array($this->status, ['downloading', 'ingested', 'transcribing', 'scoring'], true);
+    }
+
+    /**
+     * The reason this video failed, for the UI. Prefers the video-level error,
+     * falling back to the last failed pipeline stage's message.
+     */
+    public function failureReason(): ?string
+    {
+        if ($this->status !== 'failed') {
+            return null;
+        }
+
+        if (! empty($this->last_error)) {
+            return $this->last_error;
+        }
+
+        $failed = $this->pipelineJobs()
+            ->where('status', 'failed')
+            ->latest('updated_at')
+            ->first();
+
+        return $failed?->last_error;
     }
 }

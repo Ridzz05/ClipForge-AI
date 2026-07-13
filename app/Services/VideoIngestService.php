@@ -92,6 +92,83 @@ class VideoIngestService
         return $video;
     }
 
+    /**
+     * Create the videos row for a URL ingest UP FRONT, before the (slow, async)
+     * download — so the operator immediately sees a "downloading" video and any
+     * later failure is visible on that row instead of vanishing into a log.
+     */
+    public function createPendingUrlVideo(string $sourceUrl): Video
+    {
+        $video = Video::create([
+            'source_type' => 'url',
+            'source_ref' => $sourceUrl,
+            'status' => 'downloading',
+            'storage_path' => null,
+        ]);
+
+        PipelineJob::create([
+            'video_id' => $video->id,
+            'stage' => 'ingest',
+            'status' => 'queued',
+            'attempts' => 0,
+        ]);
+
+        return $video;
+    }
+
+    /**
+     * Finalise a URL ingest after yt-dlp has produced $relativePath under the
+     * video's job directory. Validates duration (same cap as uploads), then
+     * marks the video ingested and starts the pipeline. On failure the caller
+     * (IngestUrlJob) marks the video failed; here we clean up the file and throw.
+     *
+     * @throws IngestValidationException on validation failure (cleans up the dir)
+     */
+    public function completeUrlIngest(Video $video, string $relativePath, string $jobDir): Video
+    {
+        $disk = $this->disk();
+        $absolutePath = $disk->path($relativePath);
+
+        try {
+            $duration = $this->ffprobe->durationSeconds($absolutePath);
+        } catch (\RuntimeException $e) {
+            $disk->deleteDirectory($jobDir);
+            throw new IngestValidationException(
+                'Downloaded file is not a valid, decodable video.',
+                previous: $e,
+            );
+        }
+
+        if ($duration === null) {
+            $disk->deleteDirectory($jobDir);
+            throw new IngestValidationException('Could not determine video duration.');
+        }
+
+        $maxDuration = (int) config('autoclip.ingest.max_duration_seconds');
+        if ($duration > $maxDuration) {
+            $disk->deleteDirectory($jobDir);
+            throw new IngestValidationException(
+                "Video is {$duration}s long; the maximum is {$maxDuration}s."
+            );
+        }
+
+        $video->update([
+            'status' => 'ingested',
+            'duration_seconds' => $duration,
+            'storage_path' => $relativePath,
+            'last_error' => null,
+        ]);
+
+        PipelineJob::updateOrCreate(
+            ['video_id' => $video->id, 'stage' => 'ingest'],
+            ['status' => 'done', 'last_error' => null],
+        );
+
+        TranscribeJob::dispatch($video->id);
+
+        return $video;
+    }
+
     private function assertSizeWithinCap(UploadedFile $file): void
     {
         $maxKb = (int) config('autoclip.ingest.max_size_kb');

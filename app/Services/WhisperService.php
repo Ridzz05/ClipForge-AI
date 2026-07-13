@@ -59,7 +59,7 @@ class WhisperService
         }
 
         $response = $this->client()
-            ->attach('file', file_get_contents($absolutePath), basename($absolutePath))
+            ->attach('file', fopen($absolutePath, 'r'), basename($absolutePath))
             ->post('/transcribe', [
                 'model' => $this->model,
                 'word_timestamps' => 'true',

@@ -7,6 +7,7 @@ use App\Services\Reframe\FaceTrackingService;
 use App\Services\Reframe\FfmpegService;
 use App\Services\Scoring\OllamaService;
 use App\Services\WhisperService;
+use App\Services\YtDlpService;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\ServiceProvider;
 
@@ -18,6 +19,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(FfprobeService::class, fn () => FfprobeService::fromConfig());
+
+        $this->app->singleton(YtDlpService::class, fn () => YtDlpService::fromConfig());
 
         $this->app->singleton(
             WhisperService::class,
