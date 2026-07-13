@@ -18,12 +18,40 @@ namespace App\Services\Scoring;
  */
 class HighlightSchema
 {
-    /** Hard bounds so a hostile transcript can't request absurd clips. */
-    public const MIN_CLIP_MS = 3_000;      // 3s floor
+    /**
+     * Default clip-length bounds. The effective bounds are configurable
+     * (config/autoclip.php > clips) so a campaign with a hard minimum length
+     * (e.g. "clips must be >= 10s") is enforced at validation time, not left to
+     * the LLM. Constants remain the fallback when config is absent.
+     */
+    public const MIN_CLIP_MS = 3_000;      // 3s floor (default)
 
-    public const MAX_CLIP_MS = 180_000;    // 3min ceiling
+    public const MAX_CLIP_MS = 180_000;    // 3min ceiling (default)
 
     public const MAX_RATIONALE_LEN = 1_000;
+
+    private int $minClipMs;
+
+    private int $maxClipMs;
+
+    public function __construct(?int $minClipMs = null, ?int $maxClipMs = null)
+    {
+        // Precedence: explicit arg > config > constant default.
+        $this->minClipMs = $minClipMs
+            ?? (int) config('autoclip.clips.min_ms', self::MIN_CLIP_MS);
+        $this->maxClipMs = $maxClipMs
+            ?? (int) config('autoclip.clips.max_ms', self::MAX_CLIP_MS);
+    }
+
+    public function minClipMs(): int
+    {
+        return $this->minClipMs;
+    }
+
+    public function maxClipMs(): int
+    {
+        return $this->maxClipMs;
+    }
 
     /**
      * @param  mixed  $raw  decoded JSON from the LLM (expected: array of objects)
@@ -114,7 +142,7 @@ class HighlightSchema
         }
 
         $duration = $end - $start;
-        if ($duration < self::MIN_CLIP_MS || $duration > self::MAX_CLIP_MS) {
+        if ($duration < $this->minClipMs || $duration > $this->maxClipMs) {
             return null;
         }
 

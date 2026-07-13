@@ -4,6 +4,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Clip constraints (Stage 3 scoring / validation)
+    |--------------------------------------------------------------------------
+    | Enforced in HighlightSchema, independent of what the LLM proposes. Set a
+    | hard minimum length here for campaigns that require it (e.g. clips must be
+    | at least 10s). Values in milliseconds.
+    */
+    'clips' => [
+        'min_ms' => (int) env('AUTOCLIP_CLIP_MIN_MS', 10_000),   // 10s campaign floor
+        'max_ms' => (int) env('AUTOCLIP_CLIP_MAX_MS', 180_000),  // 3min ceiling
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Ingest limits (Security: resource exhaustion — spec section 6)
     |--------------------------------------------------------------------------
     | Hard caps enforced at upload before any expensive work is queued.

@@ -92,14 +92,20 @@ class OllamaService
             JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT,
         );
 
+        // Length guidance mirrors the enforced HighlightSchema bounds so the
+        // model aims inside the window instead of having clips silently dropped.
+        $minSec = (int) round((int) config('autoclip.clips.min_ms', 10_000) / 1000);
+        $maxSec = (int) round((int) config('autoclip.clips.max_ms', 180_000) / 1000);
+
         return <<<PROMPT
         You are a short-form video editor. Below is a JSON array of transcript
         segments from a longer video, each with millisecond timestamps.
 
         Identify the most engaging, self-contained highlight moments suitable for
         a vertical short (Reels/Shorts/TikTok). For each highlight, choose a
-        start_ms and end_ms that align to segment boundaries in the data, aim for
-        a 15-90 second clip, and give it a hook_score from 0-100 and a short
+        start_ms and end_ms that align to segment boundaries in the data. Each
+        clip MUST be between {$minSec} and {$maxSec} seconds long — never shorter
+        than {$minSec} seconds. Give each a hook_score from 0-100 and a short
         rationale.
 
         Respond with ONLY a JSON object of this exact shape, nothing else:

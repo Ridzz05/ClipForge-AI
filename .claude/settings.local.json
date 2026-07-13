@@ -50,7 +50,8 @@
       "Bash(xargs echo \"tracked .venv/ files:\")",
       "Bash(git commit -q -m 'UI-1: dashboard with upload + live pipeline status *)",
       "Bash(xargs echo \".venv staged:\")",
-      "Bash(git commit -q -m 'UI-2: review page — player, candidates, approve/reject *)"
+      "Bash(git commit -q -m 'UI-2: review page — player, candidates, approve/reject *)",
+      "Bash(git commit -q -m 'Compliance-1: configurable minimum clip length \\(default 10s\\) *)"
     ]
   }
 }

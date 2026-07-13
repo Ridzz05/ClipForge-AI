@@ -151,4 +151,48 @@ class HighlightSchemaTest extends TestCase
         $this->expectException(InvalidHighlightSchemaException::class);
         $this->schema->validate($raw, $this->videoMs);
     }
+
+    // --- Campaign compliance: minimum clip length ------------------------
+
+    public function test_default_minimum_is_ten_seconds_from_config(): void
+    {
+        // Campaign rule: clips must be >= 10s. Default config enforces it.
+        $this->assertSame(10_000, $this->schema->minClipMs());
+    }
+
+    public function test_rejects_clips_shorter_than_ten_seconds(): void
+    {
+        $raw = [
+            ['start_ms' => 0, 'end_ms' => 9_000, 'hook_score' => 95, 'rationale' => '9s — too short'],
+            ['start_ms' => 0, 'end_ms' => 9_999, 'hook_score' => 95, 'rationale' => 'just under'],
+            ['start_ms' => 0, 'end_ms' => 10_000, 'hook_score' => 60, 'rationale' => 'exactly 10s ok'],
+        ];
+
+        $out = $this->schema->validate($raw, $this->videoMs);
+        $this->assertCount(1, $out);
+        $this->assertSame('exactly 10s ok', $out[0]['rationale']);
+    }
+
+    public function test_minimum_is_configurable(): void
+    {
+        // A campaign requiring >= 30s clips.
+        $schema = new HighlightSchema(minClipMs: 30_000);
+        $this->assertSame(30_000, $schema->minClipMs());
+
+        $raw = [
+            ['start_ms' => 0, 'end_ms' => 20_000, 'hook_score' => 90, 'rationale' => '20s'],
+            ['start_ms' => 0, 'end_ms' => 35_000, 'hook_score' => 70, 'rationale' => '35s'],
+        ];
+
+        $out = $schema->validate($raw, $this->videoMs);
+        $this->assertCount(1, $out);
+        $this->assertSame('35s', $out[0]['rationale']);
+    }
+
+    public function test_reads_bounds_from_config(): void
+    {
+        config(['autoclip.clips.min_ms' => 15_000]);
+        $schema = new HighlightSchema;
+        $this->assertSame(15_000, $schema->minClipMs());
+    }
 }
