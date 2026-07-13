@@ -29,8 +29,8 @@ class OllamaService
     {
         return new self(
             http: $http,
-            endpoint: rtrim((string) config('autoclip.ollama.endpoint'), '/'),
-            model: (string) config('autoclip.ollama.model'),
+            endpoint: rtrim((string) config('autoclip.llm.endpoint'), '/'),
+            model: (string) config('autoclip.llm.model'),
             timeout: (int) config('autoclip.timeouts.score'),
         );
     }
@@ -44,34 +44,58 @@ class OllamaService
     public function scoreBatch(array $segments): mixed
     {
         $prompt = $this->buildPrompt($segments);
+        $driver = config('autoclip.llm.driver', 'ollama');
 
-        $response = $this->client()->post('/api/generate', [
-            'model' => $this->model,
-            'prompt' => $prompt,
-            'format' => 'json',   // constrain the model to emit valid JSON
-            'stream' => false,
-            'options' => [
-                'temperature' => 0.2, // deterministic-ish scoring
-                'num_ctx' => 4096,    // limit context window to save RAM/VRAM on iGPU
-            ],
-        ]);
+        if ($driver === 'openai' || $driver === 'agentrouter') {
+            // OpenAI-compatible /chat/completions endpoint
+            $response = $this->client()->post('/chat/completions', [
+                'model' => $this->model,
+                'messages' => [
+                    ['role' => 'user', 'content' => $prompt]
+                ],
+                'response_format' => ['type' => 'json_object'],
+                'temperature' => 0.2,
+            ]);
 
-        if (! $response->successful()) {
-            throw new RuntimeException(
-                "Ollama returned HTTP {$response->status()}: ".$response->body()
-            );
+            if (! $response->successful()) {
+                throw new RuntimeException(
+                    "LLM API returned HTTP {$response->status()}: ".$response->body()
+                );
+            }
+
+            $envelope = $response->json();
+            $text = $envelope['choices'][0]['message']['content'] ?? null;
+        } else {
+            // Self-hosted local Ollama generate endpoint
+            $response = $this->client()->post('/api/generate', [
+                'model' => $this->model,
+                'prompt' => $prompt,
+                'format' => 'json',   // constrain the model to emit valid JSON
+                'stream' => false,
+                'options' => [
+                    'temperature' => 0.2, // deterministic-ish scoring
+                    'num_ctx' => 4096,    // limit context window to save RAM/VRAM on iGPU
+                ],
+            ]);
+
+            if (! $response->successful()) {
+                throw new RuntimeException(
+                    "Ollama returned HTTP {$response->status()}: ".$response->body()
+                );
+            }
+
+            // Ollama wraps the model text in {"response": "...json..."}.
+            $envelope = $response->json();
+            $text = $envelope['response'] ?? null;
         }
 
-        // Ollama wraps the model text in {"response": "...json..."}.
-        $envelope = $response->json();
-        $text = $envelope['response'] ?? null;
         if (! is_string($text)) {
-            throw new RuntimeException('Ollama response envelope missing "response" string.');
+            throw new RuntimeException('LLM response envelope missing output content string.');
         }
 
         $decoded = json_decode($text, true);
         if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
-            throw new RuntimeException('Ollama response was not valid JSON: '.json_last_error_msg());
+            throw new RuntimeException('LLM response was not valid JSON: '.json_last_error_msg());
         }
 
         return $decoded;
@@ -122,9 +146,17 @@ class OllamaService
 
     private function client(): PendingRequest
     {
-        return $this->http
+        $apiKey = config('autoclip.llm.api_key');
+        
+        $client = $this->http
             ->baseUrl($this->endpoint)
             ->timeout($this->timeout)
             ->acceptJson();
+
+        if ($apiKey) {
+            $client = $client->withToken($apiKey);
+        }
+
+        return $client;
     }
 }

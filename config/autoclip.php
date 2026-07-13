@@ -75,13 +75,12 @@ return [
     'whisper' => [
         'endpoint' => env('AUTOCLIP_WHISPER_ENDPOINT', 'http://127.0.0.1:9000'),
         'model' => env('AUTOCLIP_WHISPER_MODEL', 'small'),
+    ],    'llm' => [
+        'driver' => env('AUTOCLIP_LLM_DRIVER', 'ollama'),
+        'endpoint' => env('AUTOCLIP_LLM_ENDPOINT', env('AUTOCLIP_OLLAMA_ENDPOINT', 'http://127.0.0.1:11434')),
+        'api_key' => env('AUTOCLIP_LLM_API_KEY'),
+        'model' => env('AUTOCLIP_LLM_MODEL', env('AUTOCLIP_OLLAMA_MODEL', 'qwen2.5:7b')),
     ],
-
-    'ollama' => [
-        'endpoint' => env('AUTOCLIP_OLLAMA_ENDPOINT', 'http://127.0.0.1:11434'),
-        'model' => env('AUTOCLIP_OLLAMA_MODEL', 'qwen2.5:7b'),
-    ],
-
     'face' => [
         'endpoint' => env('AUTOCLIP_FACE_ENDPOINT', 'http://127.0.0.1:9100'),
     ],
