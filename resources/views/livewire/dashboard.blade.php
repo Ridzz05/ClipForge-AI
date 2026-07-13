@@ -12,6 +12,49 @@
         @endif
     </div>
 
+    <!-- System Status & Control Bar -->
+    <div class="panel" style="padding: 14px 20px; background: rgba(20,20,25,0.6); border: 1px solid var(--border); border-radius: 12px; backdrop-filter: blur(8px);">
+        <div class="row between" style="gap: 16px; flex-wrap: wrap;">
+            <!-- Left: Status Indicators -->
+            <div class="row" style="gap: 20px; flex-wrap: wrap;">
+                <div style="font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
+                    Sistem Status:
+                </div>
+                
+                <!-- Whisper -->
+                <div class="row" style="gap: 8px; font-size: 13px;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: {{ ($statuses['whisper'] ?? false) ? '#10b981' : '#ef4444' }}; box-shadow: 0 0 8px {{ ($statuses['whisper'] ?? false) ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)' }};"></span>
+                    <span class="muted">Whisper:</span>
+                    <strong style="color: {{ ($statuses['whisper'] ?? false) ? 'var(--text)' : '#ef4444' }};">{{ ($statuses['whisper'] ?? false) ? 'Online' : 'Offline' }}</strong>
+                </div>
+
+                <!-- Face Tracking -->
+                <div class="row" style="gap: 8px; font-size: 13px;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: {{ ($statuses['face'] ?? false) ? '#10b981' : '#ef4444' }}; box-shadow: 0 0 8px {{ ($statuses['face'] ?? false) ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)' }};"></span>
+                    <span class="muted">Face Tracker:</span>
+                    <strong style="color: {{ ($statuses['face'] ?? false) ? 'var(--text)' : '#ef4444' }};">{{ ($statuses['face'] ?? false) ? 'Online' : 'Offline' }}</strong>
+                </div>
+
+                <!-- LLM -->
+                <div class="row" style="gap: 8px; font-size: 13px;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: {{ ($statuses['llm'] ?? false) ? '#10b981' : '#ef4444' }}; box-shadow: 0 0 8px {{ ($statuses['llm'] ?? false) ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)' }};"></span>
+                    <span class="muted">LLM Scorer ({{ ucfirst($statuses['llm_driver'] ?? 'ollama') }}):</span>
+                    <strong style="color: {{ ($statuses['llm'] ?? false) ? 'var(--text)' : '#ef4444' }};">{{ ($statuses['llm'] ?? false) ? 'Online' : 'Offline' }}</strong>
+                </div>
+            </div>
+
+            <!-- Right: Restart Actions -->
+            <div class="row" style="gap: 12px;">
+                <button type="button" wire:click="restartQueue" class="btn btn-sm btn-outline" style="border-color: rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); display: flex; align-items: center; gap: 6px;" wire:loading.attr="disabled">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" wire:loading.class="spin" wire:target="restartQueue" style="flex-shrink:0;">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                    </svg>
+                    <span>Restart Antrean (.env)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Upload & URL Panels Grid -->
     <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch;">
         

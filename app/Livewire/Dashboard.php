@@ -35,12 +35,20 @@ class Dashboard extends Component
 
     public ?string $urlError = null;
 
+    public array $statuses = [];
+
     public function updatedUpload(): void
     {
         // Clear stale messages when a new file is chosen.
         $this->flash = null;
         $this->uploadError = null;
         $this->resetValidation();
+    }
+
+    public function restartQueue(): void
+    {
+        \Illuminate\Support\Facades\Artisan::call('queue:restart');
+        $this->flash = "Sinyal restart antrean dikirim ke Queue Worker. Berkas .env dan konfigurasi sistem akan dimuat ulang saat antrean berikutnya berjalan.";
     }
 
     public function save(VideoIngestService $ingest): void
@@ -109,6 +117,40 @@ class Dashboard extends Component
         $this->flash = "URL diterima (video #{$video->id}). Mengunduh di background — pantau statusnya di daftar.";
     }
 
+    private function checkServiceStatuses(): array
+    {
+        $whisperUrl = (string) config('autoclip.whisper.endpoint', 'http://127.0.0.1:9000');
+        $whisperOnline = false;
+        try {
+            $whisperOnline = \Illuminate\Support\Facades\Http::timeout(1)->withoutVerifying()->get($whisperUrl . '/health')->successful();
+        } catch (\Throwable $e) {}
+
+        $faceUrl = (string) config('autoclip.face.endpoint', 'http://127.0.0.1:9100');
+        $faceOnline = false;
+        try {
+            $faceOnline = \Illuminate\Support\Facades\Http::timeout(1)->withoutVerifying()->get($faceUrl . '/health')->successful();
+        } catch (\Throwable $e) {}
+
+        $llmDriver = (string) config('autoclip.llm.driver', 'ollama');
+        $llmEndpoint = (string) config('autoclip.llm.endpoint', 'http://127.0.0.1:11434');
+        $llmOnline = false;
+        try {
+            if ($llmDriver === 'ollama') {
+                $llmOnline = \Illuminate\Support\Facades\Http::timeout(1)->withoutVerifying()->get($llmEndpoint)->successful();
+            } else {
+                // Cloud/router check
+                $llmOnline = \Illuminate\Support\Facades\Http::timeout(2)->withoutVerifying()->get($llmEndpoint)->status() !== 0;
+            }
+        } catch (\Throwable $e) {}
+
+        return [
+            'whisper' => $whisperOnline,
+            'face' => $faceOnline,
+            'llm' => $llmOnline,
+            'llm_driver' => $llmDriver,
+        ];
+    }
+
     public function render()
     {
         $videos = Video::query()
@@ -116,6 +158,8 @@ class Dashboard extends Component
             ->latest()
             ->limit(50)
             ->get();
+
+        $this->statuses = $this->checkServiceStatuses();
 
         // Keep polling while any video is still processing; otherwise idle.
         $anyProcessing = $videos->contains(fn (Video $v) => $v->isProcessing());
