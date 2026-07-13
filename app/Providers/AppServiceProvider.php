@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\FfprobeService;
+use App\Services\Scoring\OllamaService;
 use App\Services\WhisperService;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\ServiceProvider;
@@ -19,6 +20,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(
             WhisperService::class,
             fn ($app) => WhisperService::fromConfig($app->make(HttpFactory::class)),
+        );
+
+        $this->app->singleton(
+            OllamaService::class,
+            fn ($app) => OllamaService::fromConfig($app->make(HttpFactory::class)),
         );
     }
 

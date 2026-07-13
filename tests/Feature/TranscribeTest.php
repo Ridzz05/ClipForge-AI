@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ScoreHighlightsJob;
 use App\Jobs\TranscribeJob;
 use App\Models\PipelineJob;
 use App\Models\Transcript;
@@ -9,6 +10,7 @@ use App\Models\TranscriptSegment;
 use App\Models\Video;
 use App\Services\WhisperService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Mockery;
@@ -18,6 +20,13 @@ use Tests\TestCase;
 class TranscribeTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Stage 3 handoff is asserted here, not executed (no real Ollama call).
+        Queue::fake();
+    }
 
     /** A video row whose source file exists on the faked disk. */
     private function makeVideo(): Video
@@ -98,6 +107,9 @@ class TranscribeTest extends TestCase
             'stage' => 'transcribe',
             'status' => 'done',
         ]);
+
+        // Hands off to Stage 3 for the same video.
+        Queue::assertPushed(ScoreHighlightsJob::class, fn ($job) => $job->videoId === $video->id);
     }
 
     public function test_retry_is_idempotent_and_does_not_duplicate_segments(): void
