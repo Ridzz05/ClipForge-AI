@@ -21,7 +21,8 @@
       "Bash(git commit -q -m 'Stage 3: Score highlights — Ollama + strict schema validation *)",
       "Bash(git commit -q -m 'Stage 4 \\(WIP\\): reframe/caption services, job, review gate *)",
       "Bash(git commit -q -m 'Stage 4: unit tests for ReframeCommandBuilder + FfmpegService *)",
-      "Bash(git commit -q -m 'Stage 4: feature tests for review gate + ReframeJob *)"
+      "Bash(git commit -q -m 'Stage 4: feature tests for review gate + ReframeJob *)",
+      "Bash(git commit -q -m 'Stage 4 complete: MediaPipe service, FaceTracking test, env keys *)"
     ]
   }
 }
