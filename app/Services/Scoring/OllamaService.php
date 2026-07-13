@@ -153,6 +153,11 @@ class OllamaService
             ->timeout($this->timeout)
             ->acceptJson();
 
+        // Disable SSL verification in local environment to prevent cURL error 60 (common on Windows)
+        if (config('app.env') === 'local') {
+            $client = $client->withoutVerifying();
+        }
+
         if ($apiKey) {
             $client = $client->withToken($apiKey);
         }
