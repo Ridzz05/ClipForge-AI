@@ -167,6 +167,19 @@ class TranscribeTest extends TestCase
         $this->assertSame(0, Transcript::count());
     }
 
+    public function test_job_is_configured_to_retry_on_crash(): void
+    {
+        // DoD: "job queue survives a worker crash mid-stage (retry, not data
+        // loss)". Retries are what turn a mid-stage crash into a re-run; the
+        // idempotent handle() (tested above) makes that re-run safe.
+        $job = new TranscribeJob(1);
+        $this->assertGreaterThanOrEqual(2, $job->tries);
+        $this->assertSame(
+            (int) config('autoclip.timeouts.transcribe'),
+            $job->timeout(),
+        );
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();

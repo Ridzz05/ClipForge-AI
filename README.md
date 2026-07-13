@@ -1,58 +1,75 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Auto-Clip AI
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Self-hosted service that turns long-form video (podcasts, webinars, streams)
+into short vertical captioned clips. See [`auto-clip-system-spec.md`](auto-clip-system-spec.md)
+for the full specification.
 
-## About Laravel
+Orchestrator: **Laravel 13 + SQLite (WAL)**. Heavy work runs as queued jobs so
+video processing never blocks the request thread and retries independently.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Pipeline
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```
+Ingest → Transcribe → Score highlights → Reframe & caption → Export & deliver
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+| Stage | Status | Notes |
+|---|---|---|
+| 1 Ingest | ✅ | Upload, magic-byte validation, ffprobe duration cap, UUID storage |
+| 2 Transcribe | ✅ | faster-whisper service, word-level timestamps, crash-safe job |
+| 3 Score highlights | ⬜ | Ollama (qwen2.5), schema-validated JSON |
+| 4 Reframe & caption | ⬜ | MediaPipe + ffmpeg |
+| 5 Export & deliver | ⬜ | Watermark, render, download |
 
-## Contributing
+## Prerequisites
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- PHP 8.5+, Composer
+- **ffmpeg / ffprobe** on PATH (ingest validation + Stages 4–5)
+- Python 3.11 for the whisper service (`services/whisper/README.md`)
+- Ollama for Stage 3 (once implemented)
 
-## Code of Conduct
+## Setup
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+composer install
+cp .env.example .env          # already present on this machine
+php artisan key:generate
+php artisan migrate            # creates videos, transcripts, queue tables, etc.
+```
 
-## Security Vulnerabilities
+All Auto-Clip knobs live under `AUTOCLIP_*` in `.env` (caps, service
+endpoints, per-job timeouts) — see `config/autoclip.php`.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Running
 
-## License
+Three processes:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+# 1. Web/API
+php artisan serve
+
+# 2. Queue worker (processes pipeline jobs; retries on crash)
+php artisan queue:work --tries=3
+
+# 3. Whisper transcription service
+cd services/whisper && python app.py   # see its README for install
+```
+
+## Usage (Phase 1)
+
+```bash
+# Ingest a video — returns {id, status, duration_seconds}
+curl -F "video=@sample.mp4" http://127.0.0.1:8000/api/videos
+```
+
+This validates + stores the file and dispatches transcription. Later stages
+pick up automatically as each job completes.
+
+## Testing
+
+```bash
+php artisan test
+```
+
+Tests run against an in-memory SQLite DB and fake the external services
+(whisper, ffprobe), so **no binaries or GPU are required** to run the suite.
