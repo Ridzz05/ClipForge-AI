@@ -23,7 +23,29 @@
       "Bash(git commit -q -m 'Stage 4: unit tests for ReframeCommandBuilder + FfmpegService *)",
       "Bash(git commit -q -m 'Stage 4: feature tests for review gate + ReframeJob *)",
       "Bash(git commit -q -m 'Stage 4 complete: MediaPipe service, FaceTracking test, env keys *)",
-      "Bash(git commit -q -m 'Stage 5 complete: watermark, export delivery, manual download *)"
+      "Bash(git commit -q -m 'Stage 5 complete: watermark, export delivery, manual download *)",
+      "Bash(ollama list *)",
+      "Read(//c/Users/Ki/.ollama/models/manifests/**)",
+      "Bash(curl -s http://127.0.0.1:11434/api/tags)",
+      "Bash(curl -L -# -o ffmpeg.zip \"https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip\")",
+      "Bash(taskkill //F //IM curl.exe)",
+      "Bash(rm -f ffmpeg.zip)",
+      "Bash(curl -L -o ffmpeg-gh.zip \"https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip\")",
+      "Bash(\"C:/ffmpeg/bin/ffprobe.exe\" -version)",
+      "Bash(\"C:/ffmpeg/bin/ffmpeg.exe\" -f lavfi -i testsrc=duration=1:size=320x240:rate=30 -y \"C:/Users/Ki/ffmpeg-dl/probe-test.mp4\")",
+      "Bash(\"C:/ffmpeg/bin/ffmpeg.exe\" -version)",
+      "Bash(git commit -q -m 'whisper: pin requests dep; add START.md runtime setup guide *)",
+      "Bash(find resources/views -type f)",
+      "Bash(ls resources/views/*.blade.php)",
+      "Bash(grep -c livewire composer.json)",
+      "Bash(ls resources/css resources/js)",
+      "Bash(composer require *)",
+      "Bash(grep -iA1 livewire)",
+      "Bash(composer show *)",
+      "Bash(git commit -q -m 'UI-0: install Livewire 4, base layout + dashboard shell *)",
+      "Bash(xargs echo \".venv files in HEAD commit:\")",
+      "Bash(git reset *)",
+      "Bash(xargs echo \".venv files staged:\")"
     ]
   }
 }

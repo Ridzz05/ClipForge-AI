@@ -25,3 +25,9 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Python services — virtualenvs, caches, downloaded models
+services/**/.venv
+services/**/__pycache__
+services/**/*.pyc
+.cache
