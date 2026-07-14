@@ -247,8 +247,17 @@
                                                 </div>
                                             @endif
                                         @else
-                                            <span class="muted" style="font-size:12px; display: inline-flex; align-items: center; gap: 4px;">
-                                                <i class="ph ph-spinner-gap spin-rotate" style="font-size: 12px;"></i> Proses&hellip;
+                                            <span class="muted" style="font-size:12px; display: inline-flex; align-items: center; gap: 4px;" title="Status: {{ $video->status }}">
+                                                <i class="ph ph-spinner-gap spin-rotate" style="font-size: 12px;"></i>
+                                                @if(str_starts_with($video->status, 'downloading'))
+                                                    @if(preg_match('/downloading\s+\(([^)]+)\)/i', $video->status, $matches))
+                                                        Download {{ $matches[1] }}
+                                                    @else
+                                                        Downloading...
+                                                    @endif
+                                                @else
+                                                    Proses...
+                                                @endif
                                             </span>
                                         @endif
 

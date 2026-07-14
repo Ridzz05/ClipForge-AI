@@ -58,6 +58,8 @@ class Video extends Model
 
         return array_map(function ($s) {
             $state = 'pending';
+            $label = $s['label'];
+
             if (in_array($this->status, $s['reached'], true)) {
                 $state = 'done';
             } else {
@@ -72,10 +74,17 @@ class Video extends Model
                 }
                 if ($isActive) {
                     $state = 'active';
+                    if ($s['key'] === 'ingest' && str_starts_with($this->status, 'downloading')) {
+                        if (preg_match('/downloading\s+\(([^)]+)\)/i', $this->status, $matches)) {
+                            $label = "Downloading ({$matches[1]})";
+                        } else {
+                            $label = "Downloading...";
+                        }
+                    }
                 }
             }
 
-            return ['key' => $s['key'], 'label' => $s['label'], 'state' => $state];
+            return ['key' => $s['key'], 'label' => $label, 'state' => $state];
         }, $stages);
     }
 
