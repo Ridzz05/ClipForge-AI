@@ -36,17 +36,16 @@ class ReframeCommandBuilder
             $faceH = (int) round($renderH * 0.4);
             $gameH = $renderH - $faceH;
 
-            // Split gaming layout:
-            // 1. Crop face region: square of size in_h * 9/16 centered at $panX horizontally, scale to renderW x faceH
-            // 2. Crop gameplay region: center 16:9 of original video, scale to renderW x gameH
+            // Split gaming layout (optimized for bottom-left facecam and top-half gameplay):
+            // 1. Crop face region: bottom-left corner of the video (width 35%, height 50%), scale to renderW x faceH
+            // 2. Crop gameplay region: top-half of the screen (width 100%, height 50%), scale to renderW x gameH
             // 3. Stack them vertically
             // 4. Overlay subtitles
             $filter = sprintf(
-                '[0:v]crop=in_h*9/16:in_h*9/16:%d:0,scale=%d:%d[face]; ' .
-                '[0:v]crop=in_h*16/9:in_h:(in_w-in_h*16/9)/2:0,scale=%d:%d[game]; ' .
+                '[0:v]crop=in_w*0.35:in_h*0.5:0:in_h*0.5,scale=%d:%d,setsar=1[face]; ' .
+                '[0:v]crop=in_w:in_h*0.5:0:0,scale=%d:%d,setsar=1[game]; ' .
                 '[face][game]vstack=inputs=2[stacked]; ' .
                 '[stacked]subtitles=%s[out]',
-                $panX,
                 $renderW,
                 $faceH,
                 $renderW,
