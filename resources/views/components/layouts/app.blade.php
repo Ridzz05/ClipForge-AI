@@ -459,7 +459,7 @@
         /* Responsive & Mobile-first Sizing adjustments */
         @media (max-width: 968px) {
             body {
-                padding-bottom: 84px;
+                padding-bottom: 104px;
             }
             .container {
                 padding: 24px 16px 60px;
@@ -511,17 +511,18 @@
                 justify-content: space-around;
                 align-items: center;
                 position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                height: 72px;
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                height: 68px;
                 background: var(--stage-2);
-                border-top: 1.5px solid var(--line);
+                border: 1.5px solid var(--line);
+                border-radius: 20px;
                 backdrop-filter: blur(16px);
                 -webkit-backdrop-filter: blur(16px);
                 z-index: 999;
-                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
-                padding: 4px 12px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+                padding: 4px 16px;
             }
 
             .bottom-nav .nav-item {
