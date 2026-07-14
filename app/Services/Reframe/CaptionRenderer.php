@@ -20,6 +20,18 @@ class CaptionRenderer
      * @var array<string, array<string, string|int>>
      */
     private array $templates = [
+        'none' => [
+            'Fontname' => 'Arial',
+            'Fontsize' => 10,
+            'PrimaryColour' => '&H00FFFFFF',
+            'OutlineColour' => '&H00000000',
+            'Bold' => 0,
+            'Alignment' => 2,
+            'MarginV' => 0,
+            'Outline' => 0,
+            'Shadow' => 0,
+            'Mode' => 'none',
+        ],
         'default' => [
             'Fontname' => 'Arial',
             'Fontsize' => 64,
@@ -246,6 +258,10 @@ class CaptionRenderer
     private function events(array $words, array $tpl): string
     {
         $mode = $tpl['Mode'] ?? 'pop';
+        if ($mode === 'none') {
+            return '';
+        }
+
         $isUppercase = (bool)($tpl['Uppercase'] ?? false);
         $lines = [];
 

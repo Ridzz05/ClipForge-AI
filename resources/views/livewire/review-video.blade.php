@@ -183,6 +183,7 @@
                                        border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13.5px;
                                        outline: none; transition: border-color 0.2s ease; cursor: pointer;">
                             <option value="default">Default (Putih Arial)</option>
+                            <option value="none">Tanpa Caption (No Caption)</option>
                             <option value="karaoke_yellow">Karaoke Yellow (Kuning Arial)</option>
                             <option value="tiktok_green">TikTok Green (Hijau Arial Black)</option>
                             <option value="short_bold">Short Bold (Putih Impact)</option>
