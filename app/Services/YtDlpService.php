@@ -127,6 +127,30 @@ class YtDlpService
     {
         $host = trim($host, '[]'); // strip IPv6 brackets
 
+        // Whitelist of trusted public video domains to bypass SSRF host resolution checks
+        $trustedDomains = [
+            'youtube.com',
+            'youtu.be',
+            'tiktok.com',
+            'vimeo.com',
+            'twitter.com',
+            'x.com',
+            'instagram.com',
+            'facebook.com',
+        ];
+
+        $isTrusted = false;
+        foreach ($trustedDomains as $td) {
+            if ($host === $td || str_ends_with($host, '.' . $td)) {
+                $isTrusted = true;
+                break;
+            }
+        }
+
+        if ($isTrusted) {
+            return;
+        }
+
         $ips = filter_var($host, FILTER_VALIDATE_IP)
             ? [$host]
             : $this->resolveHost($host);

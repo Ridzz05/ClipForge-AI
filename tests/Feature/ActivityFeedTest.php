@@ -58,6 +58,6 @@ class ActivityFeedTest extends TestCase
         $this->videoWithJob('transcribe', 'running');
 
         Livewire::test(\App\Livewire\Dashboard::class)
-            ->assertSee('Aktivitas terbaru');
+            ->assertSee('Aktivitas Pipeline Terbaru');
     }
 }

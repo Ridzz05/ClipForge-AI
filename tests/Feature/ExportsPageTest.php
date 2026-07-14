@@ -35,7 +35,7 @@ class ExportsPageTest extends TestCase
     {
         Livewire::test(Exports::class)
             ->assertOk()
-            ->assertSee('Belum ada export');
+            ->assertSee('Belum ada klip yang diekspor');
     }
 
     public function test_rendered_export_shows_download_link(): void

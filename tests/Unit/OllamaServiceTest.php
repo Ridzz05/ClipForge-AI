@@ -11,6 +11,7 @@ class OllamaServiceTest extends TestCase
 {
     private function service(HttpFactory $http): OllamaService
     {
+        config(['autoclip.llm.driver' => 'ollama']);
         return new OllamaService($http, 'http://ollama.test', 'qwen2.5:7b', 60);
     }
 
