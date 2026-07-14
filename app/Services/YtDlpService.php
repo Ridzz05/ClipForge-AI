@@ -26,6 +26,7 @@ class YtDlpService
         private readonly int $timeout,
         /** @var array<int, string> */
         private readonly array $allowedSchemes,
+        private readonly string $ffmpegPath = 'ffmpeg',
     ) {}
 
     public static function fromConfig(): self
@@ -35,6 +36,7 @@ class YtDlpService
             maxFilesize: (string) config('autoclip.url_ingest.max_filesize'),
             timeout: (int) config('autoclip.url_ingest.timeout'),
             allowedSchemes: (array) config('autoclip.url_ingest.allowed_schemes'),
+            ffmpegPath: (string) config('autoclip.ffmpeg_path'),
         );
     }
 
@@ -86,7 +88,7 @@ class YtDlpService
             default => 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best',
         };
 
-        $process = new Process([
+        $args = [
             $this->ytdlpPath,
             '--no-playlist',                 // one video, never a whole playlist
             '--newline',                     // output progress bar as new lines
@@ -96,8 +98,20 @@ class YtDlpService
             '--no-continue',
             '--restrict-filenames',
             '-o', $outputTemplate,
-            '--', $url,                      // '--' stops option parsing; URL is data
-        ]);
+        ];
+
+        if (!empty($this->ffmpegPath) && $this->ffmpegPath !== 'ffmpeg') {
+            $ffmpegDir = dirname($this->ffmpegPath);
+            if (is_dir($ffmpegDir)) {
+                $args[] = '--ffmpeg-location';
+                $args[] = $ffmpegDir;
+            }
+        }
+
+        $args[] = '--';
+        $args[] = $url;
+
+        $process = new Process($args);
         $process->setTimeout($this->timeout);
 
         $lastUpdate = 0;
