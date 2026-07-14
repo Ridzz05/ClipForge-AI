@@ -30,17 +30,21 @@ class CaptionRenderer
             'MarginV' => 240,
             'Outline' => 4,
             'Shadow' => 1,
+            'Mode' => 'karaoke',
+            'HighlightColour' => '&H0000FFFF', // yellow highlight
         ],
         'karaoke_yellow' => [
             'Fontname' => 'Arial',
             'Fontsize' => 72,
-            'PrimaryColour' => '&H0000FFFF', // yellow
+            'PrimaryColour' => '&H00FFFFFF', // white base
             'OutlineColour' => '&H00000000',
             'Bold' => 1,
             'Alignment' => 2,
             'MarginV' => 280,
             'Outline' => 5,
             'Shadow' => 1,
+            'Mode' => 'karaoke',
+            'HighlightColour' => '&H0000FFFF', // yellow highlight
         ],
         'tiktok_green' => [
             'Fontname' => 'Arial Black',
@@ -52,6 +56,7 @@ class CaptionRenderer
             'MarginV' => 320,
             'Outline' => 6,
             'Shadow' => 2,
+            'Mode' => 'pop', // zoom bounce pop animation
         ],
         'short_bold' => [
             'Fontname' => 'Impact',
@@ -63,6 +68,7 @@ class CaptionRenderer
             'MarginV' => 360,
             'Outline' => 6,
             'Shadow' => 2,
+            'Mode' => 'pop', // zoom bounce pop animation
         ],
     ];
 
@@ -92,7 +98,7 @@ class CaptionRenderer
         }
 
         $header = $this->header($tpl, $playResX, $playResY);
-        $events = $this->events($words);
+        $events = $this->events($words, $tpl);
 
         $cta = $this->ctaEvent($ctaText, $clipDurationMs);
         if ($cta !== '') {
@@ -194,18 +200,60 @@ class CaptionRenderer
 
     /**
      * @param  array<int, array{word:string, start_ms:int, end_ms:int}>  $words
+     * @param  array<string, string|int>  $tpl
      */
-    private function events(array $words): string
+    private function events(array $words, array $tpl): string
     {
+        $mode = $tpl['Mode'] ?? 'pop';
         $lines = [];
-        foreach ($words as $w) {
-            $start = $this->toAssTime((int) $w['start_ms']);
-            $end = $this->toAssTime((int) $w['end_ms']);
-            $text = $this->sanitize((string) $w['word']);
-            if ($text === '') {
-                continue;
+
+        if ($mode === 'pop') {
+            // One word at a time with zoom bounce animation
+            foreach ($words as $w) {
+                $start = $this->toAssTime((int) $w['start_ms']);
+                $end = $this->toAssTime((int) $w['end_ms']);
+                $text = $this->sanitize((string) $w['word']);
+                if ($text === '') {
+                    continue;
+                }
+                // Zoom bounce: fscx130\fscy130 at start, transition to 100% over 100ms
+                $animatedText = "{\\fscx130\\fscy130\\t(0,100,\\fscx100\\fscy100)}" . $text;
+                $lines[] = "Dialogue: 0,{$start},{$end},Default,,0,0,0,,{$animatedText}";
             }
-            $lines[] = "Dialogue: 0,{$start},{$end},Default,,0,0,0,,{$text}";
+        } else {
+            // Karaoke Phrase Style: group words into phrases of 3 words
+            $chunks = array_chunk($words, 3);
+            foreach ($chunks as $chunk) {
+                foreach ($chunk as $index => $activeWord) {
+                    $wordStart = (int) $activeWord['start_ms'];
+                    $wordEnd = (int) $activeWord['end_ms'];
+                    
+                    $lineWords = [];
+                    foreach ($chunk as $i => $w) {
+                        $cleanWord = $this->sanitize($w['word']);
+                        if ($cleanWord === '') {
+                            continue;
+                        }
+                        if ($i === $index) {
+                            $highlight = $tpl['HighlightColour'] ?? '&H0000FFFF';
+                            $primary = $tpl['PrimaryColour'] ?? '&H00FFFFFF';
+                            // Format: {\c<Highlight>}word{\c<Primary>}
+                            $lineWords[] = "{\\c{$highlight}}" . $cleanWord . "{\\c{$primary}}";
+                        } else {
+                            $lineWords[] = $cleanWord;
+                        }
+                    }
+                    
+                    $text = implode(' ', $lineWords);
+                    if (trim($text) === '') {
+                        continue;
+                    }
+                    
+                    $startStr = $this->toAssTime($wordStart);
+                    $endStr = $this->toAssTime($wordEnd);
+                    $lines[] = "Dialogue: 0,{$startStr},{$endStr},Default,,0,0,0,,{$text}";
+                }
+            }
         }
 
         return implode("\n", $lines);
