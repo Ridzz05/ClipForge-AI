@@ -1,4 +1,4 @@
-<div @if($poll) wire:poll.4s @endif class="grid" style="gap: 32px;">
+<div @if($poll) wire:poll.2s @endif class="grid" style="gap: 32px;">
     <!-- Page Header -->
     <div class="row between" style="align-items: flex-start;">
         <div>

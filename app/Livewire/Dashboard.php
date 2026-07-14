@@ -224,8 +224,8 @@ class Dashboard extends Component
 
         $this->statuses = $this->checkServiceStatuses();
 
-        // Keep polling while any video is still processing; otherwise idle.
-        $anyProcessing = $videos->contains(fn (Video $v) => $v->isProcessing());
+        // Keep polling while any video is still processing OR if the status modal is open!
+        $anyProcessing = $videos->contains(fn (Video $v) => $v->isProcessing()) || $this->showStatusModal;
 
         $selectedVideo = $this->selectedVideoId 
             ? Video::with(['pipelineJobs'])->find($this->selectedVideoId) 
