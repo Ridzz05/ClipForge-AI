@@ -67,10 +67,16 @@ class Dashboard extends Component
         }
 
         try {
+            $phpBinary = '"' . PHP_BINARY . '"';
+            $artisanPath = '"' . base_path('artisan') . '"';
+
             if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
-                pclose(popen("start /B php artisan queue:work --tries=3", "r"));
+                // Window start needs empty title parameter when executable is quoted
+                $command = "start /B \"\" {$phpBinary} {$artisanPath} queue:work --tries=3";
+                pclose(popen($command, "r"));
             } else {
-                exec("php artisan queue:work --tries=3 > /dev/null 2>&1 &");
+                $command = "{$phpBinary} {$artisanPath} queue:work --tries=3 > /dev/null 2>&1 &";
+                exec($command);
             }
             $this->dispatch('toast', message: "Antrean (Queue Worker) berhasil dibangunkan di latar belakang!", type: 'success');
         } catch (\Throwable $e) {
