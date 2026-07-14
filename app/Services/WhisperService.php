@@ -32,15 +32,22 @@ class WhisperService
         private readonly string $endpoint,
         private readonly string $model,
         private readonly int $timeout,
+        private readonly string $driver = 'local',
     ) {}
 
     public static function fromConfig(HttpFactory $http): self
     {
+        $driver = (string) config('autoclip.whisper.driver', 'local');
+        $endpoint = $driver === 'openai'
+            ? 'https://api.openai.com/v1'
+            : rtrim((string) config('autoclip.whisper.endpoint'), '/');
+
         return new self(
             http: $http,
-            endpoint: rtrim((string) config('autoclip.whisper.endpoint'), '/'),
+            endpoint: $endpoint,
             model: (string) config('autoclip.whisper.model'),
             timeout: (int) config('autoclip.timeouts.transcribe'),
+            driver: $driver,
         );
     }
 
@@ -58,12 +65,30 @@ class WhisperService
             throw new RuntimeException("Media file not found for transcription: {$absolutePath}");
         }
 
-        $response = $this->client()
-            ->attach('file', fopen($absolutePath, 'r'), basename($absolutePath))
-            ->post('/transcribe', [
-                'model' => $this->model,
-                'word_timestamps' => 'true',
-            ]);
+        $client = $this->client();
+
+        if ($this->driver === 'openai') {
+            $apiKey = config('autoclip.llm.api_key');
+            if ($apiKey) {
+                $client = $client->withToken($apiKey);
+            }
+
+            // OpenAI requires specific multipart fields for verbose_json + word-level timestamps
+            $response = $client
+                ->attach('file', fopen($absolutePath, 'r'), basename($absolutePath))
+                ->attach('model', 'whisper-1')
+                ->attach('response_format', 'verbose_json')
+                ->attach('timestamp_granularities[]', 'word')
+                ->attach('timestamp_granularities[]', 'segment')
+                ->post('/audio/transcriptions');
+        } else {
+            $response = $client
+                ->attach('file', fopen($absolutePath, 'r'), basename($absolutePath))
+                ->post('/transcribe', [
+                    'model' => $this->model,
+                    'word_timestamps' => 'true',
+                ]);
+        }
 
         if (! $response->successful()) {
             throw new RuntimeException(

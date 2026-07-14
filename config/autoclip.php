@@ -73,6 +73,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'whisper' => [
+        'driver' => env('AUTOCLIP_WHISPER_DRIVER', 'local'),
         'endpoint' => env('AUTOCLIP_WHISPER_ENDPOINT', 'http://127.0.0.1:9000'),
         'model' => env('AUTOCLIP_WHISPER_MODEL', 'small'),
     ],    'llm' => [
