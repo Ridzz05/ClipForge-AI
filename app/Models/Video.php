@@ -60,8 +60,19 @@ class Video extends Model
             $state = 'pending';
             if (in_array($this->status, $s['reached'], true)) {
                 $state = 'done';
-            } elseif (isset($s['active']) && in_array($this->status, $s['active'], true)) {
-                $state = 'active';
+            } else {
+                $isActive = false;
+                if (isset($s['active'])) {
+                    foreach ($s['active'] as $act) {
+                        if ($this->status === $act || str_starts_with($this->status, $act . ' ')) {
+                            $isActive = true;
+                            break;
+                        }
+                    }
+                }
+                if ($isActive) {
+                    $state = 'active';
+                }
             }
 
             return ['key' => $s['key'], 'label' => $s['label'], 'state' => $state];
@@ -71,7 +82,8 @@ class Video extends Model
     /** Is the pipeline still actively working (so the UI keeps polling)? */
     public function isProcessing(): bool
     {
-        return in_array($this->status, ['downloading', 'ingested', 'transcribing', 'scoring'], true);
+        return in_array($this->status, ['downloading', 'ingested', 'transcribing', 'scoring'], true)
+            || str_starts_with($this->status, 'downloading ');
     }
 
     /**

@@ -67,7 +67,7 @@ class YtDlpService
      * @throws IngestValidationException on unsafe URL
      * @throws RuntimeException on download failure
      */
-    public function download(string $url, string $targetDir, string $basename, string $resolution = 'best'): string
+    public function download(string $url, string $targetDir, string $basename, string $resolution = 'best', ?callable $onProgress = null): string
     {
         $this->assertSafeUrl($url);
 
@@ -89,7 +89,7 @@ class YtDlpService
         $process = new Process([
             $this->ytdlpPath,
             '--no-playlist',                 // one video, never a whole playlist
-            '--no-progress',
+            '--newline',                     // output progress bar as new lines
             '--max-filesize', $this->maxFilesize,
             // Prefer a single mp4 (avoids needing a merge/remux step downstream).
             '-f', $format,
@@ -100,8 +100,30 @@ class YtDlpService
         ]);
         $process->setTimeout($this->timeout);
 
+        $lastUpdate = 0;
+        $lastPercent = '';
+
         try {
-            $process->mustRun();
+            $process->mustRun(function ($type, $buffer) use ($onProgress, &$lastUpdate, &$lastPercent) {
+                if ($type === Process::ERR) {
+                    return;
+                }
+
+                $lines = explode("\n", $buffer);
+                foreach ($lines as $line) {
+                    if (preg_match('/\[download\]\s+([0-9.]+)%/', $line, $matches)) {
+                        $percent = $matches[1] . '%';
+                        $now = time();
+                        if ($percent !== $lastPercent && ($now - $lastUpdate) >= 1) {
+                            if ($onProgress) {
+                                $onProgress($percent);
+                            }
+                            $lastPercent = $percent;
+                            $lastUpdate = $now;
+                        }
+                    }
+                }
+            });
         } catch (ProcessFailedException $e) {
             throw new RuntimeException(
                 'yt-dlp download failed: '.$this->tail($process->getErrorOutput()),

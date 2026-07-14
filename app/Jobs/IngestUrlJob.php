@@ -59,7 +59,15 @@ class IngestUrlJob implements ShouldQueue
 
         Log::info('URL ingest: downloading', ['video_id' => $video->id, 'url' => $video->source_ref, 'resolution' => $this->resolution]);
 
-        $downloadedAbs = $ytdlp->download($video->source_ref, $absDir, 'source', $this->resolution);
+        $downloadedAbs = $ytdlp->download(
+            $video->source_ref,
+            $absDir,
+            'source',
+            $this->resolution,
+            function (string $percent) use ($video) {
+                $video->update(['status' => "downloading ({$percent})"]);
+            }
+        );
         $relative = $jobDir.'/'.basename($downloadedAbs);
 
         $ingest->completeUrlIngest($video, $relative, $jobDir);
