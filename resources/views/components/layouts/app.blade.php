@@ -452,8 +452,15 @@
             background: var(--ink);
         }
 
+        .bottom-nav {
+            display: none;
+        }
+
         /* Responsive & Mobile-first Sizing adjustments */
         @media (max-width: 968px) {
+            body {
+                padding-bottom: 84px;
+            }
             .container {
                 padding: 24px 16px 60px;
             }
@@ -462,6 +469,9 @@
                 flex-direction: column;
                 gap: 12px;
                 text-align: center;
+            }
+            .topbar .nav a {
+                display: none;
             }
             .nav {
                 flex-wrap: wrap;
@@ -494,6 +504,64 @@
                 width: 100%;
                 justify-content: center;
             }
+
+            /* Mobile Bottom Navbar Styles */
+            .bottom-nav {
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 72px;
+                background: var(--stage-2);
+                border-top: 1.5px solid var(--line);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                z-index: 999;
+                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+                padding: 4px 12px;
+            }
+
+            .bottom-nav .nav-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 4px;
+                color: var(--muted);
+                text-transform: uppercase;
+                font: 600 10px/1 var(--mono);
+                letter-spacing: 0.05em;
+                text-decoration: none;
+                flex: 1;
+                height: 100%;
+                transition: all 0.2s ease;
+                position: relative;
+            }
+
+            .bottom-nav .nav-item i {
+                font-size: 20px;
+            }
+
+            .bottom-nav .nav-item.active {
+                color: var(--accent);
+            }
+
+            .bottom-nav .nav-item.active::after {
+                content: '';
+                position: absolute;
+                bottom: 6px;
+                width: 4px;
+                height: 4px;
+                border-radius: 50%;
+                background: var(--accent);
+            }
+
+            .bottom-nav .nav-item:active {
+                transform: scale(0.92);
+            }
         }
     </style>
     @livewireStyles
@@ -520,6 +588,23 @@
     <main class="container">
         {{ $slot }}
     </main>
+
+    <!-- Mobile Bottom Navbar -->
+    <div class="bottom-nav">
+        @php $r = request()->path(); @endphp
+        <a href="/" wire:navigate class="nav-item {{ $r === '/' || $r === '' ? 'active' : '' }}">
+            <i class="ph ph-house-line"></i>
+            <span>Home</span>
+        </a>
+        <a href="/#upload-section" wire:navigate class="nav-item">
+            <i class="ph ph-plus-circle" style="font-size: 26px; color: var(--accent);"></i>
+            <span>New Clip</span>
+        </a>
+        <a href="/exports" wire:navigate class="nav-item {{ str_starts_with($r, 'exports') ? 'active' : '' }}">
+            <i class="ph ph-download-simple"></i>
+            <span>Exports</span>
+        </a>
+    </div>
 
     @livewireScripts
     

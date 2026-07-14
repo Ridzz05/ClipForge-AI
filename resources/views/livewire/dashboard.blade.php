@@ -54,7 +54,7 @@
     </div>
 
     <!-- Upload & URL Panels Grid -->
-    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch;">
+    <div id="upload-section" class="grid" style="grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch;">
         
         <!-- Upload panel -->
         <div class="panel grid" style="gap: 16px; background: var(--tile-2); border-color: rgba(0,0,0,0.05); color: var(--ink);">
