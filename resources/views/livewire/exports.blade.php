@@ -1,4 +1,11 @@
 <div @if($poll) wire:poll.4s @endif class="grid" style="gap: 24px;">
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb" style="font: 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 16px; display: flex; align-items: center; gap: 6px;">
+        <a href="/" style="color: var(--muted); display: inline-flex; align-items: center; gap: 4px;"><i class="ph ph-house" style="font-size: 13px;"></i> Dashboard</a>
+        <span style="color: var(--line);">/</span>
+        <span style="color: var(--accent); font-weight: 600;">Exports</span>
+    </nav>
+
     <!-- Page Header -->
     <div class="row between" style="align-items: flex-start;">
         <div>

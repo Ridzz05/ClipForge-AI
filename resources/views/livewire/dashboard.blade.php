@@ -71,9 +71,9 @@
 
             <form wire:submit="save" class="grid" style="gap: 18px; justify-content: space-between; height: 100%;">
                 <!-- Styled Upload Zone -->
-                <div style="border: 2px dashed rgba(26,23,20,0.15); border-radius: 18px; padding: 28px 20px; text-align: center; background: rgba(255,255,255,0.25); transition: border-color 0.2s ease;"
+                <div style="border: 2px dashed var(--line); border-radius: 18px; padding: 28px 20px; text-align: center; background: rgba(0,0,0,0.03); transition: border-color 0.2s ease;"
                      ondragover="this.style.borderColor='var(--ink)'"
-                     ondragleave="this.style.borderColor='rgba(26,23,20,0.15)'">
+                     ondragleave="this.style.borderColor='var(--line)'">
                     <i class="ph ph-cloud-arrow-up" style="font-size: 32px; color: var(--ink); margin-bottom: 12px; display: inline-block;"></i>
                     <div style="margin-bottom: 8px; font-weight: 700; color: var(--ink); font-size: 14px;">Pilih atau seret file video di sini</div>
                     <div style="font-size: 12px; margin-bottom: 14px; color: var(--muted); font-weight: 500;">Mendukung MP4, MOV, MKV, WebM, AVI (Maks. 3 Jam)</div>
@@ -114,7 +114,7 @@
                 <div class="grid" style="gap: 12px;">
                     <label style="font-weight: 700; font-size: 13px; color: var(--ink);">Tempel URL Video (YouTube, TikTok, dll)</label>
                     <input type="url" wire:model="url" placeholder="https://www.youtube.com/watch?v=..."
-                           style="width: 100%; padding: 12px 16px; border-radius: 12px; background: #ffffff;
+                           style="width: 100%; padding: 12px 16px; border-radius: 12px; background: var(--paper);
                                   border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13.5px;">
                     @if($urlError)
                         <span class="flash flash-error" style="padding: 8px 12px; margin-bottom: 0; font-size: 12px; background: var(--paper);">{{ $urlError }}</span>
@@ -123,7 +123,7 @@
                     <div style="margin-top: 4px;">
                         <label style="font-weight: 700; font-size: 13px; color: var(--ink); display: block; margin-bottom: 6px;">Batas Resolusi Unduhan</label>
                         <select wire:model="resolution"
-                                style="width: 100%; padding: 12px 16px; border-radius: 12px; background: #ffffff;
+                                style="width: 100%; padding: 12px 16px; border-radius: 12px; background: var(--paper);
                                        border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13.5px;
                                        outline: none; transition: border-color 0.2s ease; cursor: pointer;">
                             <option value="best">Kualitas Terbaik (Best MP4)</option>
@@ -134,7 +134,7 @@
                         </select>
                     </div>
                     
-                    <div style="border: 1.5px dashed rgba(26,23,20,0.15); border-radius: 12px; padding: 16px; background: rgba(255,255,255,0.25); display: flex; gap: 12px; align-items: flex-start; margin-top: 8px;">
+                    <div style="border: 1.5px dashed var(--line); border-radius: 12px; padding: 16px; background: rgba(0,0,0,0.03); display: flex; gap: 12px; align-items: flex-start; margin-top: 8px;">
                         <i class="ph ph-info" style="font-size: 18px; flex-shrink: 0; color: var(--ink); margin-top: 1px;"></i>
                         <p style="font-size: 12px; line-height: 1.5; margin: 0; color: var(--muted); font-weight: 500;">
                             Unduhan diproses di latar belakang menggunakan `yt-dlp`. Video akan secara otomatis di-ingest, dikompresi, dan masuk ke pipeline transkripsi setelah selesai.
@@ -223,25 +223,33 @@
                                     @endif
                                 </td>
                                 <td style="text-align: right;">
-                                    @if(in_array($video->status, ['reviewing','done']))
-                                        <a href="/videos/{{ $video->id }}/review" class="btn btn-sm btn-primary" style="padding: 5px 12px; border-color: var(--ink); background: var(--ink); color: var(--paper);">
-                                            <i class="ph ph-eye" style="font-size: 12px; vertical-align: middle;"></i> Review Hasil
-                                        </a>
-                                    @elseif($video->status === 'failed')
-                                        @php $reason = $video->failureReason(); @endphp
-                                        <span class="badge badge-red" @if($reason) title="{{ $reason }}" @endif style="cursor: help;">Gagal</span>
-                                        @if($reason)
-                                            <div class="muted" style="font-size:10px; margin-top:4px; max-width:140px;
-                                                 overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align: right;"
-                                                 title="{{ $reason }}">
-                                                {{ $reason }}
-                                            </div>
+                                    <div style="display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; width: 100%;">
+                                        @if(in_array($video->status, ['reviewing','done']))
+                                            <a href="/videos/{{ $video->id }}/review" class="btn btn-sm btn-primary" style="padding: 5px 12px; border-color: var(--ink); background: var(--ink); color: var(--paper);">
+                                                <i class="ph ph-eye" style="font-size: 12px; vertical-align: middle;"></i> Review
+                                            </a>
+                                        @elseif($video->status === 'failed')
+                                            @php $reason = $video->failureReason(); @endphp
+                                            <span class="badge badge-red" @if($reason) title="{{ $reason }}" @endif style="cursor: help;">Gagal</span>
+                                            @if($reason)
+                                                <div class="muted" style="font-size:10px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ $reason }}">
+                                                    {{ $reason }}
+                                                </div>
+                                            @endif
+                                        @else
+                                            <span class="muted" style="font-size:12px; display: inline-flex; align-items: center; gap: 4px;">
+                                                <i class="ph ph-spinner-gap spin-rotate" style="font-size: 12px;"></i> Proses&hellip;
+                                            </span>
                                         @endif
-                                    @else
-                                        <span class="muted" style="font-size:12px; display: inline-flex; align-items: center; gap: 6px;">
-                                            <i class="ph ph-spinner-gap spin-rotate" style="font-size: 12px;"></i> Proses&hellip;
-                                        </span>
-                                    @endif
+
+                                        <button type="button" wire:click="deleteVideo({{ $video->id }})"
+                                                wire:confirm="Apakah Anda yakin ingin menghapus video ini beserta seluruh data kandidat & hasil ekspor terkait secara permanen?"
+                                                class="btn btn-sm btn-outline"
+                                                style="padding: 5px 8px; border-color: #dc2626; color: #dc2626; border-radius: 8px;"
+                                                title="Hapus Video">
+                                            <i class="ph ph-trash" style="font-size: 14px; vertical-align: middle;"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach

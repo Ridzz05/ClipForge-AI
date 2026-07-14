@@ -64,6 +64,14 @@
             --text-title: #f5efe4;
             --border-stage: rgba(245,239,228,0.15);
             --radial-glow: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(233,132,37,0.18), transparent 70%);
+
+            /* Sleek dark pastel cards */
+            --tile-1: #2a2010; /* dark gold */
+            --tile-2: #2e1713; /* dark reddish */
+            --tile-3: #1a1024; /* dark purple */
+            --tile-4: #101e0f; /* dark green */
+            --tile-5: #101a24; /* dark blue */
+            --tile-6: #2b1120; /* dark pink */
         }
 
         * {
@@ -442,6 +450,50 @@
             height: 10px;
             border-radius: 50%;
             background: var(--ink);
+        }
+
+        /* Responsive & Mobile-first Sizing adjustments */
+        @media (max-width: 968px) {
+            .container {
+                padding: 24px 16px 60px;
+            }
+            .topbar {
+                padding: 16px 20px;
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+            .nav {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 8px;
+            }
+            .page-title {
+                font-size: 32px;
+            }
+            .grid {
+                grid-template-columns: 1fr !important;
+                gap: 16px;
+            }
+            .review-split {
+                grid-template-columns: 1fr !important;
+            }
+            .review-split > div {
+                position: relative !important;
+                top: 0 !important;
+            }
+            .row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .row.between {
+                align-items: stretch;
+            }
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
     @livewireStyles

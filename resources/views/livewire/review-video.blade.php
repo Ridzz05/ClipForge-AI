@@ -1,12 +1,15 @@
 <div @if($poll) wire:poll.4s @endif class="grid" style="gap: 24px;">
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb" style="font: 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 16px; display: flex; align-items: center; gap: 6px;">
+        <a href="/" style="color: var(--muted); display: inline-flex; align-items: center; gap: 4px;"><i class="ph ph-house" style="font-size: 13px;"></i> Dashboard</a>
+        <span style="color: var(--line);">/</span>
+        <span style="color: var(--accent); font-weight: 600;">Review Video #{{ $video->id }}</span>
+    </nav>
+
     <!-- Page Header & Navigation -->
     <div class="row between" style="align-items: flex-start;">
         <div>
-            <a href="/" class="muted" style="font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: color 0.2s; color: var(--muted);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">
-                <i class="ph ph-arrow-left" style="font-size: 14px; vertical-align: middle;"></i>
-                Kembali ke Dashboard
-            </a>
-            <h1 class="page-title" style="margin-top:8px;">Review &amp; Edit Kandidat</h1>
+            <h1 class="page-title">Review &amp; Edit Kandidat</h1>
             <p class="page-sub" style="margin-bottom:0; display: flex; align-items: center; gap: 8px;">
                 <span class="muted" style="max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ $video->source_ref ?? '—' }}</span>
                 @if($video->duration_seconds)
@@ -33,7 +36,7 @@
     @if($error)<div class="flash flash-error">{{ $error }}</div>@endif
 
     <!-- Split Workspace -->
-    <div class="grid" style="grid-template-columns: 420px 1fr; gap: 28px; align-items: start;">
+    <div class="grid review-split" style="grid-template-columns: 420px 1fr; gap: 28px; align-items: start;">
         
         <!-- Left Side: Sticky Workspace Panel -->
         <div style="position: sticky; top: 92px;" class="grid">
@@ -90,11 +93,11 @@
                     <div class="row" style="gap: 12px;">
                         <div style="flex: 1;">
                             <label style="font-size: 11px; font-family: var(--mono); font-weight: 700; display: block; margin-bottom: 4px; text-transform: uppercase; color: var(--ink);">Start (ms)</label>
-                            <input type="number" wire:model.live="editStartMs" style="width:100%; padding: 8px 10px; border-radius: 8px; background: #ffffff; border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13px;">
+                            <input type="number" wire:model.live="editStartMs" style="width:100%; padding: 8px 10px; border-radius: 8px; background: var(--paper); border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13px;">
                         </div>
                         <div style="flex: 1;">
                             <label style="font-size: 11px; font-family: var(--mono); font-weight: 700; display: block; margin-bottom: 4px; text-transform: uppercase; color: var(--ink);">End (ms)</label>
-                            <input type="number" wire:model.live="editEndMs" style="width:100%; padding: 8px 10px; border-radius: 8px; background: #ffffff; border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13px;">
+                            <input type="number" wire:model.live="editEndMs" style="width:100%; padding: 8px 10px; border-radius: 8px; background: var(--paper); border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13px;">
                         </div>
                     </div>
 
@@ -110,7 +113,7 @@
                     <!-- Rationale textarea -->
                     <div>
                         <label style="font-size: 11px; font-family: var(--mono); font-weight: 700; display: block; margin-bottom: 4px; text-transform: uppercase; color: var(--ink);">Deskripsi / Rationale</label>
-                        <textarea wire:model="editRationale" rows="3" style="width:100%; padding: 8px 12px; border-radius: 8px; background: #ffffff; border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13px; resize: vertical; line-height: 1.4;"></textarea>
+                        <textarea wire:model="editRationale" rows="3" style="width:100%; padding: 8px 12px; border-radius: 8px; background: var(--paper); border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13px; resize: vertical; line-height: 1.4;"></textarea>
                     </div>
 
                     <!-- Save / Cancel Buttons -->
@@ -141,7 +144,7 @@
                     <label style="font-weight: 700; font-size: 13px; color: var(--ink);">Teks Call-to-Action (CTA)</label>
                     <input type="text" wire:model="ctaText" maxlength="120"
                            placeholder="Masukkan CTA khusus (cth. BELI SEKARANG DI STEAM)"
-                           style="width: 100%; padding: 12px 16px; border-radius: 12px; background: #ffffff;
+                           style="width: 100%; padding: 12px 16px; border-radius: 12px; background: var(--paper);
                                   border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13.5px;">
                     
                     <div class="grid" style="gap: 6px;">
@@ -172,7 +175,7 @@
                     <div>
                         <label style="font-weight: 700; font-size: 13px; color: var(--ink); display: block; margin-bottom: 6px;">Gaya Auto-Caption</label>
                         <select wire:model="captionStyle"
-                                style="width: 100%; padding: 12px 16px; border-radius: 12px; background: #ffffff;
+                                style="width: 100%; padding: 12px 16px; border-radius: 12px; background: var(--paper);
                                        border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13.5px;
                                        outline: none; transition: border-color 0.2s ease; cursor: pointer;">
                             <option value="default">Default (Putih Arial)</option>
