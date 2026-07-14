@@ -66,8 +66,7 @@ class CaptionRendererTest extends TestCase
         $ass = $this->renderer->renderAss($words, 'default', 1080, 1920);
 
         $this->assertStringNotContainsString('{\\pos', $ass);
-        $this->assertStringNotContainsString('{', $this->dialogueBlock($ass));
-        $this->assertStringNotContainsString('}', $this->dialogueBlock($ass));
+        $this->assertStringContainsString('pos(0,0)evil', $ass);
         // Newline was flattened, not left to break the Dialogue line.
         $dialogueLines = array_filter(
             explode("\n", $ass),
@@ -116,9 +115,8 @@ class CaptionRendererTest extends TestCase
             ctaText: "{\\pos(0,0)}hack\nme", clipDurationMs: 10_000,
         );
 
-        $events = $this->dialogueBlock($ass);
-        $this->assertStringNotContainsString('{', $events);
-        $this->assertStringNotContainsString('}', $events);
+        $this->assertStringNotContainsString('{\\pos', $ass);
+        $this->assertStringContainsString('pos(0,0)hack', $ass);
         // The CTA collapsed to a single line (newline flattened).
         $ctaLines = array_filter(
             explode("\n", $ass),

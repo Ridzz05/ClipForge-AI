@@ -31,7 +31,7 @@ class ActivityFeedTest extends TestCase
     {
         Livewire::test(ActivityFeed::class)
             ->assertOk()
-            ->assertSee('Belum ada aktivitas');
+            ->assertSee('Belum ada riwayat aktivitas');
     }
 
     public function test_shows_recent_pipeline_events(): void
@@ -40,7 +40,7 @@ class ActivityFeedTest extends TestCase
 
         Livewire::test(ActivityFeed::class)
             ->assertSee('Transcribe')
-            ->assertSee('selesai')
+            ->assertSee('Selesai')
             ->assertSee('ep.mp4');
     }
 
@@ -49,7 +49,7 @@ class ActivityFeedTest extends TestCase
         $this->videoWithJob('score', 'failed', 'Ollama returned HTTP 500');
 
         Livewire::test(ActivityFeed::class)
-            ->assertSee('gagal')
+            ->assertSee('Gagal')
             ->assertSee('Ollama returned HTTP 500');
     }
 

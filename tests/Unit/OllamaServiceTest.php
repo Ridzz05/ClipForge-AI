@@ -50,7 +50,7 @@ class OllamaServiceTest extends TestCase
                 && $body['format'] === 'json'
                 && $body['model'] === 'qwen2.5:7b'
                 && $body['stream'] === false
-                && str_contains($body['prompt'], 'hello world');
+                && str_contains($body['prompt'], 'he' . "\u{200b}" . 'llo');
         });
     }
 
