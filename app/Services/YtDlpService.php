@@ -217,10 +217,44 @@ class YtDlpService
         return $ips;
     }
 
-    private function tail(string $output, int $lines = 5): string
+    private function tail(string $output, int $lines = 2): string
     {
         $parts = array_filter(array_map('trim', explode("\n", $output)));
 
-        return implode(' | ', array_slice($parts, -$lines));
+        // 1. If there are lines starting with "ERROR:", isolate them
+        $errorLines = array_filter($parts, fn($l) => str_starts_with($l, 'ERROR:'));
+        if (!empty($errorLines)) {
+            $parts = $errorLines;
+        }
+
+        // 2. Take the last N lines
+        $selected = array_slice($parts, -$lines);
+
+        // 3. Clean up verbose network details to make them short and friendly
+        return implode(' | ', array_map(function ($l) {
+            // Remove prefix "ERROR: [youtube] "
+            $l = preg_replace('/^ERROR:\s+\[[^\]]+\]\s+/', 'Error: ', $l);
+            $l = preg_replace('/^ERROR:\s+/', 'Error: ', $l);
+
+            // Simplify resolve/connection errors
+            if (stripos($l, 'failed to resolve') !== false || stripos($l, 'getaddrinfo failed') !== false) {
+                // Get the domain being resolved
+                if (preg_match("/host='([^']+)'/i", $l, $m)) {
+                    return "Error: Gagal tersambung ke jaringan. Tidak dapat mendeteksi host '{$m[1]}' (Periksa koneksi internet Anda).";
+                }
+                return "Error: Gagal mendeteksi koneksi internet (Koneksi jaringan gagal).";
+            }
+
+            // Simplify private address block
+            if (stripos($l, 'resolves to a private') !== false) {
+                return "Error: Domain diblokir karena merujuk ke alamat IP privat lokal (Proteksi SSRF).";
+            }
+
+            // Remove long system stack trace/exception details at the end
+            $l = preg_replace('/\(caused by\s+TransportError.*/i', '', $l);
+            $l = preg_replace('/\(caused by\s+URLError.*/i', '', $l);
+
+            return trim($l);
+        }, $selected));
     }
 }
