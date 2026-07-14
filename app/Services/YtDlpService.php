@@ -116,23 +116,38 @@ class YtDlpService
 
         $lastUpdate = 0;
         $lastPercent = '';
+        $currentStream = 'Video';
 
         try {
-            $process->mustRun(function ($type, $buffer) use ($onProgress, &$lastUpdate, &$lastPercent) {
+            $process->mustRun(function ($type, $buffer) use ($onProgress, &$lastUpdate, &$lastPercent, &$currentStream) {
                 if ($type === Process::ERR) {
                     return;
                 }
 
                 $lines = explode("\n", $buffer);
                 foreach ($lines as $line) {
+                    // Update active stream phase (Video, Audio, Merging)
+                    if (preg_match('/Destination:\s+.*\.([a-zA-Z0-9]+)$/i', $line, $m)) {
+                        $ext = strtolower($m[1]);
+                        if (in_array($ext, ['m4a', 'mp3', 'aac', 'opus', 'ogg', 'wav'], true)) {
+                            $currentStream = 'Audio';
+                        } else {
+                            $currentStream = 'Video';
+                        }
+                    } elseif (stripos($line, 'merging formats') !== false || stripos($line, 'extracting') !== false) {
+                        $currentStream = 'Merging';
+                    }
+
                     if (preg_match('/\[download\]\s+([0-9.]+)%/', $line, $matches)) {
                         $percent = $matches[1] . '%';
+                        $progressStr = "{$currentStream}: {$percent}";
+
                         $now = time();
-                        if ($percent !== $lastPercent && ($now - $lastUpdate) >= 1) {
+                        if ($progressStr !== $lastPercent && ($now - $lastUpdate) >= 1) {
                             if ($onProgress) {
-                                $onProgress($percent);
+                                $onProgress($progressStr);
                             }
-                            $lastPercent = $percent;
+                            $lastPercent = $progressStr;
                             $lastUpdate = $now;
                         }
                     }
