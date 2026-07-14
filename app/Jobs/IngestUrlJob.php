@@ -31,6 +31,7 @@ class IngestUrlJob implements ShouldQueue
 
     public function __construct(
         public readonly int $videoId,
+        public readonly string $resolution = 'best',
     ) {}
 
     public function timeout(): int
@@ -56,9 +57,9 @@ class IngestUrlJob implements ShouldQueue
         $disk = Storage::disk((string) config('autoclip.ingest.disk'));
         $absDir = $disk->path($jobDir);
 
-        Log::info('URL ingest: downloading', ['video_id' => $video->id, 'url' => $video->source_ref]);
+        Log::info('URL ingest: downloading', ['video_id' => $video->id, 'url' => $video->source_ref, 'resolution' => $this->resolution]);
 
-        $downloadedAbs = $ytdlp->download($video->source_ref, $absDir, 'source');
+        $downloadedAbs = $ytdlp->download($video->source_ref, $absDir, 'source', $this->resolution);
         $relative = $jobDir.'/'.basename($downloadedAbs);
 
         $ingest->completeUrlIngest($video, $relative, $jobDir);

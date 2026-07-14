@@ -67,7 +67,7 @@ class YtDlpService
      * @throws IngestValidationException on unsafe URL
      * @throws RuntimeException on download failure
      */
-    public function download(string $url, string $targetDir, string $basename): string
+    public function download(string $url, string $targetDir, string $basename, string $resolution = 'best'): string
     {
         $this->assertSafeUrl($url);
 
@@ -78,13 +78,21 @@ class YtDlpService
         // Output template: our directory + server-generated name + yt-dlp ext.
         $outputTemplate = rtrim($targetDir, '/\\').DIRECTORY_SEPARATOR.$basename.'.%(ext)s';
 
+        $format = match ($resolution) {
+            '1080p' => 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]/best',
+            '720p'  => 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best',
+            '480p'  => 'bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480][ext=mp4]/best',
+            '360p'  => 'bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[height<=360][ext=mp4]/best',
+            default => 'best[ext=mp4]/mp4/best',
+        };
+
         $process = new Process([
             $this->ytdlpPath,
             '--no-playlist',                 // one video, never a whole playlist
             '--no-progress',
             '--max-filesize', $this->maxFilesize,
             // Prefer a single mp4 (avoids needing a merge/remux step downstream).
-            '-f', 'best[ext=mp4]/mp4/best',
+            '-f', $format,
             '--no-continue',
             '--restrict-filenames',
             '-o', $outputTemplate,

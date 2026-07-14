@@ -28,6 +28,9 @@ class Dashboard extends Component
     /** Public video URL to ingest via yt-dlp. */
     public string $url = '';
 
+    /** Video resolution limit for yt-dlp. */
+    public string $resolution = 'best';
+
     public ?string $flash = null;
 
     /** Errors are scoped per form so one form's failure can't confuse the other. */
@@ -111,7 +114,7 @@ class Dashboard extends Component
         // Create the video row now (status=downloading) so it appears in the
         // list immediately; the slow download runs on the queue.
         $video = $ingest->createPendingUrlVideo($url);
-        IngestUrlJob::dispatch($video->id);
+        IngestUrlJob::dispatch($video->id, $this->resolution);
 
         $this->reset('url');
         $this->flash = "URL diterima (video #{$video->id}). Mengunduh di background — pantau statusnya di daftar.";

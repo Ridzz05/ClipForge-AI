@@ -119,6 +119,20 @@
                     @if($urlError)
                         <span class="flash flash-error" style="padding: 8px 12px; margin-bottom: 0; font-size: 12px; background: var(--paper);">{{ $urlError }}</span>
                     @endif
+
+                    <div style="margin-top: 4px;">
+                        <label style="font-weight: 700; font-size: 13px; color: var(--ink); display: block; margin-bottom: 6px;">Batas Resolusi Unduhan</label>
+                        <select wire:model="resolution"
+                                style="width: 100%; padding: 12px 16px; border-radius: 12px; background: #ffffff;
+                                       border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13.5px;
+                                       outline: none; transition: border-color 0.2s ease; cursor: pointer;">
+                            <option value="best">Kualitas Terbaik (Best MP4)</option>
+                            <option value="1080p">Maksimal 1080p</option>
+                            <option value="720p">Maksimal 720p</option>
+                            <option value="480p">Maksimal 480p (Hemat Bandwidth)</option>
+                            <option value="360p">Maksimal 360p (Sangat Cepat)</option>
+                        </select>
+                    </div>
                     
                     <div style="border: 1.5px dashed rgba(26,23,20,0.15); border-radius: 12px; padding: 16px; background: rgba(255,255,255,0.25); display: flex; gap: 12px; align-items: flex-start; margin-top: 8px;">
                         <i class="ph ph-info" style="font-size: 18px; flex-shrink: 0; color: var(--ink); margin-top: 1px;"></i>
