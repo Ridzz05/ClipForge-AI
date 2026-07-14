@@ -33,23 +33,23 @@ class ReframeCommandBuilder
         $assFilterPath = $this->escapeForFilter($assPath);
 
         if ($layout === 'split_gaming') {
-            $faceH = (int) round($renderH * 0.4);
-            $gameH = $renderH - $faceH;
+            $gameH = (int) round($renderH * 0.6);
+            $faceH = $renderH - $gameH;
 
-            // Split gaming layout (optimized for bottom-left facecam and top-half gameplay):
-            // 1. Crop face region: bottom-left corner of the video (width 35%, height 50%), scale to renderW x faceH
-            // 2. Crop gameplay region: top-half of the screen (width 100%, height 50%), scale to renderW x gameH
-            // 3. Stack them vertically
+            // Split gaming layout (Gameplay top, Facecam/Reaction bottom):
+            // 1. Crop gameplay region: top-half of the screen (width 100%, height 50%), scale to renderW x gameH
+            // 2. Crop face region: bottom-left corner of the video (width 35%, height 50%), scale to renderW x faceH
+            // 3. Stack them vertically: gameplay on top [game], reaction on bottom [face]
             // 4. Overlay subtitles
             $filter = sprintf(
-                '[0:v]crop=in_w*0.35:in_h*0.5:0:in_h*0.5,scale=%d:%d,setsar=1[face]; ' .
                 '[0:v]crop=in_w:in_h*0.5:0:0,scale=%d:%d,setsar=1[game]; ' .
-                '[face][game]vstack=inputs=2[stacked]; ' .
+                '[0:v]crop=in_w*0.35:in_h*0.5:0:in_h*0.5,scale=%d:%d,setsar=1[face]; ' .
+                '[game][face]vstack=inputs=2[stacked]; ' .
                 '[stacked]subtitles=%s[out]',
                 $renderW,
-                $faceH,
-                $renderW,
                 $gameH,
+                $renderW,
+                $faceH,
                 $assFilterPath
             );
 
