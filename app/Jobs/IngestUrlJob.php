@@ -99,6 +99,10 @@ class IngestUrlJob implements ShouldQueue
             ? $e->getMessage()
             : 'Download failed: '.$e->getMessage();
 
+        if ($e->getPrevious()) {
+            $message .= ' (Detail: '.$e->getPrevious()->getMessage().')';
+        }
+
         $video = Video::find($this->videoId);
         $video?->update(['status' => 'failed', 'last_error' => $message]);
 
