@@ -7,7 +7,7 @@
         </div>
         @if($poll)
             <span class="badge badge-blue" style="background: var(--tile-5); color: var(--ink); border: 1px solid rgba(0,0,0,0.06);">
-                <i class="ph ph-spinner-gap spin" style="font-size:14px;"></i>&nbsp;Proses Rendering Aktif
+                <i class="ph ph-spinner-gap spin-rotate" style="font-size:14px;"></i>&nbsp;Proses Rendering Aktif
             </span>
         @endif
     </div>
@@ -64,7 +64,7 @@
                                 </td>
                                 <td>
                                     <span class="badge {{ $cls }}">
-                                        @if($e->status==='rendering' || $e->status==='queued')<i class="ph ph-spinner-gap spin" style="font-size:10px; margin-right:2px;"></i>@endif
+                                        @if($e->status==='rendering' || $e->status==='queued')<i class="ph ph-spinner-gap spin-rotate" style="font-size:10px; margin-right:2px;"></i>@endif
                                         {{ $label }}
                                     </span>
                                     @if($e->status==='failed' && $e->last_error)
@@ -84,7 +84,7 @@
                                         <span class="muted">—</span>
                                     @else
                                         <span class="muted" style="font-size:12px; display: inline-flex; align-items: center; gap: 6px;">
-                                            <i class="ph ph-spinner-gap spin" style="font-size: 12px;"></i> Rendering&hellip;
+                                            <i class="ph ph-spinner-gap spin-rotate" style="font-size: 12px;"></i> Rendering&hellip;
                                         </span>
                                     @endif
                                 </td>

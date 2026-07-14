@@ -23,7 +23,7 @@
             </button>
             @if($poll)
                 <span class="badge badge-amber" style="background: var(--tile-1); color: var(--ink); border: 1px solid rgba(0,0,0,0.06);">
-                    <i class="ph ph-spinner-gap spin" style="font-size: 14px;"></i>&nbsp;Mengekspor &amp; Merender
+                    <i class="ph ph-spinner-gap spin-rotate" style="font-size: 14px;"></i>&nbsp;Mengekspor &amp; Merender
                 </span>
             @endif
         </div>

@@ -7,7 +7,7 @@
         </div>
         @if($poll)
             <span class="badge badge-blue" style="background: var(--tile-5); color: var(--ink); border: 1px solid rgba(0,0,0,0.06);">
-                <i class="ph ph-spinner-gap spin" style="font-size: 14px;"></i>&nbsp;Memproses Queue
+                <i class="ph ph-spinner-gap spin-rotate" style="font-size: 14px;"></i>&nbsp;Memproses Queue
             </span>
         @endif
     </div>
@@ -46,7 +46,7 @@
             <!-- Right: Restart Actions -->
             <div class="row" style="gap: 12px;">
                 <button type="button" wire:click="restartQueue" class="btn btn-sm btn-outline" style="border-color: var(--border-stage); background: rgba(255,255,255,0.03); color: var(--text-title); display: flex; align-items: center; gap: 6px;" wire:loading.attr="disabled">
-                    <i class="ph ph-arrows-clockwise" wire:loading.class="spin" wire:target="restartQueue" style="font-size: 14px;"></i>
+                    <i class="ph ph-arrows-clockwise" wire:loading.class="spin-rotate" wire:target="restartQueue" style="font-size: 14px;"></i>
                     <span>Restart Antrean (.env)</span>
                 </button>
             </div>
@@ -98,7 +98,7 @@
                     <button type="submit" class="btn btn-primary" style="width: 100%; border-color: var(--ink); background: var(--ink); color: var(--paper);"
                             wire:loading.attr="disabled" wire:target="save,upload">
                         <span wire:loading.remove wire:target="save">Mulai Ingest &amp; Proses</span>
-                        <span wire:loading wire:target="save"><i class="ph ph-spinner-gap spin" style="font-size:14px;"></i>&nbsp;Mengunggah&hellip;</span>
+                        <span wire:loading wire:target="save"><i class="ph ph-spinner-gap spin-rotate" style="font-size:14px;"></i>&nbsp;Mengunggah&hellip;</span>
                     </button>
                 </div>
             </form>
@@ -146,7 +146,7 @@
                     <button type="submit" class="btn btn-primary" style="width: 100%; border-color: var(--ink); background: var(--ink); color: var(--paper);"
                             wire:loading.attr="disabled" wire:target="ingestUrl">
                         <span wire:loading.remove wire:target="ingestUrl">Unduh &amp; Proses</span>
-                        <span wire:loading wire:target="ingestUrl"><i class="ph ph-spinner-gap spin" style="font-size:14px;"></i>&nbsp;Menghubungi Server&hellip;</span>
+                        <span wire:loading wire:target="ingestUrl"><i class="ph ph-spinner-gap spin-rotate" style="font-size:14px;"></i>&nbsp;Menghubungi Server&hellip;</span>
                     </button>
                 </div>
             </form>
@@ -209,7 +209,7 @@
                                             @endphp
                                             <span class="badge {{ $cls }}" style="font-size:10px; padding:3px 10px;"
                                                   title="{{ $stage['label'] }}: {{ $stage['state'] }}">
-                                                @if($stage['state']==='active')<i class="ph ph-spinner-gap spin" style="font-size:10px; margin-right:2px;"></i>@endif
+                                                @if($stage['state']==='active')<i class="ph ph-spinner-gap spin-rotate" style="font-size:10px; margin-right:2px;"></i>@endif
                                                 {{ $stage['label'] }}
                                             </span>
                                         @endforeach
@@ -239,7 +239,7 @@
                                         @endif
                                     @else
                                         <span class="muted" style="font-size:12px; display: inline-flex; align-items: center; gap: 6px;">
-                                            <i class="ph ph-spinner-gap spin" style="font-size: 12px;"></i> Proses&hellip;
+                                            <i class="ph ph-spinner-gap spin-rotate" style="font-size: 12px;"></i> Proses&hellip;
                                         </span>
                                     @endif
                                 </td>

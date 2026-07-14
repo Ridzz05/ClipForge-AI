@@ -395,6 +395,10 @@
             border-radius: 50%;
             animation: sp 0.8s linear infinite;
         }
+        .spin-rotate {
+            display: inline-block;
+            animation: sp 0.8s linear infinite;
+        }
         @keyframes sp {
             to { transform: rotate(360deg); }
         }
