@@ -6,7 +6,7 @@
             <p class="page-sub" style="margin-bottom:0;">Unduh hasil potongan klip vertikal (9:16) berkualitas tinggi yang telah berhasil di-render.</p>
         </div>
         @if($poll)
-            <span class="badge badge-blue" style="box-shadow: 0 0 12px rgba(59, 130, 246, 0.25);">
+            <span class="badge badge-blue" style="background: var(--tile-5); color: var(--ink); border: 1px solid rgba(0,0,0,0.06);">
                 <span class="spin"></span>&nbsp;Proses Rendering Aktif
             </span>
         @endif
@@ -47,7 +47,7 @@
                             <tr wire:key="export-{{ $e->id }}">
                                 <td style="text-align: center;" class="muted font-semibold">{{ $e->id }}</td>
                                 <td>
-                                    <div style="max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight: 600; color: var(--text);">
+                                    <div style="max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight: 700; color: var(--ink);">
                                         {{ $video?->source_ref ?? '—' }}
                                     </div>
                                     <span class="muted" style="font-size:11px; display: inline-flex; align-items: center; gap: 4px; margin-top: 2px;">
@@ -77,7 +77,7 @@
                                 </td>
                                 <td style="text-align: right;">
                                     @if($e->status==='rendered' && $e->output_path)
-                                        <a href="/api/exports/{{ $e->id }}/download" class="btn btn-sm btn-primary" style="padding: 5px 14px;">Download MP4</a>
+                                        <a href="/api/exports/{{ $e->id }}/download" class="btn btn-sm btn-primary" style="padding: 5px 14px; border-color: var(--ink); background: var(--ink); color: #f5efe4;">Download MP4</a>
                                     @elseif($e->status==='failed')
                                         <span class="muted">—</span>
                                     @else
@@ -94,4 +94,3 @@
         @endif
     </div>
 </div>
-
