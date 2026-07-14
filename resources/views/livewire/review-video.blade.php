@@ -287,10 +287,8 @@
 
     <!-- Video Editor Script Binding -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            let previewInterval = null;
-
-            // Listen for candidate loading events from Livewire
+        // Listen for candidate loading events from Livewire (register exactly once)
+        if (!window.candidateListenerRegistered) {
             window.addEventListener('candidate-selected', (event) => {
                 const startMs = event.detail.startMs;
                 const video = document.getElementById('editor-video');
@@ -298,59 +296,62 @@
                     video.currentTime = startMs / 1000;
                 }
             });
+            window.candidateListenerRegistered = true;
+        }
 
-            window.setStartToCurrent = () => {
-                const video = document.getElementById('editor-video');
-                if (video) {
-                    const currentMs = Math.round(video.currentTime * 1000);
-                    Livewire.dispatch('set-start-ms', { ms: currentMs });
-                    @this.set('editStartMs', currentMs);
-                }
-            };
+        let previewInterval = null;
 
-            window.setEndToCurrent = () => {
-                const video = document.getElementById('editor-video');
-                if (video) {
-                    const currentMs = Math.round(video.currentTime * 1000);
-                    @this.set('editEndMs', currentMs);
-                }
-            };
+        window.setStartToCurrent = () => {
+            const video = document.getElementById('editor-video');
+            if (video) {
+                const currentMs = Math.round(video.currentTime * 1000);
+                Livewire.dispatch('set-start-ms', { ms: currentMs });
+                @this.set('editStartMs', currentMs);
+            }
+        };
 
-            window.jumpToStart = () => {
-                const video = document.getElementById('editor-video');
-                if (video) {
-                    const startMs = @this.get('editStartMs');
-                    video.currentTime = startMs / 1000;
-                }
-            };
+        window.setEndToCurrent = () => {
+            const video = document.getElementById('editor-video');
+            if (video) {
+                const currentMs = Math.round(video.currentTime * 1000);
+                @this.set('editEndMs', currentMs);
+            }
+        };
 
-            window.jumpToEnd = () => {
-                const video = document.getElementById('editor-video');
-                if (video) {
-                    const endMs = @this.get('editEndMs');
-                    video.currentTime = endMs / 1000;
-                }
-            };
+        window.jumpToStart = () => {
+            const video = document.getElementById('editor-video');
+            if (video) {
+                const startMs = @this.get('editStartMs');
+                video.currentTime = startMs / 1000;
+            }
+        };
 
-            window.playPreview = () => {
-                const video = document.getElementById('editor-video');
-                if (video) {
-                    const startMs = @this.get('editStartMs');
-                    const endMs = @this.get('editEndMs');
-                    video.currentTime = startMs / 1000;
-                    video.play();
+        window.jumpToEnd = () => {
+            const video = document.getElementById('editor-video');
+            if (video) {
+                const endMs = @this.get('editEndMs');
+                video.currentTime = endMs / 1000;
+            }
+        };
 
-                    if (previewInterval) clearInterval(previewInterval);
+        window.playPreview = () => {
+            const video = document.getElementById('editor-video');
+            if (video) {
+                const startMs = @this.get('editStartMs');
+                const endMs = @this.get('editEndMs');
+                video.currentTime = startMs / 1000;
+                video.play();
 
-                    previewInterval = setInterval(() => {
-                        const currentMs = video.currentTime * 1000;
-                        if (currentMs >= endMs) {
-                            video.pause();
-                            clearInterval(previewInterval);
-                        }
-                    }, 50);
-                }
-            };
-        });
+                if (previewInterval) clearInterval(previewInterval);
+
+                previewInterval = setInterval(() => {
+                    const currentMs = video.currentTime * 1000;
+                    if (currentMs >= endMs) {
+                        video.pause();
+                        clearInterval(previewInterval);
+                    }
+                }, 50);
+            }
+        };
     </script>
 </div>
