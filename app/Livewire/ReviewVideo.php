@@ -115,6 +115,7 @@ class ReviewVideo extends Component
     public function saveCustomCandidate(): void
     {
         if ($this->editStartMs >= $this->editEndMs) {
+            $this->error = "Waktu mulai harus lebih kecil dari waktu selesai.";
             $this->dispatch('toast', message: "Waktu mulai harus lebih kecil dari waktu selesai.", type: 'error');
             return;
         }
@@ -142,6 +143,7 @@ class ReviewVideo extends Component
         try {
             $export = $review->approve($candidate, $this->ctaText, $this->captionStyle, $this->captionMarginV);
         } catch (\RuntimeException $e) {
+            $this->error = $e->getMessage();
             $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 
             return;
