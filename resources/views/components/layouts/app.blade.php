@@ -1,25 +1,33 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'ClipForge AI' }}</title>
     
-    <!-- Fonts from gamification template -->
+    <!-- Theme Flash Prevention -->
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
+    <!-- Phosphor Icons CDN -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
     <style>
         :root {
-            /* Level Gamification Design Tokens */
-            --stage: #0e0d0c;
-            --stage-2: #1a1714;
-            --paper: #ffffff;
-            --ink: #1a1714;
-            --muted: #6c6660;
-            --line: #ebe6dd;
+            /* Fonts */
+            --serif: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+            --sans: 'Inter', -apple-system, system-ui, sans-serif;
+            --mono: 'IBM Plex Mono', ui-monospace, monospace;
             
             --accent: #e98425;
             --accent-2: #ff6b3d;
@@ -31,9 +39,31 @@
             --tile-5: #d6e7ff;
             --tile-6: #ffd6f1;
             
-            --serif: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
-            --sans: 'Inter', -apple-system, system-ui, sans-serif;
-            --mono: 'IBM Plex Mono', ui-monospace, monospace;
+            /* Light theme values (Default) */
+            --stage: #f7f5f0;
+            --stage-2: #ffffff;
+            --paper: #ffffff;
+            --ink: #1a1714;
+            --muted: #706a64;
+            --line: #ebe6dd;
+            --text-body: #1a1714;
+            --text-title: #1a1714;
+            --border-stage: rgba(26,23,20,0.08);
+            --radial-glow: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(233,132,37,0.06), transparent 70%);
+        }
+
+        [data-theme="dark"] {
+            /* Dark theme values */
+            --stage: #0e0d0c;
+            --stage-2: #1a1714;
+            --paper: #1a1714;
+            --ink: #f5efe4;
+            --muted: #a39c96;
+            --line: #2e2a26;
+            --text-body: #ebd9c5;
+            --text-title: #f5efe4;
+            --border-stage: rgba(245,239,228,0.15);
+            --radial-glow: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(233,132,37,0.18), transparent 70%);
         }
 
         * {
@@ -46,15 +76,16 @@
             margin: 0;
             min-height: 100vh;
             background:
-                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(233,132,37,0.18), transparent 70%),
-                radial-gradient(ellipse 70% 50% at 50% 110%, rgba(255,255,255,0.04), transparent 70%),
+                var(--radial-glow),
+                radial-gradient(ellipse 70% 50% at 50% 110%, rgba(255,255,255,0.02), transparent 70%),
                 var(--stage);
-            color: #f5efe4;
+            color: var(--text-body);
             font: 14px/1.5 var(--sans);
             position: relative;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
         a {
@@ -73,23 +104,24 @@
             align-items: center;
             padding: 20px 36px;
             font: 11px/1 var(--mono);
-            color: rgba(245,239,228,0.5);
+            color: var(--muted);
             letter-spacing: 0.2em;
             text-transform: uppercase;
-            border-bottom: 1px dashed rgba(245,239,228,0.15);
+            border-bottom: 1px dashed var(--border-stage);
             position: sticky;
             top: 0;
-            background: rgba(14,13,12,0.9);
+            background: var(--stage);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             z-index: 100;
+            transition: background 0.3s ease, border 0.3s ease;
         }
 
         .brand {
             font-family: var(--serif);
             font-style: italic;
             font-size: 26px;
-            color: #f5efe4;
+            color: var(--text-title);
             letter-spacing: 0;
             text-transform: none;
             display: flex;
@@ -109,7 +141,7 @@
 
         .nav a {
             font: 11px/1 var(--mono);
-            color: rgba(245,239,228,0.5);
+            color: var(--muted);
             letter-spacing: 0.15em;
             text-transform: uppercase;
             padding: 6px 12px;
@@ -117,12 +149,12 @@
             transition: all 0.2s ease;
         }
         .nav a:hover {
-            color: #f5efe4;
-            background: rgba(255,255,255,0.05);
+            color: var(--text-title);
+            background: rgba(255,255,255,0.1);
         }
         .nav a.active {
             color: var(--stage);
-            background: #f5efe4;
+            background: var(--text-title);
             font-weight: 600;
         }
 
@@ -135,7 +167,7 @@
 
         .page-title {
             font: italic 700 44px/1.1 var(--serif);
-            color: #f5efe4;
+            color: var(--text-title);
             margin: 0 0 8px;
             letter-spacing: -0.01em;
         }
@@ -154,9 +186,9 @@
             color: var(--ink);
             border-radius: 24px;
             padding: 28px 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.06);
             border: 1px solid var(--line);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease, border 0.3s ease;
         }
 
         /* Buttons matching the start/badge button */
@@ -180,7 +212,7 @@
 
         .btn:hover:not(:disabled) {
             background: var(--ink);
-            color: #f5efe4;
+            color: var(--paper);
             transform: translateY(-1px);
         }
 
@@ -195,7 +227,7 @@
 
         .btn-primary {
             background: var(--ink);
-            color: #f5efe4;
+            color: var(--paper);
             border-color: var(--ink);
         }
         .btn-primary:hover:not(:disabled) {
@@ -225,7 +257,7 @@
             font: 700 10.5px/1 var(--mono);
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: var(--ink);
+            color: #1a1714 !important; /* Pastel badges always use dark text */
             border: 1px solid rgba(0,0,0,0.08);
         }
 
@@ -247,7 +279,7 @@
         
         .badge-gray {
             background: var(--line);
-            color: var(--muted);
+            color: var(--muted) !important;
         }
 
         /* Premium Gamified Table Style */
@@ -305,7 +337,7 @@
             margin-bottom: 24px;
             background: var(--tile-4);
             border: 1px solid rgba(0,0,0,0.06);
-            color: var(--ink);
+            color: #1a1714;
             font-weight: 600;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -313,7 +345,7 @@
         
         .flash-error {
             background: var(--tile-2);
-            color: var(--ink);
+            color: #1a1714;
         }
 
         @keyframes slideDown {
@@ -342,11 +374,11 @@
             width: 100%;
             padding: 14px 18px;
             border-radius: 14px;
-            background: #ffffff;
+            background: var(--paper);
             border: 1.5px solid var(--line);
             color: var(--ink);
             font: 13.5px var(--sans);
-            transition: all 0.2s ease;
+            transition: all 0.2s ease, border 0.3s ease;
         }
 
         input[type=text]:focus, input[type=url]:focus {
@@ -365,6 +397,29 @@
         }
         @keyframes sp {
             to { transform: rotate(360deg); }
+        }
+
+        /* Theme button style */
+        .theme-btn {
+            background: transparent;
+            border: 1.5px solid var(--border-stage);
+            cursor: pointer;
+            color: var(--text-title);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .theme-btn:hover {
+            border-color: var(--text-title);
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .theme-btn i {
+            font-size: 16px;
         }
 
         /* Livewire activity-feed styles fallback */
@@ -396,6 +451,12 @@
             @php $r = request()->path(); @endphp
             <a href="/" class="{{ $r === '/' || $r === '' ? 'active' : '' }}">Dashboard</a>
             <a href="/exports" class="{{ str_starts_with($r, 'exports') ? 'active' : '' }}">Exports</a>
+            
+            <!-- Theme Toggle Button -->
+            <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Ganti Tema">
+                <i class="ph ph-sun" id="theme-icon-light" style="display: none;"></i>
+                <i class="ph ph-moon" id="theme-icon-dark" style="display: none;"></i>
+            </button>
         </nav>
     </div>
 
@@ -405,5 +466,35 @@
     </main>
 
     @livewireScripts
+    
+    <!-- Theme Toggle Controller -->
+    <script>
+        function getTheme() {
+            return localStorage.getItem('theme') || 'light';
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            const lightIcon = document.getElementById('theme-icon-light');
+            const darkIcon = document.getElementById('theme-icon-dark');
+            if (theme === 'dark') {
+                if (lightIcon) lightIcon.style.display = 'inline-block';
+                if (darkIcon) darkIcon.style.display = 'none';
+            } else {
+                if (lightIcon) lightIcon.style.display = 'none';
+                if (darkIcon) darkIcon.style.display = 'inline-block';
+            }
+        }
+
+        function toggleTheme() {
+            const current = getTheme();
+            const next = current === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', next);
+            applyTheme(next);
+        }
+
+        // Apply theme variables immediately
+        applyTheme(getTheme());
+    </script>
 </body>
 </html>

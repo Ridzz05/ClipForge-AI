@@ -7,7 +7,7 @@
         </div>
         @if($poll)
             <span class="badge badge-blue" style="background: var(--tile-5); color: var(--ink); border: 1px solid rgba(0,0,0,0.06);">
-                <span class="spin"></span>&nbsp;Proses Rendering Aktif
+                <i class="ph ph-spinner-gap spin" style="font-size:14px;"></i>&nbsp;Proses Rendering Aktif
             </span>
         @endif
     </div>
@@ -64,7 +64,7 @@
                                 </td>
                                 <td>
                                     <span class="badge {{ $cls }}">
-                                        @if($e->status==='rendering' || $e->status==='queued')<span class="spin" style="width:8px;height:8px;border-width:1.5px;margin-right:2px;"></span>@endif
+                                        @if($e->status==='rendering' || $e->status==='queued')<i class="ph ph-spinner-gap spin" style="font-size:10px; margin-right:2px;"></i>@endif
                                         {{ $label }}
                                     </span>
                                     @if($e->status==='failed' && $e->last_error)
@@ -77,12 +77,14 @@
                                 </td>
                                 <td style="text-align: right;">
                                     @if($e->status==='rendered' && $e->output_path)
-                                        <a href="/api/exports/{{ $e->id }}/download" class="btn btn-sm btn-primary" style="padding: 5px 14px; border-color: var(--ink); background: var(--ink); color: #f5efe4;">Download MP4</a>
+                                        <a href="/api/exports/{{ $e->id }}/download" class="btn btn-sm btn-primary" style="padding: 5px 14px; border-color: var(--ink); background: var(--ink); color: var(--paper);">
+                                            <i class="ph ph-download-simple" style="font-size:13px; vertical-align: middle;"></i> Download MP4
+                                        </a>
                                     @elseif($e->status==='failed')
                                         <span class="muted">—</span>
                                     @else
                                         <span class="muted" style="font-size:12px; display: inline-flex; align-items: center; gap: 6px;">
-                                            <span class="spin" style="width:10px;height:10px;border-width:1.5px;"></span> Rendering&hellip;
+                                            <i class="ph ph-spinner-gap spin" style="font-size: 12px;"></i> Rendering&hellip;
                                         </span>
                                     @endif
                                 </td>

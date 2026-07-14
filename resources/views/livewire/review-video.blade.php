@@ -2,28 +2,28 @@
     <!-- Page Header & Navigation -->
     <div class="row between" style="align-items: flex-start;">
         <div>
-            <a href="/" class="muted" style="font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: color 0.2s; color: rgba(245,239,228,0.6);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='rgba(245,239,228,0.6)'">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            <a href="/" class="muted" style="font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: color 0.2s; color: var(--muted);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">
+                <i class="ph ph-arrow-left" style="font-size: 14px; vertical-align: middle;"></i>
                 Kembali ke Dashboard
             </a>
             <h1 class="page-title" style="margin-top:8px;">Review &amp; Edit Kandidat</h1>
             <p class="page-sub" style="margin-bottom:0; display: flex; align-items: center; gap: 8px;">
                 <span class="muted" style="max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ $video->source_ref ?? '—' }}</span>
                 @if($video->duration_seconds)
-                    <span style="color: rgba(245,239,228,0.2);">|</span>
+                    <span style="color: var(--line);">|</span>
                     <span class="muted font-semibold">{{ gmdate($video->duration_seconds >= 3600 ? 'H:i:s' : 'i:s', $video->duration_seconds) }}</span>
                 @endif
-                <span style="color: rgba(245,239,228,0.2);">|</span>
+                <span style="color: var(--line);">|</span>
                 <span style="color: var(--accent); font-weight: 600;">{{ $candidates->count() }} Kandidat Terdeteksi</span>
             </p>
         </div>
         <div class="row" style="gap: 12px;">
-            <button type="button" class="btn btn-sm btn-outline" wire:click="createCustomCandidate" style="color: #f5efe4; border-color: rgba(245,239,228,0.2); background: rgba(255,255,255,0.03);">
-                ➕ Buat Klip Kustom
+            <button type="button" class="btn btn-sm btn-outline" wire:click="createCustomCandidate" style="color: var(--text-title); border-color: var(--border-stage); background: rgba(255,255,255,0.03);">
+                <i class="ph ph-plus-circle" style="font-size: 14px; vertical-align: middle;"></i> Buat Klip Kustom
             </button>
             @if($poll)
                 <span class="badge badge-amber" style="background: var(--tile-1); color: var(--ink); border: 1px solid rgba(0,0,0,0.06);">
-                    <span class="spin"></span>&nbsp;Mengekspor &amp; Merender Klip
+                    <i class="ph ph-spinner-gap spin" style="font-size: 14px;"></i>&nbsp;Mengekspor &amp; Merender
                 </span>
             @endif
         </div>
@@ -54,7 +54,7 @@
                 <!-- Edit Mode: Sticky Clip Editor Workspace -->
                 <div class="panel grid" style="gap: 16px; padding: 20px; background: var(--tile-3); border-color: rgba(0,0,0,0.05); color: var(--ink);">
                     <h4 style="margin: 0; font-family: var(--serif); font-style: italic; font-size: 24px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 6px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--ink);"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        <i class="ph ph-scissors" style="font-size: 22px; color: var(--ink);"></i>
                         {{ $editingId === -1 ? 'Buat Klip Kustom' : 'Edit Klip #' . $editingId }}
                     </h4>
                     
@@ -66,23 +66,23 @@
                     <!-- Quick In/Out Buttons -->
                     <div class="row" style="gap: 8px; justify-content: center;">
                         <button type="button" class="btn btn-sm btn-outline" onclick="setStartToCurrent()" style="flex: 1; padding: 8px 10px; font-size: 11px;" title="Gunakan posisi player saat ini sebagai stempel waktu awal">
-                            📍 Set Awal (In)
+                            <i class="ph ph-map-pin-line" style="font-size: 12px; vertical-align: middle;"></i> Set Awal
                         </button>
                         <button type="button" class="btn btn-sm btn-outline" onclick="setEndToCurrent()" style="flex: 1; padding: 8px 10px; font-size: 11px;" title="Gunakan posisi player saat ini sebagai stempel waktu akhir">
-                            🏁 Set Akhir (Out)
+                            <i class="ph ph-flag-banner" style="font-size: 12px; vertical-align: middle;"></i> Set Akhir
                         </button>
                     </div>
 
                     <!-- Seek & Preview Actions -->
                     <div class="row" style="gap: 8px; justify-content: center;">
-                        <button type="button" class="btn btn-sm btn-primary" onclick="playPreview()" style="flex: 2; padding: 8px 12px; font-size: 11px; border-color: var(--ink); background: var(--ink); color: #f5efe4;">
-                            ▶ Preview Klip
+                        <button type="button" class="btn btn-sm btn-primary" onclick="playPreview()" style="flex: 2; padding: 8px 12px; font-size: 11px; border-color: var(--ink); background: var(--ink); color: var(--paper);">
+                            <i class="ph ph-play-circle" style="font-size: 13px; vertical-align: middle;"></i> Preview Klip
                         </button>
                         <button type="button" class="btn btn-sm btn-outline" onclick="jumpToStart()" style="flex: 1; padding: 8px; font-size: 11px;" title="Lompat ke marker awal">
-                            ⏮ Awal
+                            <i class="ph ph-caret-double-left" style="font-size: 12px; vertical-align: middle;"></i> Awal
                         </button>
                         <button type="button" class="btn btn-sm btn-outline" onclick="jumpToEnd()" style="flex: 1; padding: 8px; font-size: 11px;" title="Lompat ke marker akhir">
-                            ⏭ Akhir
+                            <i class="ph ph-caret-double-right" style="font-size: 12px; vertical-align: middle;"></i> Akhir
                         </button>
                     </div>
 
@@ -118,7 +118,7 @@
                         <button type="button" class="btn btn-sm btn-outline" wire:click="closeEditor" style="flex: 1; border-color: var(--ink); color: var(--ink);">
                             Batal
                         </button>
-                        <button type="button" class="btn btn-sm btn-primary" wire:click="{{ $editingId === -1 ? 'saveCustomCandidate' : 'saveCandidate' }}" style="flex: 1; border-color: var(--ink); background: var(--ink); color: #f5efe4;">
+                        <button type="button" class="btn btn-sm btn-primary" wire:click="{{ $editingId === -1 ? 'saveCustomCandidate' : 'saveCandidate' }}" style="flex: 1; border-color: var(--ink); background: var(--ink); color: var(--paper);">
                             Simpan
                         </button>
                     </div>
@@ -156,7 +156,7 @@
                 
                 @if(trim($ctaText) === '')
                     <div style="font-size: 11.5px; color: #b45309; display: flex; gap: 6px; align-items: center; font-weight: 700;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        <i class="ph ph-warning" style="font-size: 14px; vertical-align: middle;"></i>
                         Teks CTA kosong. Sangat direkomendasikan menyertakan CTA untuk materi kampanye.
                     </div>
                 @endif
@@ -177,9 +177,9 @@
                         
                         // Score-based border color & glowing effect
                         $scoreGlow = $c->hook_score >= 75 
-                            ? 'border-left: 5px solid #16a34a; box-shadow: 0 4px 20px rgba(0,0,0,0.05);' 
+                            ? 'border-left: 5px solid #16a34a; box-shadow: 0 4px 20px rgba(0,0,0,0.02);' 
                             : ($c->hook_score >= 50 
-                                ? 'border-left: 5px solid #d97706; box-shadow: 0 4px 20px rgba(0,0,0,0.05);' 
+                                ? 'border-left: 5px solid #d97706; box-shadow: 0 4px 20px rgba(0,0,0,0.02);' 
                                 : 'border-left: 5px solid var(--muted);');
                     @endphp
                     <div class="panel" wire:key="cand-{{ $c->id }}" style="{{ $scoreGlow }}">
@@ -212,19 +212,19 @@
                                 @if(in_array($c->status, ['pending','rejected']))
                                     <!-- Edit Trigger Button -->
                                     <button class="btn btn-sm btn-outline" wire:click="selectCandidate({{ $c->id }})" title="Edit stempel waktu klip ini secara manual">
-                                        ✏️ Edit
+                                        <i class="ph ph-pencil-simple" style="font-size:12px; vertical-align: middle;"></i> Edit
                                     </button>
                                     <button class="btn btn-sm btn-primary" style="border-color: #16a34a; background: #16a34a; color: #ffffff;"
                                             wire:click="approve({{ $c->id }})"
                                             wire:loading.attr="disabled" wire:target="approve({{ $c->id }})">
-                                        Approve &amp; Render
+                                        <i class="ph ph-sparkle" style="font-size:12px; vertical-align: middle;"></i> Approve
                                     </button>
                                 @endif
                                 @if(in_array($c->status, ['pending','approved']))
                                     <button class="btn btn-sm btn-outline" style="border-color: #dc2626; color: #dc2626;"
                                             wire:click="reject({{ $c->id }})"
                                             wire:loading.attr="disabled" wire:target="reject({{ $c->id }})">
-                                        Reject
+                                        <i class="ph ph-x-circle" style="font-size:12px; vertical-align: middle;"></i> Reject
                                     </button>
                                 @endif
                             </div>
@@ -233,9 +233,7 @@
                         <!-- LLM Rationale text -->
                         @if($c->score_rationale)
                             <div style="margin-top: 14px; font-size: 13px; border-top: 1px solid var(--line); padding-top: 12px; line-height: 1.6; color: var(--muted); display: flex; gap: 8px; align-items: flex-start;">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 3px;">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                                </svg>
+                                <i class="ph ph-chat-centered-dots" style="font-size:15px; flex-shrink: 0; color: var(--ink); margin-top: 3px;"></i>
                                 <p style="margin: 0; color: var(--muted); font-weight: 500;">{{ $c->score_rationale }}</p>
                             </div>
                         @endif
