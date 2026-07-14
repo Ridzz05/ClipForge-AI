@@ -88,7 +88,7 @@ class Dashboard extends Component
         // linger and cause a confusing "required" on the next submit.
         $this->dispatch('upload-cleared');
 
-        $this->flash = "Video #{$video->id} diterima ({$video->duration_seconds}s). Pipeline dimulai.";
+        $this->dispatch('toast', message: "Video #{$video->id} diterima ({$video->duration_seconds}s). Pipeline dimulai.", type: 'success');
     }
 
     public function ingestUrl(YtDlpService $ytdlp, VideoIngestService $ingest): void
@@ -121,7 +121,7 @@ class Dashboard extends Component
         IngestUrlJob::dispatch($video->id, $this->resolution);
 
         $this->reset('url');
-        $this->flash = "URL diterima (video #{$video->id}). Mengunduh di background — pantau statusnya di daftar.";
+        $this->dispatch('toast', message: "URL diterima (video #{$video->id}). Mengunduh di background.", type: 'success');
     }
 
     public function deleteVideo(int $id): void
@@ -162,9 +162,9 @@ class Dashboard extends Component
             // 4. Delete the video row itself
             $video->delete();
 
-            $this->flash = "Video #{$id} dan seluruh berkas/kandidat terkait berhasil dihapus dari sistem.";
+            $this->dispatch('toast', message: "Video #{$id} dan seluruh berkas/kandidat terkait berhasil dihapus.", type: 'success');
         } catch (\Throwable $e) {
-            $this->urlError = "Gagal menghapus video: " . $e->getMessage();
+            $this->dispatch('toast', message: "Gagal menghapus video: " . $e->getMessage(), type: 'error');
         }
     }
 

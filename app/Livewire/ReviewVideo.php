@@ -94,7 +94,7 @@ class ReviewVideo extends Component
         ]);
 
         $this->error = null;
-        $this->flash = "Klip #{$candidate->id} berhasil diperbarui.";
+        $this->dispatch('toast', message: "Klip #{$candidate->id} berhasil diperbarui.", type: 'success');
         $this->closeEditor();
     }
 
@@ -115,7 +115,7 @@ class ReviewVideo extends Component
     public function saveCustomCandidate(): void
     {
         if ($this->editStartMs >= $this->editEndMs) {
-            $this->error = "Waktu mulai harus lebih kecil dari waktu selesai.";
+            $this->dispatch('toast', message: "Waktu mulai harus lebih kecil dari waktu selesai.", type: 'error');
             return;
         }
 
@@ -128,7 +128,7 @@ class ReviewVideo extends Component
         ]);
 
         $this->error = null;
-        $this->flash = "Klip kustom baru #{$candidate->id} berhasil dibuat.";
+        $this->dispatch('toast', message: "Klip kustom baru #{$candidate->id} berhasil dibuat.", type: 'success');
         $this->closeEditor();
     }
 
@@ -142,13 +142,13 @@ class ReviewVideo extends Component
         try {
             $export = $review->approve($candidate, $this->ctaText, $this->captionStyle, $this->captionMarginV);
         } catch (\RuntimeException $e) {
-            $this->error = $e->getMessage();
+            $this->dispatch('toast', message: $e->getMessage(), type: 'error');
 
             return;
         }
 
         $this->error = null;
-        $this->flash = "Klip #{$candidate->id} disetujui — render dimulai (export #{$export->id}).";
+        $this->dispatch('toast', message: "Klip #{$candidate->id} disetujui — render dimulai (export #{$export->id}).", type: 'success');
     }
 
     public function reject(int $candidateId, ClipReviewService $review): void
@@ -160,7 +160,7 @@ class ReviewVideo extends Component
 
         $review->reject($candidate);
         $this->error = null;
-        $this->flash = "Klip #{$candidate->id} ditolak.";
+        $this->dispatch('toast', message: "Klip #{$candidate->id} ditolak.", type: 'warning');
     }
 
     /** Guard: only candidates belonging to THIS video can be acted on. */

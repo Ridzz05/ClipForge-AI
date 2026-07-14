@@ -32,8 +32,7 @@
         </div>
     </div>
 
-    @if($flash)<div class="flash">{{ $flash }}</div>@endif
-    @if($error)<div class="flash flash-error">{{ $error }}</div>@endif
+
 
     <!-- Split Workspace -->
     <div class="grid review-split" style="grid-template-columns: 420px 1fr; gap: 28px; align-items: start;">

@@ -62,9 +62,6 @@
                 <i class="ph ph-upload-simple" style="vertical-align: middle; margin-right: 4px;"></i>Upload File Video
             </h3>
             
-            @if($flash)
-                <div class="flash" style="background: var(--paper);">{{ $flash }}</div>
-            @endif
             @if($uploadError)
                 <div class="flash flash-error" style="background: var(--paper);">{{ $uploadError }}</div>
             @endif
