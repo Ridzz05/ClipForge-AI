@@ -225,7 +225,7 @@
                                 <td style="text-align: right;">
                                     <div style="display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; width: 100%;">
                                         @if(in_array($video->status, ['reviewing','done']))
-                                            <a href="/videos/{{ $video->id }}/review" class="btn btn-sm btn-primary" style="padding: 5px 12px; border-color: var(--ink); background: var(--ink); color: var(--paper);">
+                                            <a href="/videos/{{ $video->id }}/review" wire:navigate class="btn btn-sm btn-primary" style="padding: 5px 12px; border-color: var(--ink); background: var(--ink); color: var(--paper);">
                                                 <i class="ph ph-eye" style="font-size: 12px; vertical-align: middle;"></i> Review
                                             </a>
                                         @elseif($video->status === 'failed')

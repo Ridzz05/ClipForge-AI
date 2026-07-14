@@ -502,11 +502,11 @@
     <!-- Top Bar Styled after stage-bar -->
     <div class="topbar">
         <span>CLIPFORGE AI · COGNITIVE HIGHLIGHTER</span>
-        <div class="brand" onclick="window.location.href='/'">clipforge<span>.</span></div>
+        <a href="/" wire:navigate class="brand" style="text-decoration: none;">clipforge<span>.</span></a>
         <nav class="nav">
             @php $r = request()->path(); @endphp
-            <a href="/" class="{{ $r === '/' || $r === '' ? 'active' : '' }}">Dashboard</a>
-            <a href="/exports" class="{{ str_starts_with($r, 'exports') ? 'active' : '' }}">Exports</a>
+            <a href="/" wire:navigate class="{{ $r === '/' || $r === '' ? 'active' : '' }}">Dashboard</a>
+            <a href="/exports" wire:navigate class="{{ str_starts_with($r, 'exports') ? 'active' : '' }}">Exports</a>
             
             <!-- Theme Toggle Button -->
             <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Ganti Tema">
