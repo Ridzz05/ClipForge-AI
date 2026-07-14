@@ -40,6 +40,10 @@ class Dashboard extends Component
 
     public array $statuses = [];
 
+    public ?int $selectedVideoId = null;
+
+    public bool $showStatusModal = false;
+
     public function updatedUpload(): void
     {
         // Clear stale messages when a new file is chosen.
@@ -164,6 +168,18 @@ class Dashboard extends Component
         }
     }
 
+    public function showStatusModal(int $id): void
+    {
+        $this->selectedVideoId = $id;
+        $this->showStatusModal = true;
+    }
+
+    public function closeStatusModal(): void
+    {
+        $this->selectedVideoId = null;
+        $this->showStatusModal = false;
+    }
+
     private function checkServiceStatuses(): array
     {
         $whisperUrl = (string) config('autoclip.whisper.endpoint', 'http://127.0.0.1:9000');
@@ -211,9 +227,14 @@ class Dashboard extends Component
         // Keep polling while any video is still processing; otherwise idle.
         $anyProcessing = $videos->contains(fn (Video $v) => $v->isProcessing());
 
+        $selectedVideo = $this->selectedVideoId 
+            ? Video::with(['pipelineJobs'])->find($this->selectedVideoId) 
+            : null;
+
         return view('livewire.dashboard', [
             'videos' => $videos,
             'poll' => $anyProcessing,
+            'selectedVideo' => $selectedVideo,
         ]);
     }
 }

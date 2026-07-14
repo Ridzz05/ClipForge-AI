@@ -197,7 +197,7 @@
                                     @else — @endif
                                 </td>
                                 <td>
-                                    <div class="row" style="gap:6px; flex-wrap: wrap;">
+                                    <div class="row" style="gap:6px; flex-wrap: wrap; cursor: pointer;" wire:click="showStatusModal({{ $video->id }})" title="Klik untuk detail pipeline status">
                                         @foreach($video->stageProgress() as $stage)
                                             @php
                                                 $cls = match($stage['state']) {
@@ -263,4 +263,114 @@
     <div>
         <livewire:activity-feed />
     </div>
+
+    <!-- Pipeline Status Modal Overlay -->
+    @if($showStatusModal && $selectedVideo)
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;"
+             wire:click.self="closeStatusModal">
+            
+            <div class="panel grid" style="width: 100%; max-width: 640px; background: var(--stage-2); border: 1.5px solid var(--line); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); overflow: hidden; padding: 24px; gap: 20px; color: var(--ink); animation: modalFadeIn 0.2s ease;">
+                <style>
+                    @keyframes modalFadeIn {
+                        from { opacity: 0; transform: scale(0.96); }
+                        to { opacity: 1; transform: scale(1); }
+                    }
+                </style>
+                <!-- Header -->
+                <div class="row between" style="border-bottom: 1.5px solid var(--line); padding-bottom: 14px; align-items: center; gap: 12px;">
+                    <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+                        <h3 style="margin: 0; font-family: var(--serif); font-style: italic; font-size: 24px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            <i class="ph ph-activity" style="vertical-align: middle; margin-right: 4px;"></i>Detail Pipeline #{{ $selectedVideo->id }}
+                        </h3>
+                        <span style="font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">
+                            Sumber: <strong style="font-family: var(--mono); font-size:11px;">{{ $selectedVideo->source_ref }}</strong>
+                        </span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline" wire:click="closeStatusModal" style="padding: 6px 12px; border-radius: 8px; border-color: var(--line); color: var(--ink); flex-shrink: 0;">
+                        Tutup
+                    </button>
+                </div>
+
+                <!-- Stages Timeline -->
+                <div class="grid" style="gap: 16px; max-height: 60vh; overflow-y: auto; padding-right: 4px;">
+                    @php
+                        $stageDetails = [
+                            'ingest' => [
+                                'title' => '1. Ingest (Unduh & Validasi)',
+                                'desc' => 'Mengunduh video dari URL (menggunakan yt-dlp dengan persentase real-time) atau memproses unggahan berkas video lokal, serta memverifikasi kesesuaian durasi dan bytes data.'
+                            ],
+                            'transcribe' => [
+                                'title' => '2. Transcribe (Deteksi Suara ke Teks)',
+                                'desc' => 'Mengekstrak audio dan menganalisis frekuensi suara menggunakan AI faster-whisper untuk menghasilkan teks transkripsi kata-demi-kata dengan stempel waktu.'
+                            ],
+                            'score' => [
+                                'title' => '3. Score (Rekomendasi Klip AI)',
+                                'desc' => 'Mengirim teks transkripsi ke model LLM lokal (Ollama) untuk mencari hook viral, menilai skor kelayakan (0-100%), dan menyusun ringkasan deskripsi klip.'
+                            ],
+                            'review' => [
+                                'title' => '4. Review & Konfigurasi',
+                                'desc' => 'Operator (Anda) melakukan validasi waktu potong, menulis teks Call-To-Action (CTA), memilih gaya tulisan subtitel, dan menyetujui klip untuk dirender.'
+                            ]
+                        ];
+                    @endphp
+
+                    @foreach($selectedVideo->stageProgress() as $progress)
+                        @php
+                            $detail = $stageDetails[$progress['key']] ?? ['title' => $progress['label'], 'desc' => ''];
+                            
+                            // Find the corresponding database record to display details
+                            $dbJob = $selectedVideo->pipelineJobs->firstWhere('stage', $progress['key']);
+                            $state = $progress['state']; // done|active|failed|pending
+                            
+                            $badgeCls = match($state) {
+                                'done' => 'badge-green',
+                                'active' => 'badge-blue',
+                                'failed' => 'badge-red',
+                                default => 'badge-gray',
+                            };
+                            
+                            $badgeLabel = match($state) {
+                                'done' => 'Selesai',
+                                'active' => 'Berjalan',
+                                'failed' => 'Gagal',
+                                default => 'Menunggu',
+                            };
+                        @endphp
+
+                        <div style="border: 1.5px solid var(--line); border-radius: 12px; padding: 14px; background: rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 8px;">
+                            <div class="row between" style="align-items: center; width: 100%; flex-direction: row !important; gap: 8px;">
+                                <strong style="font-size: 14px; font-weight: 700; color: var(--ink);">{{ $detail['title'] }}</strong>
+                                <span class="badge {{ $badgeCls }}" style="font-size: 10px; padding: 3px 10px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                                    @if($state === 'active')<i class="ph ph-spinner-gap spin-rotate" style="font-size: 10px;"></i>@endif
+                                    {{ $badgeLabel }}
+                                </span>
+                            </div>
+                            
+                            <p style="margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); font-weight: 500;">
+                                {{ $detail['desc'] }}
+                            </p>
+                            
+                            @if($dbJob)
+                                <div class="row" style="gap: 12px; font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 4px; flex-direction: row !important;">
+                                    <span>Percobaan: {{ $dbJob->attempts }}</span>
+                                    <span>•</span>
+                                    <span>Mulai: {{ $dbJob->created_at->setTimezone('Asia/Jakarta')->format('H:i:s') }}</span>
+                                    @if($dbJob->status !== 'running' && $dbJob->status !== 'queued')
+                                        <span>•</span>
+                                        <span>Selesai: {{ $dbJob->updated_at->setTimezone('Asia/Jakarta')->format('H:i:s') }}</span>
+                                    @endif
+                                </div>
+                                
+                                @if($dbJob->last_error)
+                                    <div style="margin-top: 8px; background: rgba(239, 68, 68, 0.05); border: 1.5px solid rgba(239, 68, 68, 0.2); border-radius: 8px; padding: 10px 14px; font-family: var(--mono); font-size: 11px; color: #f87171; overflow-x: auto; line-height: 1.5;">
+                                        <strong>Log Error:</strong> {{ $dbJob->last_error }}
+                                    </div>
+                                @endif
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
