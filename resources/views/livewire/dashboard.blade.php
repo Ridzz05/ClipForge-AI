@@ -41,10 +41,23 @@
                     <span style="color: var(--muted)">LLM Scorer ({{ ucfirst($statuses['llm_driver'] ?? 'ollama') }}):</span>
                     <strong style="color: {{ ($statuses['llm'] ?? false) ? 'var(--text-title)' : '#ef4444' }};">{{ ($statuses['llm'] ?? false) ? 'Online' : 'Offline' }}</strong>
                 </div>
+
+                <!-- Queue Worker -->
+                <div class="row" style="gap: 8px; font-size: 12px; font-family: var(--mono); letter-spacing: 0.05em;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: {{ ($statuses['queue'] ?? false) ? '#10b981' : '#ef4444' }}; box-shadow: 0 0 8px {{ ($statuses['queue'] ?? false) ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)' }};"></span>
+                    <span style="color: var(--muted)">Queue Worker (Antrean):</span>
+                    <strong style="color: {{ ($statuses['queue'] ?? false) ? 'var(--text-title)' : '#ef4444' }};">{{ ($statuses['queue'] ?? false) ? 'Running' : 'Stopped' }}</strong>
+                </div>
             </div>
 
             <!-- Right: Restart Actions -->
-            <div class="row" style="gap: 12px;">
+            <div class="row" style="gap: 12px; flex-wrap: wrap;">
+                @if(!($statuses['queue'] ?? false))
+                    <button type="button" wire:click="wakeUpQueue" class="btn btn-sm" style="padding: 6px 12px; background: #eab308; border: 1.5px solid #ca8a04; color: black; font-weight: 700; display: flex; align-items: center; gap: 6px; border-radius: 10px;" wire:loading.attr="disabled">
+                        <i class="ph ph-lightning" wire:loading.class="spin-rotate" wire:target="wakeUpQueue" style="font-size: 14px;"></i>
+                        <span>Bangunkan Antrean</span>
+                    </button>
+                @endif
                 <button type="button" wire:click="restartQueue" class="btn btn-sm btn-outline" style="border-color: var(--border-stage); background: rgba(255,255,255,0.03); color: var(--text-title); display: flex; align-items: center; gap: 6px;" wire:loading.attr="disabled">
                     <i class="ph ph-arrows-clockwise" wire:loading.class="spin-rotate" wire:target="restartQueue" style="font-size: 14px;"></i>
                     <span>Restart Antrean (.env)</span>

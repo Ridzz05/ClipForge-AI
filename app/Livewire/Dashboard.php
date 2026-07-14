@@ -55,7 +55,27 @@ class Dashboard extends Component
     public function restartQueue(): void
     {
         \Illuminate\Support\Facades\Artisan::call('queue:restart');
-        $this->flash = "Sinyal restart antrean dikirim ke Queue Worker. Berkas .env dan konfigurasi sistem akan dimuat ulang saat antrean berikutnya berjalan.";
+        $this->dispatch('toast', message: "Sinyal restart antrean dikirim ke Queue Worker.", type: 'success');
+    }
+
+    public function wakeUpQueue(): void
+    {
+        $statuses = $this->checkServiceStatuses();
+        if ($statuses['queue']) {
+            $this->dispatch('toast', message: "Antrean (Queue Worker) sudah berjalan aktif.", type: 'info');
+            return;
+        }
+
+        try {
+            if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
+                pclose(popen("start /B php artisan queue:work --tries=3", "r"));
+            } else {
+                exec("php artisan queue:work --tries=3 > /dev/null 2>&1 &");
+            }
+            $this->dispatch('toast', message: "Antrean (Queue Worker) berhasil dibangunkan di latar belakang!", type: 'success');
+        } catch (\Throwable $e) {
+            $this->dispatch('toast', message: "Gagal membangunkan antrean: " . $e->getMessage(), type: 'error');
+        }
     }
 
     public function save(VideoIngestService $ingest): void
@@ -206,11 +226,28 @@ class Dashboard extends Component
             }
         } catch (\Throwable $e) {}
 
+        $queueOnline = false;
+        try {
+            if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
+                @exec("wmic process where \"CommandLine like '%queue:work%' and name='php.exe'\" get ProcessId 2>&1", $winOutput);
+                foreach ($winOutput as $line) {
+                    if (is_numeric(trim($line))) {
+                        $queueOnline = true;
+                        break;
+                    }
+                }
+            } else {
+                @exec('pgrep -f "queue:work"', $unixOutput);
+                $queueOnline = count($unixOutput) > 0;
+            }
+        } catch (\Throwable $e) {}
+
         return [
             'whisper' => $whisperOnline,
             'face' => $faceOnline,
             'llm' => $llmOnline,
             'llm_driver' => $llmDriver,
+            'queue' => $queueOnline,
         ];
     }
 
