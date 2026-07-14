@@ -649,66 +649,67 @@
         // Apply theme variables immediately
         applyTheme(getTheme());
 
-        // Global Toast Notification System
-        window.addEventListener('toast', (event) => {
-            const container = document.getElementById('toast-container');
-            if (!container) return;
+        // Global Toast Notification System (register exactly once)
+        if (!window.toastListenerRegistered) {
+            window.addEventListener('toast', (event) => {
+                const container = document.getElementById('toast-container');
+                if (!container) return;
 
-            const toast = document.createElement('div');
-            toast.style.pointerEvents = 'auto';
-            toast.style.background = 'var(--stage-2)';
-            toast.style.border = '1.5px solid var(--line)';
-            toast.style.borderRadius = '14px';
-            toast.style.padding = '14px 20px';
-            toast.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
-            toast.style.color = 'var(--ink)';
-            toast.style.font = '500 13px/1.4 var(--sans)';
-            toast.style.display = 'flex';
-            toast.style.alignItems = 'center';
-            toast.style.gap = '12px';
-            toast.style.transform = 'translateX(120%)';
-            toast.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-            toast.style.maxWidth = '340px';
-            toast.style.animation = 'toastIn 0.3s forwards';
+                const toast = document.createElement('div');
+                toast.style.pointerEvents = 'auto';
+                toast.style.background = 'var(--stage-2)';
+                toast.style.border = '1.5px solid var(--line)';
+                toast.style.borderRadius = '14px';
+                toast.style.padding = '14px 20px';
+                toast.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
+                toast.style.color = 'var(--ink)';
+                toast.style.font = '500 13px/1.4 var(--sans)';
+                toast.style.display = 'flex';
+                toast.style.alignItems = 'center';
+                toast.style.gap = '12px';
+                toast.style.transform = 'translateX(120%)';
+                toast.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                toast.style.maxWidth = '340px';
+                toast.style.animation = 'toastIn 0.3s forwards';
 
-            const type = event.detail.type || 'info';
-            let icon = 'ph-info';
-            let color = 'var(--accent)';
-            if (type === 'success') {
-                icon = 'ph-check-circle';
-                color = '#10b981';
-            } else if (type === 'error') {
-                icon = 'ph-warning-octagon';
-                color = '#ef4444';
-            } else if (type === 'warning') {
-                icon = 'ph-warning';
-                color = '#f59e0b';
-            }
+                const type = event.detail.type || 'info';
+                let icon = 'ph-info';
+                let color = 'var(--accent)';
+                if (type === 'success') {
+                    icon = 'ph-check-circle';
+                    color = '#10b981';
+                } else if (type === 'error') {
+                    icon = 'ph-warning-octagon';
+                    color = '#ef4444';
+                } else if (type === 'warning') {
+                    icon = 'ph-warning';
+                    color = '#f59e0b';
+                }
 
-            toast.innerHTML = `
-                <i class="ph ${icon}" style="font-size: 20px; color: ${color}; flex-shrink: 0;"></i>
-                <div style="flex-grow: 1; font-weight: 500;">${event.detail.message}</div>
-            `;
+                toast.innerHTML = `
+                    <i class="ph ${icon}" style="font-size: 20px; color: ${color}; flex-shrink: 0;"></i>
+                    <div style="flex-grow: 1; font-weight: 500;">${event.detail.message}</div>
+                `;
 
-            container.appendChild(toast);
+                container.appendChild(toast);
 
-            // Animate exit
-            setTimeout(() => {
-                toast.style.animation = 'toastOut 0.3s forwards';
+                // Animate exit
                 setTimeout(() => {
-                    toast.remove();
-                }, 300);
-            }, 4000);
-        });
+                    toast.style.animation = 'toastOut 0.3s forwards';
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300);
+                }, 4000);
+            });
+            window.toastListenerRegistered = true;
+        }
 
-        // Trigger toast on page load if session message exists
-        document.addEventListener('livewire:navigated', () => {
-            @if(session()->has('flash') || session()->has('success'))
-                window.dispatchEvent(new CustomEvent('toast', {
-                    detail: { message: "{{ session('flash') ?? session('success') }}", type: 'success' }
-                }));
-            @endif
-        });
+        // Trigger toast immediately if session message exists
+        @if(session()->has('flash') || session()->has('success'))
+            window.dispatchEvent(new CustomEvent('toast', {
+                detail: { message: "{{ session('flash') ?? session('success') }}", type: 'success' }
+            }));
+        @endif
     </script>
 </body>
 </html>
