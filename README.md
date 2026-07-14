@@ -6,6 +6,24 @@ It functions similarly to services like OpusClip or Vizard, but runs entirely on
 
 ---
 
+## 📸 User Interface Showcase
+
+Below are screenshots of the premium obsidian-dark glassmorphism dashboard and the built-in video editor:
+
+| Main Dashboard & Pipeline Status | Live Video Editor Workspace |
+| :---: | :---: |
+| ![Dashboard](docs/images/screenshot_16.webp) | ![Editor Workspace](docs/images/screenshot_17.webp) |
+
+| Export & Final Deliverables | Activity Feed & Pipeline Timeline |
+| :---: | :---: |
+| ![Exports](docs/images/screenshot_18.webp) | ![Activity Timeline](docs/images/screenshot_19.webp) |
+
+| Video Ingest & Queue Manager |
+| :---: |
+| ![Ingest Panel](docs/images/screenshot_20.webp) |
+
+---
+
 ## 🛠️ Architecture & Pipeline Overview
 
 The system is built on **Laravel 13** as the orchestrator, backed by **SQLite (WAL)**, with heavy asynchronous processing running via a robust queued job system. 
