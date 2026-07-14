@@ -84,9 +84,14 @@
                                 </td>
                                 <td style="text-align: right;">
                                     @if($e->status==='rendered' && $e->output_path)
-                                        <a href="/api/exports/{{ $e->id }}/download" class="btn btn-sm btn-primary" style="padding: 5px 14px; border-color: var(--ink); background: var(--ink); color: var(--paper);">
-                                            <i class="ph ph-download-simple" style="font-size:13px; vertical-align: middle;"></i> Download MP4
-                                        </a>
+                                        <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center;">
+                                            <a href="/openreel/?video_url={{ urlencode('/api/exports/' . $e->id . '/download') }}" target="_blank" class="btn btn-sm btn-outline" style="padding: 5px 10px; border-color: #3b82f6; color: #3b82f6; display: inline-flex; align-items: center; gap: 4px; border-radius: 8px; text-decoration: none;" title="Edit hasil render ini di OpenReel">
+                                                <i class="ph ph-video" style="font-size:13px; vertical-align: middle;"></i> Edit di OpenReel
+                                            </a>
+                                            <a href="/api/exports/{{ $e->id }}/download" class="btn btn-sm btn-primary" style="padding: 5px 14px; border-color: var(--ink); background: var(--ink); color: var(--paper);">
+                                                <i class="ph ph-download-simple" style="font-size:13px; vertical-align: middle;"></i> Download MP4
+                                            </a>
+                                        </div>
                                     @elseif($e->status==='failed')
                                         <span class="muted">—</span>
                                     @else

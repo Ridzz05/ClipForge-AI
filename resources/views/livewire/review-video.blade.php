@@ -51,6 +51,11 @@
                     <p class="muted" style="font-size: 12px; line-height: 1.5; margin: 12px 0 0; color: var(--muted); font-weight: 500;">
                         Gunakan pemutar di atas untuk meninjau bagian stempel waktu di kanan. Untuk mengedit stempel waktu klip secara akurat, klik tombol **Edit** pada kartu klip yang bersangkutan.
                     </p>
+                    <div style="margin-top: 14px;">
+                        <a href="/openreel/?video_url={{ urlencode('/videos/' . $video->id . '/source') }}" target="_blank" class="btn btn-sm btn-outline" style="border-color: #3b82f6; color: #3b82f6; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 14px; border-radius: 10px; font-weight: 700; text-decoration: none;">
+                            <i class="ph ph-video" style="font-size: 16px;"></i> Edit Video di OpenReel
+                        </a>
+                    </div>
                 </div>
             @else
                 <!-- Edit Mode: Sticky Clip Editor Workspace -->
