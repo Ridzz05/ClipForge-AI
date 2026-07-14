@@ -88,7 +88,16 @@ class ScoreHighlightsJob implements ShouldQueue
                 'text' => $s->text,
             ])->values()->all();
 
-            $raw = $ollama->scoreBatch($payload);
+            try {
+                $raw = $ollama->scoreBatch($payload);
+            } catch (\Exception $e) {
+                Log::warning('Batch scoring failed, skipping chunk.', [
+                    'video_id' => $video->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                continue;
+            }
 
             try {
                 $validated = $schema->validate($raw, $durationMs);
@@ -105,6 +114,9 @@ class ScoreHighlightsJob implements ShouldQueue
             foreach ($validated as $v) {
                 $candidates[] = $v;
             }
+
+            // Sleep for 3 seconds between batches to avoid WAF/gateway rate limit triggers
+            sleep(3);
         }
 
         $this->persist($video, $candidates);
