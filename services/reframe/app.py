@@ -63,31 +63,46 @@ def _sample_centers(path: str, start_ms: int, end_ms: int) -> list[dict]:
         return []
 
     fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+    frame_delay = 1000.0 / fps
     step_ms = max(1, int(1000 / SAMPLE_HZ))
 
+    # Initial seek to start time
+    cap.set(cv2.CAP_PROP_POS_MSEC, start_ms)
+
     centers: list[dict] = []
+    next_target_ms = start_ms
+
     with mp_face.FaceDetection(model_selection=1, min_detection_confidence=0.5) as fd:
-        t = start_ms
-        while t <= end_ms:
-            cap.set(cv2.CAP_PROP_POS_MSEC, t)
+        while True:
             ok, frame = cap.read()
             if not ok:
                 break
 
-            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            result = fd.process(rgb)
+            current_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
+            if current_ms > end_ms:
+                break
 
-            if result.detections:
-                # Largest detection = primary speaker.
-                best = max(
-                    result.detections,
-                    key=lambda d: d.location_data.relative_bounding_box.width,
-                )
-                box = best.location_data.relative_bounding_box
-                cx = box.xmin + box.width / 2.0
-                centers.append({"t_ms": t, "cx": max(0.0, min(1.0, float(cx)))})
+            # Process frame if we have reached or passed the target timestamp
+            if current_ms >= next_target_ms:
+                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                result = fd.process(rgb)
 
-            t += step_ms
+                if result.detections:
+                    best = max(
+                        result.detections,
+                        key=lambda d: d.location_data.relative_bounding_box.width,
+                    )
+                    box = best.location_data.relative_bounding_box
+                    cx = box.xmin + box.width / 2.0
+                    centers.append({"t_ms": int(current_ms), "cx": max(0.0, min(1.0, float(cx)))})
+
+                next_target_ms += step_ms
+
+                # Fast forward / skip decoding using grab() until we are close to next target
+                while current_ms < next_target_ms - frame_delay:
+                    if not cap.grab():
+                        break
+                    current_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
 
     cap.release()
     return centers
