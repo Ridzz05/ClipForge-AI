@@ -54,7 +54,6 @@ class OllamaService
                     ['role' => 'user', 'content' => $prompt]
                 ],
                 'response_format' => ['type' => 'json_object'],
-                'temperature' => 0.2,
             ]);
 
             if (! $response->successful()) {
@@ -155,7 +154,10 @@ class OllamaService
         $client = $this->http
             ->baseUrl($this->endpoint)
             ->timeout($this->timeout)
-            ->acceptJson();
+            ->acceptJson()
+            ->withHeaders([
+                'User-Agent' => 'claude-cli/0.2.20 (external, cli)',
+            ]);
 
         // Disable SSL verification in local environment to prevent cURL error 60 (common on Windows)
         if (config('app.env') === 'local') {
