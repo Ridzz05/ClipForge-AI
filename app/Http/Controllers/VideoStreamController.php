@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Video;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * Streams a video's stored source file for the in-browser review player.
@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class VideoStreamController extends Controller
 {
-    public function source(Video $video): StreamedResponse|JsonResponse
+    public function source(Video $video): BinaryFileResponse|JsonResponse
     {
         $disk = Storage::disk((string) config('autoclip.ingest.disk'));
 
@@ -21,10 +21,9 @@ class VideoStreamController extends Controller
             return response()->json(['message' => 'Source file missing.'], 404);
         }
 
-        // Inline so the browser <video> element can play it directly.
-        return $disk->response($video->storage_path, null, [
+        // Return a BinaryFileResponse to fully support HTTP range requests (seeking/206 Partial Content)
+        return response()->file($disk->path($video->storage_path), [
             'Content-Type' => 'video/mp4',
-            'Accept-Ranges' => 'bytes',
         ]);
     }
 }
