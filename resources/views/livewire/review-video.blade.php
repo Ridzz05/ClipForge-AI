@@ -129,37 +129,72 @@
         <!-- Right Side: Configuration & Candidates -->
         <div class="grid" style="gap: 20px;">
             
-            <!-- CTA Configurator -->
-            <div class="panel grid" style="gap: 14px; background: var(--tile-6); border-color: rgba(0,0,0,0.05); color: var(--ink);">
+            <!-- CTA & Caption Configurator -->
+            <div class="panel grid" style="gap: 20px; background: var(--tile-6); border-color: rgba(0,0,0,0.05); color: var(--ink);">
                 <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <label style="font-family: var(--serif); font-style: italic; font-weight: 700; font-size: 20px; color: var(--ink);">Call-to-Action (CTA) Overlay</label>
-                    <span style="font-size: 12px; color: var(--muted); font-weight: 500;">Teks CTA ini akan di-burn secara permanen di bagian atas klip vertikal yang Anda setujui.</span>
+                    <label style="font-family: var(--serif); font-style: italic; font-weight: 700; font-size: 22px; color: var(--ink);">Pengaturan Ekspor &amp; Subtitle</label>
+                    <span style="font-size: 12px; color: var(--muted); font-weight: 500;">Konfigurasi teks CTA dan posisi teks subtitle otomatis sebelum melakukan approval.</span>
                 </div>
                 
-                <input type="text" wire:model="ctaText" maxlength="120"
-                       placeholder="Masukkan CTA khusus (cth. BELI SEKARANG DI STEAM)"
-                       style="width: 100%; padding: 12px 16px; border-radius: 12px; background: #ffffff;
-                              border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13.5px;">
-                
+                <!-- CTA text section -->
                 <div class="grid" style="gap: 8px;">
-                    <span style="font-size: 11px; font-family: var(--mono); font-weight: 700; text-transform: uppercase; color: var(--ink);">Pilihan Preset Cepat</span>
-                    <div class="row" style="gap: 8px; flex-wrap: wrap;">
-                        @foreach($this->ctaPresets() as $preset)
-                            <button type="button" class="btn btn-sm btn-outline"
-                                    wire:click="$set('ctaText', @js($preset))"
-                                    style="font-size: 11px; padding: 6px 12px; background: rgba(255,255,255,0.3); font-weight: 600; border-radius: 8px; border-color: rgba(0,0,0,0.12); color: var(--ink);">
-                                {{ $preset }}
-                            </button>
-                        @endforeach
+                    <label style="font-weight: 700; font-size: 13px; color: var(--ink);">Teks Call-to-Action (CTA)</label>
+                    <input type="text" wire:model="ctaText" maxlength="120"
+                           placeholder="Masukkan CTA khusus (cth. BELI SEKARANG DI STEAM)"
+                           style="width: 100%; padding: 12px 16px; border-radius: 12px; background: #ffffff;
+                                  border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13.5px;">
+                    
+                    <div class="grid" style="gap: 6px;">
+                        <span style="font-size: 11px; font-family: var(--mono); font-weight: 700; text-transform: uppercase; color: var(--ink);">Pilihan Preset Cepat</span>
+                        <div class="row" style="gap: 6px; flex-wrap: wrap;">
+                            @foreach($this->ctaPresets() as $preset)
+                                <button type="button" class="btn btn-sm btn-outline"
+                                        wire:click="$set('ctaText', @js($preset))"
+                                        style="font-size: 10.5px; padding: 6px 12px; background: rgba(255,255,255,0.3); font-weight: 600; border-radius: 8px; border-color: rgba(0,0,0,0.12); color: var(--ink);">
+                                    {{ $preset }}
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                    
+                    @if(trim($ctaText) === '')
+                        <div style="font-size: 11.5px; color: #b45309; display: flex; gap: 6px; align-items: center; font-weight: 700;">
+                            <i class="ph ph-warning" style="font-size: 14px; vertical-align: middle;"></i>
+                            Teks CTA kosong. Direkomendasikan mengisi CTA.
+                        </div>
+                    @endif
+                </div>
+
+                <hr style="border: none; border-top: 1.5px dashed rgba(26,23,20,0.1); margin: 4px 0;">
+
+                <!-- Subtitle Style section -->
+                <div class="grid" style="gap: 12px;">
+                    <div>
+                        <label style="font-weight: 700; font-size: 13px; color: var(--ink); display: block; margin-bottom: 6px;">Gaya Auto-Caption</label>
+                        <select wire:model="captionStyle"
+                                style="width: 100%; padding: 12px 16px; border-radius: 12px; background: #ffffff;
+                                       border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13.5px;
+                                       outline: none; transition: border-color 0.2s ease; cursor: pointer;">
+                            <option value="default">Default (Putih Arial)</option>
+                            <option value="karaoke_yellow">Karaoke Yellow (Kuning Arial)</option>
+                            <option value="tiktok_green">TikTok Green (Hijau Arial Black)</option>
+                            <option value="short_bold">Short Bold (Putih Impact)</option>
+                        </select>
+                    </div>
+
+                    <!-- Subtitle Position slider -->
+                    <div>
+                        <div class="row between" style="margin-bottom: 6px;">
+                            <label style="font-weight: 700; font-size: 13px; color: var(--ink);">Posisi Vertikal Caption</label>
+                            <span style="font-weight: 800; color: var(--ink); font-size: 13px; font-family: var(--mono);">{{ $captionMarginV }} px dari bawah</span>
+                        </div>
+                        <input type="range" min="40" max="1200" step="10" wire:model.live="captionMarginV"
+                               style="width:100%; accent-color: var(--ink); cursor: pointer;">
+                        <span style="font-size: 11px; color: var(--muted); font-weight: 500; display: block; margin-top: 4px;">
+                            Geser slider ke kanan untuk memindahkan posisi teks ke arah tengah/atas layar (1920px tinggi total).
+                        </span>
                     </div>
                 </div>
-                
-                @if(trim($ctaText) === '')
-                    <div style="font-size: 11.5px; color: #b45309; display: flex; gap: 6px; align-items: center; font-weight: 700;">
-                        <i class="ph ph-warning" style="font-size: 14px; vertical-align: middle;"></i>
-                        Teks CTA kosong. Sangat direkomendasikan menyertakan CTA untuk materi kampanye.
-                    </div>
-                @endif
             </div>
 
             <!-- Candidate Clip Cards -->

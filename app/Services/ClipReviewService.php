@@ -22,8 +22,12 @@ class ClipReviewService
      *
      * @throws RuntimeException if the candidate was already exported
      */
-    public function approve(ClipCandidate $candidate, ?string $ctaText = null): Export
-    {
+    public function approve(
+        ClipCandidate $candidate,
+        ?string $ctaText = null,
+        ?string $captionStyle = null,
+        ?int $captionMarginV = null
+    ): Export {
         if ($candidate->status === ClipCandidate::STATUS_EXPORTED) {
             throw new RuntimeException('Candidate already exported.');
         }
@@ -38,12 +42,21 @@ class ClipReviewService
             ? trim($ctaText)
             : (string) config('autoclip.render.cta_text', '');
 
+        $style = $captionStyle !== null && trim($captionStyle) !== ''
+            ? trim($captionStyle)
+            : (string) config('autoclip.render.caption_style', 'default');
+
+        $marginV = $captionMarginV !== null
+            ? (int) $captionMarginV
+            : null;
+
         $export = Export::create([
             'clip_candidate_id' => $candidate->id,
             'aspect_ratio' => '9:16',
-            'caption_style' => (string) config('autoclip.render.caption_style'),
+            'caption_style' => $style,
             'cta_text' => $cta,
             'status' => Export::STATUS_QUEUED,
+            'caption_margin_v' => $marginV,
         ]);
 
         ReframeJob::dispatch($export->id);

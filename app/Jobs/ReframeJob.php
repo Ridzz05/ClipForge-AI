@@ -91,6 +91,7 @@ class ReframeJob implements ShouldQueue
             $renderH,
             $ctaText,
             $clipDurationMs,
+            $export->caption_margin_v
         ));
         $assPath = $exportDisk->path($assRelative);
 

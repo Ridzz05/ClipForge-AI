@@ -38,6 +38,24 @@ class CaptionRenderer
             'Alignment' => 2,
             'MarginV' => 80,
         ],
+        'tiktok_green' => [
+            'Fontname' => 'Arial Black',
+            'Fontsize' => 20,
+            'PrimaryColour' => '&H0000FF00', // lime green
+            'OutlineColour' => '&H00000000',
+            'Bold' => 1,
+            'Alignment' => 2,
+            'MarginV' => 120,
+        ],
+        'short_bold' => [
+            'Fontname' => 'Impact',
+            'Fontsize' => 24,
+            'PrimaryColour' => '&H00FFFFFF', // white
+            'OutlineColour' => '&H00000000',
+            'Bold' => 1,
+            'Alignment' => 2,
+            'MarginV' => 150,
+        ],
     ];
 
     /**
@@ -49,6 +67,7 @@ class CaptionRenderer
      * @param  int  $playResY  render height (px)
      * @param  string  $ctaText  optional fixed CTA burned at the top for the whole clip
      * @param  int  $clipDurationMs  clip length, used for the CTA's end time
+     * @param  int|null  $customMarginV  optional custom vertical margin
      */
     public function renderAss(
         array $words,
@@ -57,8 +76,12 @@ class CaptionRenderer
         int $playResY,
         string $ctaText = '',
         int $clipDurationMs = 0,
+        ?int $customMarginV = null,
     ): string {
         $tpl = $this->templates[$style] ?? $this->templates['default'];
+        if ($customMarginV !== null) {
+            $tpl['MarginV'] = $customMarginV;
+        }
 
         $header = $this->header($tpl, $playResX, $playResY);
         $events = $this->events($words);

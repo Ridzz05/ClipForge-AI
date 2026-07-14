@@ -27,6 +27,10 @@ class ReviewVideo extends Component
     public int $editHookScore = 80;
     public string $editRationale = '';
 
+    public string $captionStyle = 'default';
+
+    public int $captionMarginV = 120;
+
     /** Preset CTA options from the campaign brief; operator can also type one. */
     public function ctaPresets(): array
     {
@@ -39,12 +43,12 @@ class ReviewVideo extends Component
         ];
     }
 
-    /** Route-model-bound in the route definition. */
     public function mount(Video $video): void
     {
         $this->video = $video;
         // Seed with the configured default CTA so the field isn't empty.
         $this->ctaText = (string) config('autoclip.render.cta_text', '');
+        $this->captionStyle = (string) config('autoclip.render.caption_style', 'default');
     }
 
     public function selectCandidate(int $id): void
@@ -136,7 +140,7 @@ class ReviewVideo extends Component
         }
 
         try {
-            $export = $review->approve($candidate, $this->ctaText);
+            $export = $review->approve($candidate, $this->ctaText, $this->captionStyle, $this->captionMarginV);
         } catch (\RuntimeException $e) {
             $this->error = $e->getMessage();
 

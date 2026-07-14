@@ -25,11 +25,13 @@ class Export extends Model
         'status',
         'last_error',
         'rendered_at',
+        'caption_margin_v',
     ];
 
     protected $casts = [
         'watermark_applied' => 'boolean',
         'rendered_at' => 'datetime',
+        'caption_margin_v' => 'integer',
     ];
 
     public function clipCandidate(): BelongsTo
