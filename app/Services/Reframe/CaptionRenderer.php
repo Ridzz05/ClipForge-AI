@@ -70,6 +70,47 @@ class CaptionRenderer
             'Shadow' => 2,
             'Mode' => 'pop', // zoom bounce pop animation
         ],
+        'hormozi_neon' => [
+            'Fontname' => 'Segoe UI Black', // Very heavy sans-serif standard on Windows
+            'Fontsize' => 76,
+            'PrimaryColour' => '&H00FFFFFF', // White base
+            'OutlineColour' => '&H00000000', // Black outline
+            'Bold' => 1,
+            'Alignment' => 2,
+            'MarginV' => 300,
+            'Outline' => 5,
+            'Shadow' => 2,
+            'Mode' => 'pop',
+            'MultiColor' => true,
+            'Uppercase' => true,
+        ],
+        'mrbeast_comic' => [
+            'Fontname' => 'Impact',
+            'Fontsize' => 84,
+            'PrimaryColour' => '&H0000FFFF', // Neon yellow base
+            'OutlineColour' => '&H00000000', // Heavy black outline
+            'Bold' => 1,
+            'Alignment' => 2,
+            'MarginV' => 340,
+            'Outline' => 7,
+            'Shadow' => 1,
+            'Mode' => 'pop',
+            'Uppercase' => true,
+        ],
+        'minimal_outfit' => [
+            'Fontname' => 'Trebuchet MS', // Smooth rounded modern font
+            'Fontsize' => 64,
+            'PrimaryColour' => '&H00FFFFFF',
+            'OutlineColour' => '&H00000000',
+            'Bold' => 1,
+            'Alignment' => 2,
+            'MarginV' => 240,
+            'Outline' => 3,
+            'Shadow' => 0,
+            'Mode' => 'karaoke',
+            'HighlightColour' => '&H0000FFFF',
+            'Uppercase' => false,
+        ],
     ];
 
     /**
@@ -205,19 +246,35 @@ class CaptionRenderer
     private function events(array $words, array $tpl): string
     {
         $mode = $tpl['Mode'] ?? 'pop';
+        $isUppercase = (bool)($tpl['Uppercase'] ?? false);
         $lines = [];
 
         if ($mode === 'pop') {
+            $isMultiColor = (bool)($tpl['MultiColor'] ?? false);
+            // Colors: White, White, Neon Green, White, Neon Yellow
+            $multiColors = ['&H00FFFFFF', '&H00FFFFFF', '&H0000FF00', '&H00FFFFFF', '&H0000FFFF'];
+
             // One word at a time with zoom bounce animation
-            foreach ($words as $w) {
+            foreach ($words as $idx => $w) {
                 $start = $this->toAssTime((int) $w['start_ms']);
                 $end = $this->toAssTime((int) $w['end_ms']);
                 $text = $this->sanitize((string) $w['word']);
                 if ($text === '') {
                     continue;
                 }
+
+                if ($isUppercase) {
+                    $text = mb_strtoupper($text);
+                }
+
+                $colorOverride = '';
+                if ($isMultiColor) {
+                    $color = $multiColors[$idx % count($multiColors)];
+                    $colorOverride = "\\c{$color}";
+                }
+
                 // Zoom bounce: fscx130\fscy130 at start, transition to 100% over 100ms
-                $animatedText = "{\\fscx130\\fscy130\\t(0,100,\\fscx100\\fscy100)}" . $text;
+                $animatedText = "{\\fscx130\\fscy130\\t(0,100,\\fscx100\\fscy100){$colorOverride}}" . $text;
                 $lines[] = "Dialogue: 0,{$start},{$end},Default,,0,0,0,,{$animatedText}";
             }
         } else {
@@ -227,13 +284,18 @@ class CaptionRenderer
                 foreach ($chunk as $index => $activeWord) {
                     $wordStart = (int) $activeWord['start_ms'];
                     $wordEnd = (int) $activeWord['end_ms'];
-                    
+
                     $lineWords = [];
                     foreach ($chunk as $i => $w) {
                         $cleanWord = $this->sanitize($w['word']);
                         if ($cleanWord === '') {
                             continue;
                         }
+
+                        if ($isUppercase) {
+                            $cleanWord = mb_strtoupper($cleanWord);
+                        }
+
                         if ($i === $index) {
                             $highlight = $tpl['HighlightColour'] ?? '&H0000FFFF';
                             $primary = $tpl['PrimaryColour'] ?? '&H00FFFFFF';
@@ -243,12 +305,12 @@ class CaptionRenderer
                             $lineWords[] = $cleanWord;
                         }
                     }
-                    
+
                     $text = implode(' ', $lineWords);
                     if (trim($text) === '') {
                         continue;
                     }
-                    
+
                     $startStr = $this->toAssTime($wordStart);
                     $endStr = $this->toAssTime($wordEnd);
                     $lines[] = "Dialogue: 0,{$startStr},{$endStr},Default,,0,0,0,,{$text}";

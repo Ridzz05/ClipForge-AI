@@ -186,6 +186,9 @@
                             <option value="karaoke_yellow">Karaoke Yellow (Kuning Arial)</option>
                             <option value="tiktok_green">TikTok Green (Hijau Arial Black)</option>
                             <option value="short_bold">Short Bold (Putih Impact)</option>
+                            <option value="hormozi_neon">Alex Hormozi (Neon Segoe UI Black)</option>
+                            <option value="mrbeast_comic">MrBeast (Kuning Impact + Bold Outline)</option>
+                            <option value="minimal_outfit">Ali Abdaal (Minimalis Trebuchet MS)</option>
                         </select>
                     </div>
 
