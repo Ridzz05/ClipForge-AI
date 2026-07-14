@@ -29,7 +29,7 @@ class ReviewVideo extends Component
 
     public string $captionStyle = 'default';
 
-    public int $captionMarginV = 120;
+    public int $captionMarginV = 320;
 
     /** Preset CTA options from the campaign brief; operator can also type one. */
     public function ctaPresets(): array

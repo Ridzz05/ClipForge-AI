@@ -22,39 +22,47 @@ class CaptionRenderer
     private array $templates = [
         'default' => [
             'Fontname' => 'Arial',
-            'Fontsize' => 16,
+            'Fontsize' => 64,
             'PrimaryColour' => '&H00FFFFFF', // white
             'OutlineColour' => '&H00000000', // black outline
             'Bold' => 1,
             'Alignment' => 2,  // bottom-center
-            'MarginV' => 60,
+            'MarginV' => 240,
+            'Outline' => 4,
+            'Shadow' => 1,
         ],
         'karaoke_yellow' => [
             'Fontname' => 'Arial',
-            'Fontsize' => 18,
+            'Fontsize' => 72,
             'PrimaryColour' => '&H0000FFFF', // yellow
             'OutlineColour' => '&H00000000',
             'Bold' => 1,
             'Alignment' => 2,
-            'MarginV' => 80,
+            'MarginV' => 280,
+            'Outline' => 5,
+            'Shadow' => 1,
         ],
         'tiktok_green' => [
             'Fontname' => 'Arial Black',
-            'Fontsize' => 20,
+            'Fontsize' => 76,
             'PrimaryColour' => '&H0000FF00', // lime green
             'OutlineColour' => '&H00000000',
             'Bold' => 1,
             'Alignment' => 2,
-            'MarginV' => 120,
+            'MarginV' => 320,
+            'Outline' => 6,
+            'Shadow' => 2,
         ],
         'short_bold' => [
             'Fontname' => 'Impact',
-            'Fontsize' => 24,
+            'Fontsize' => 84,
             'PrimaryColour' => '&H00FFFFFF', // white
             'OutlineColour' => '&H00000000',
             'Bold' => 1,
             'Alignment' => 2,
-            'MarginV' => 150,
+            'MarginV' => 360,
+            'Outline' => 6,
+            'Shadow' => 2,
         ],
     ];
 
@@ -104,6 +112,9 @@ class CaptionRenderer
      */
     private function header(array $tpl, int $playResX, int $playResY): string
     {
+        $outline = $tpl['Outline'] ?? 4;
+        $shadow = $tpl['Shadow'] ?? 1;
+
         $style = implode(',', [
             'Default',
             $tpl['Fontname'],
@@ -117,7 +128,8 @@ class CaptionRenderer
             100, 100,            // ScaleX, ScaleY
             0, 0,                // Spacing, Angle
             1,                   // BorderStyle (outline+shadow)
-            2, 1,                // Outline, Shadow
+            $outline,
+            $shadow,             // Outline, Shadow
             $tpl['Alignment'],
             10, 10,              // MarginL, MarginR
             $tpl['MarginV'],
