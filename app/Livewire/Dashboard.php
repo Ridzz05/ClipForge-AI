@@ -54,12 +54,14 @@ class Dashboard extends Component
 
     public function restartQueue(): void
     {
+        \Illuminate\Support\Facades\Cache::forget('service_statuses');
         \Illuminate\Support\Facades\Artisan::call('queue:restart');
         $this->dispatch('toast', message: "Sinyal restart antrean dikirim ke Queue Worker.", type: 'success');
     }
 
     public function wakeUpQueue(): void
     {
+        \Illuminate\Support\Facades\Cache::forget('service_statuses');
         $statuses = $this->checkServiceStatuses();
         if ($statuses['queue']) {
             $this->dispatch('toast', message: "Antrean (Queue Worker) sudah berjalan aktif.", type: 'info');
@@ -208,53 +210,55 @@ class Dashboard extends Component
 
     private function checkServiceStatuses(): array
     {
-        $whisperUrl = (string) config('autoclip.whisper.endpoint', 'http://127.0.0.1:9000');
-        $whisperOnline = false;
-        try {
-            $whisperOnline = \Illuminate\Support\Facades\Http::timeout(1)->withoutVerifying()->get($whisperUrl . '/health')->successful();
-        } catch (\Throwable $e) {}
+        return \Illuminate\Support\Facades\Cache::remember('service_statuses', 5, function () {
+            $whisperUrl = (string) config('autoclip.whisper.endpoint', 'http://127.0.0.1:9000');
+            $whisperOnline = false;
+            try {
+                $whisperOnline = \Illuminate\Support\Facades\Http::timeout(1)->withoutVerifying()->get($whisperUrl . '/health')->successful();
+            } catch (\Throwable $e) {}
 
-        $faceUrl = (string) config('autoclip.face.endpoint', 'http://127.0.0.1:9100');
-        $faceOnline = false;
-        try {
-            $faceOnline = \Illuminate\Support\Facades\Http::timeout(1)->withoutVerifying()->get($faceUrl . '/health')->successful();
-        } catch (\Throwable $e) {}
+            $faceUrl = (string) config('autoclip.face.endpoint', 'http://127.0.0.1:9100');
+            $faceOnline = false;
+            try {
+                $faceOnline = \Illuminate\Support\Facades\Http::timeout(1)->withoutVerifying()->get($faceUrl . '/health')->successful();
+            } catch (\Throwable $e) {}
 
-        $llmDriver = (string) config('autoclip.llm.driver', 'ollama');
-        $llmEndpoint = (string) config('autoclip.llm.endpoint', 'http://127.0.0.1:11434');
-        $llmOnline = false;
-        try {
-            if ($llmDriver === 'ollama') {
-                $llmOnline = \Illuminate\Support\Facades\Http::timeout(1)->withoutVerifying()->get($llmEndpoint)->successful();
-            } else {
-                // Cloud/router check
-                $llmOnline = \Illuminate\Support\Facades\Http::timeout(2)->withoutVerifying()->get($llmEndpoint)->status() !== 0;
-            }
-        } catch (\Throwable $e) {}
-
-        $queueOnline = false;
-        try {
-            if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
-                @exec("wmic process where \"CommandLine like '%queue:work%' and name='php.exe'\" get ProcessId 2>&1", $winOutput);
-                foreach ($winOutput as $line) {
-                    if (is_numeric(trim($line))) {
-                        $queueOnline = true;
-                        break;
-                    }
+            $llmDriver = (string) config('autoclip.llm.driver', 'ollama');
+            $llmEndpoint = (string) config('autoclip.llm.endpoint', 'http://127.0.0.1:11434');
+            $llmOnline = false;
+            try {
+                if ($llmDriver === 'ollama') {
+                    $llmOnline = \Illuminate\Support\Facades\Http::timeout(1)->withoutVerifying()->get($llmEndpoint)->successful();
+                } else {
+                    // Cloud/router check
+                    $llmOnline = \Illuminate\Support\Facades\Http::timeout(2)->withoutVerifying()->get($llmEndpoint)->status() !== 0;
                 }
-            } else {
-                @exec('pgrep -f "queue:work"', $unixOutput);
-                $queueOnline = count($unixOutput) > 0;
-            }
-        } catch (\Throwable $e) {}
+            } catch (\Throwable $e) {}
 
-        return [
-            'whisper' => $whisperOnline,
-            'face' => $faceOnline,
-            'llm' => $llmOnline,
-            'llm_driver' => $llmDriver,
-            'queue' => $queueOnline,
-        ];
+            $queueOnline = false;
+            try {
+                if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
+                    @exec("wmic process where \"CommandLine like '%queue:work%' and name='php.exe'\" get ProcessId 2>&1", $winOutput);
+                    foreach ($winOutput as $line) {
+                        if (is_numeric(trim($line))) {
+                            $queueOnline = true;
+                            break;
+                        }
+                    }
+                } else {
+                    @exec('pgrep -f "queue:work"', $unixOutput);
+                    $queueOnline = count($unixOutput) > 0;
+                }
+            } catch (\Throwable $e) {}
+
+            return [
+                'whisper' => $whisperOnline,
+                'face' => $faceOnline,
+                'llm' => $llmOnline,
+                'llm_driver' => $llmDriver,
+                'queue' => $queueOnline,
+            ];
+        });
     }
 
     public function render()
