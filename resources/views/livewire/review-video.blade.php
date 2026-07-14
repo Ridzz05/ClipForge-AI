@@ -175,6 +175,19 @@
                 <hr style="border: none; border-top: 1.5px dashed rgba(26,23,20,0.1); margin: 4px 0;">
 
                 <!-- Subtitle Style section -->
+                <div class="grid" style="gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label style="font-weight: 700; font-size: 13px; color: var(--ink); display: block; margin-bottom: 6px;">Layout Video</label>
+                        <select wire:model="layout"
+                                style="width: 100%; padding: 12px 16px; border-radius: 12px; background: var(--paper);
+                                       border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13.5px;
+                                       outline: none; transition: border-color 0.2s ease; cursor: pointer;">
+                            <option value="single">Single Speaker Crop (9:16 Face Tracking)</option>
+                            <option value="split_gaming">Gaming Split-Screen (Facecam Atas + Gameplay Bawah)</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="grid" style="gap: 12px;">
                     <div>
                         <label style="font-weight: 700; font-size: 13px; color: var(--ink); display: block; margin-bottom: 6px;">Gaya Auto-Caption</label>

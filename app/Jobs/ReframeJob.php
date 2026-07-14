@@ -110,6 +110,7 @@ class ReframeJob implements ShouldQueue
             panX: $panX,
             renderW: $renderW,
             renderH: $renderH,
+            layout: $export->layout ?? 'single',
         );
         $ffmpeg->run($args);
 

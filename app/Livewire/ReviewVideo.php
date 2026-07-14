@@ -31,6 +31,8 @@ class ReviewVideo extends Component
 
     public int $captionMarginV = 320;
 
+    public string $layout = 'single';
+
     /** Preset CTA options from the campaign brief; operator can also type one. */
     public function ctaPresets(): array
     {
@@ -141,7 +143,13 @@ class ReviewVideo extends Component
         }
 
         try {
-            $export = $review->approve($candidate, $this->ctaText, $this->captionStyle, $this->captionMarginV);
+            $export = $review->approve(
+                $candidate,
+                $this->ctaText,
+                $this->captionStyle,
+                $this->captionMarginV,
+                $this->layout
+            );
         } catch (\RuntimeException $e) {
             $this->error = $e->getMessage();
             $this->dispatch('toast', message: $e->getMessage(), type: 'error');
