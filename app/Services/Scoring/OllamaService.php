@@ -134,7 +134,8 @@ class OllamaService
         1. **Hook & Retention:** The clip must start with a strong hook (a question, a bold statement, or high-emotion statement) in the first 3 seconds to capture attention.
         2. **Insight & Value:** Focus on segments where the speaker delivers a complete educational insight, a valuable tip, a key lesson, a funny story, or a dramatic climax. Avoid filler talk, reading chat usernames, or empty transitions.
         3. **Story Completeness:** The clip must represent a self-contained thought. Never cut in the middle of a sentence or leave the viewer hanging without context. The end must feel like a natural pause or resolution.
-        4. **Strict Duration:** Each clip duration must be between {$minSec} and {$maxSec} seconds. Do not propose clips shorter than {$minSec} seconds.
+        4. **Strict Duration:** Each clip duration must be between {$minSec} and {$maxSec} seconds. Do not propose clips shorter than {$minSec} seconds. Prefer tight, punchy clips of 15 to 40 seconds for high-intensity moments.
+        5. **High-Emotion & Energy Peaks (Gaming/Streaming):** For gaming streamers or high-energy creators (like IShowSpeed), actively prioritize segments that capture high-emotion peaks (screaming, shouting, intense laughter, jumpscares, rage-quitting, or dramatic celebrations). Look for indicators in the transcript such as ALL CAPS text, multiple exclamation marks (e.g., "!!!"), emotional outbursts ("OH MY GOD", "NOOO", "WHAT?!"), or sudden shifts in volume/tone. Give these highly engaging, high-energy clips a higher hook_score.
 
         Input segments are in Indonesian. Analyze their meaning deeply.
         For each high-value highlight identified, respond with:
