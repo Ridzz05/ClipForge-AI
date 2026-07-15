@@ -15,10 +15,12 @@ class Video extends Model
         'last_error',
         'duration_seconds',
         'storage_path',
+        'auto_clip',
     ];
 
     protected $casts = [
         'duration_seconds' => 'integer',
+        'auto_clip' => 'boolean',
     ];
 
     public function pipelineJobs(): HasMany

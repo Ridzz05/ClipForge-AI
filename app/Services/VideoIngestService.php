@@ -28,7 +28,7 @@ class VideoIngestService
      *
      * @throws IngestValidationException on any validation failure
      */
-    public function ingestUpload(UploadedFile $file): Video
+    public function ingestUpload(UploadedFile $file, bool $autoClip = false): Video
     {
         $this->assertSizeWithinCap($file);
         $this->assertAllowedMime($file);
@@ -77,6 +77,7 @@ class VideoIngestService
             'status' => 'ingested',
             'duration_seconds' => $duration,
             'storage_path' => $relativePath,
+            'auto_clip' => $autoClip,
         ]);
 
         PipelineJob::create([
@@ -97,13 +98,14 @@ class VideoIngestService
      * download — so the operator immediately sees a "downloading" video and any
      * later failure is visible on that row instead of vanishing into a log.
      */
-    public function createPendingUrlVideo(string $sourceUrl): Video
+    public function createPendingUrlVideo(string $sourceUrl, bool $autoClip = false): Video
     {
         $video = Video::create([
             'source_type' => 'url',
             'source_ref' => $sourceUrl,
             'status' => 'downloading',
             'storage_path' => null,
+            'auto_clip' => $autoClip,
         ]);
 
         PipelineJob::create([

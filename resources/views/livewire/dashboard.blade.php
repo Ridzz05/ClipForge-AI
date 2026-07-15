@@ -104,7 +104,16 @@
 
                 @error('upload') <span class="flash flash-error" style="padding: 8px 12px; margin-bottom: 0; font-size: 12px; background: var(--paper);">{{ $message }}</span> @enderror
 
-                <div class="row between" style="gap: 12px; margin-top: auto;">
+                <!-- Auto-Clip Checkbox Option -->
+                <div style="display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; background: rgba(0,0,0,0.02); padding: 12px; border-radius: 12px; border: 1px solid var(--line);">
+                    <input type="checkbox" wire:model="autoClip" id="auto-clip-upload" style="margin-top: 3px; cursor: pointer; transform: scale(1.15);">
+                    <label for="auto-clip-upload" style="font-size: 12.5px; color: var(--ink); line-height: 1.4; cursor: pointer; font-weight: 500; text-align: left;">
+                        <strong style="display: block; margin-bottom: 2px;">Render &amp; Ekspor Otomatis (Auto-Clip)</strong>
+                        Langsung potong 9:16 untuk 3 klip terbaik (Skor &ge; 75). Nonaktifkan jika hanya ingin melihat rekomendasi durasi untuk edit manual di CapCut.
+                    </label>
+                </div>
+
+                <div class="row between" style="gap: 12px; margin-top: 12px;">
                     <button type="submit" class="btn btn-primary" style="width: 100%; border-color: var(--ink); background: var(--ink); color: var(--paper);"
                             wire:loading.attr="disabled" wire:target="save,upload">
                         <span wire:loading.remove wire:target="save">Mulai Ingest &amp; Proses</span>
@@ -152,7 +161,16 @@
                     </div>
                 </div>
 
-                <div class="row" style="margin-top: auto;">
+                <!-- Auto-Clip Checkbox Option -->
+                <div style="display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; background: rgba(0,0,0,0.02); padding: 12px; border-radius: 12px; border: 1px solid var(--line);">
+                    <input type="checkbox" wire:model="autoClip" id="auto-clip-url" style="margin-top: 3px; cursor: pointer; transform: scale(1.15);">
+                    <label for="auto-clip-url" style="font-size: 12.5px; color: var(--ink); line-height: 1.4; cursor: pointer; font-weight: 500; text-align: left;">
+                        <strong style="display: block; margin-bottom: 2px;">Render &amp; Ekspor Otomatis (Auto-Clip)</strong>
+                        Langsung potong 9:16 untuk 3 klip terbaik (Skor &ge; 75). Nonaktifkan jika hanya ingin melihat rekomendasi durasi untuk edit manual di CapCut.
+                    </label>
+                </div>
+
+                <div class="row" style="margin-top: 12px;">
                     <button type="submit" class="btn btn-primary" style="width: 100%; border-color: var(--ink); background: var(--ink); color: var(--paper);"
                             wire:loading.attr="disabled" wire:target="ingestUrl">
                         <span wire:loading.remove wire:target="ingestUrl">Unduh &amp; Proses</span>

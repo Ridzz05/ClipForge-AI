@@ -31,6 +31,8 @@ class Dashboard extends Component
     /** Video resolution limit for yt-dlp. */
     public string $resolution = 'best';
 
+    public bool $autoClip = false;
+
     public ?string $flash = null;
 
     /** Errors are scoped per form so one form's failure can't confuse the other. */
@@ -103,7 +105,7 @@ class Dashboard extends Component
         $file = $this->upload;
 
         try {
-            $video = $ingest->ingestUpload($file);
+            $video = $ingest->ingestUpload($file, $this->autoClip);
         } catch (IngestValidationException $e) {
             $this->uploadError = $e->getMessage();
 
@@ -145,7 +147,7 @@ class Dashboard extends Component
 
         // Create the video row now (status=downloading) so it appears in the
         // list immediately; the slow download runs on the queue.
-        $video = $ingest->createPendingUrlVideo($url);
+        $video = $ingest->createPendingUrlVideo($url, $this->autoClip);
         IngestUrlJob::dispatch($video->id, $this->resolution);
 
         $this->reset('url');

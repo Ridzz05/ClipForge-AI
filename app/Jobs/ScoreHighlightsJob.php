@@ -123,6 +123,36 @@ class ScoreHighlightsJob implements ShouldQueue
         $pipelineJob->update(['status' => 'done', 'last_error' => null]);
         $this->markReviewing($video);
 
+        if ($video->auto_clip) {
+            Log::info('Score: Auto-clip enabled. Automatically approving top candidates.', ['video_id' => $video->id]);
+            $topCandidates = ClipCandidate::where('video_id', $video->id)
+                ->where('status', ClipCandidate::STATUS_PENDING)
+                ->orderByDesc('hook_score')
+                ->take(3)
+                ->get();
+
+            $reviewService = app(\App\Services\ClipReviewService::class);
+            foreach ($topCandidates as $candidate) {
+                if ($candidate->hook_score >= 75) {
+                    try {
+                        Log::info('Score: Auto-approving candidate', ['candidate_id' => $candidate->id, 'score' => $candidate->hook_score]);
+                        $reviewService->approve(
+                            candidate: $candidate,
+                            ctaText: null,
+                            captionStyle: 'default',
+                            captionMarginV: 320,
+                            layout: 'single'
+                        );
+                    } catch (\Throwable $e) {
+                        Log::error('Score: Auto-clip approval failed', [
+                            'candidate_id' => $candidate->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+            }
+        }
+
         Log::info('Score: done', [
             'video_id' => $video->id,
             'candidates' => count($candidates),
