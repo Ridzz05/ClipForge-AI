@@ -80,23 +80,44 @@
             @endif
 
             <form wire:submit="save" class="grid" style="gap: 18px; justify-content: space-between; height: 100%;">
-                <!-- Styled Upload Zone -->
-                <div style="border: 2px dashed var(--line); border-radius: 18px; padding: 28px 20px; text-align: center; background: rgba(0,0,0,0.03); transition: border-color 0.2s ease;"
+                <!-- Styled Upload Zone with Livewire Upload Progress -->
+                <div x-data="{ isUploading: false, progress: 0 }"
+                     x-on:livewire-upload-start="isUploading = true"
+                     x-on:livewire-upload-finish="isUploading = false"
+                     x-on:livewire-upload-error="isUploading = false"
+                     x-on:livewire-upload-progress="progress = $event.detail.progress"
+                     style="border: 2px dashed var(--line); border-radius: 18px; padding: 28px 20px; text-align: center; background: rgba(0,0,0,0.03); transition: border-color 0.2s ease;"
                      ondragover="this.style.borderColor='var(--ink)'"
                      ondragleave="this.style.borderColor='var(--line)'">
-                    <i class="ph ph-cloud-arrow-up" style="font-size: 32px; color: var(--ink); margin-bottom: 12px; display: inline-block;"></i>
-                    <div style="margin-bottom: 8px; font-weight: 700; color: var(--ink); font-size: 14px;">Pilih atau seret file video di sini</div>
-                    <div style="font-size: 12px; margin-bottom: 14px; color: var(--muted); font-weight: 500;">Mendukung MP4, MOV, MKV, WebM, AVI (Maks. 3 Jam)</div>
                     
-                    <input type="file" wire:model="upload" id="video-upload-input"
-                           accept="video/mp4,video/quicktime,video/x-matroska,video/webm,video/x-msvideo"
-                           style="display: none;">
-                    <button type="button" class="btn btn-sm btn-outline" onclick="document.getElementById('video-upload-input').click()">
-                        Pilih Berkas
-                    </button>
+                    <div x-show="!isUploading">
+                        <i class="ph ph-cloud-arrow-up" style="font-size: 32px; color: var(--ink); margin-bottom: 12px; display: inline-block;"></i>
+                        <div style="margin-bottom: 8px; font-weight: 700; color: var(--ink); font-size: 14px;">Pilih atau seret file video di sini</div>
+                        <div style="font-size: 12px; margin-bottom: 14px; color: var(--muted); font-weight: 500;">Mendukung MP4, MOV, MKV, WebM, AVI (Maks. 3 Jam)</div>
+                        
+                        <input type="file" wire:model="upload" id="video-upload-input"
+                               accept="video/mp4,video/quicktime,video/x-matroska,video/webm,video/x-msvideo"
+                               style="display: none;">
+                        <button type="button" class="btn btn-sm btn-outline" onclick="document.getElementById('video-upload-input').click()">
+                            Pilih Berkas
+                        </button>
+                    </div>
+
+                    <!-- Upload Progress Bar -->
+                    <div x-show="isUploading" style="padding: 10px 0; display: none;">
+                        <i class="ph ph-spinner-gap spin-rotate" style="font-size: 36px; color: var(--accent); margin-bottom: 12px; display: inline-block;"></i>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 13px; font-weight: 700; color: var(--ink);">Sedang mengunggah video ke server...</span>
+                            <span x-text="progress + '%'" style="font-size: 13px; font-weight: 700; color: var(--accent);">0%</span>
+                        </div>
+                        <div style="width: 100%; height: 10px; background: rgba(0,0,0,0.05); border-radius: 99px; overflow: hidden; border: 1.5px solid var(--line);">
+                            <div :style="`width: ${progress}%; transition: width 0.1s ease;`" style="height: 100%; background: var(--accent); border-radius: 99px;"></div>
+                        </div>
+                        <div style="font-size: 11px; margin-top: 8px; color: var(--muted); font-weight: 500;">Mohon tunggu, jangan tutup tab browser ini.</div>
+                    </div>
                     
                     @if($upload)
-                        <div style="margin-top: 12px; color: #15803d; font-size: 12px; font-weight: 700;" wire:loading.remove wire:target="upload">
+                        <div style="margin-top: 12px; color: #15803d; font-size: 12px; font-weight: 700;" x-show="!isUploading">
                             <i class="ph ph-check-circle" style="vertical-align: middle;"></i> Berkas siap: {{ $upload->getClientOriginalName() }}
                         </div>
                     @endif
