@@ -50,6 +50,13 @@
             --text-title: #1a1714;
             --border-stage: rgba(26,23,20,0.08);
             --radial-glow: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(233,132,37,0.06), transparent 70%);
+
+            /* Badge Colors */
+            --badge-green-color: #1a1714;
+            --badge-amber-color: #1a1714;
+            --badge-blue-color: #1a1714;
+            --badge-red-color: #1a1714;
+            --badge-border: rgba(0,0,0,0.08);
         }
 
         [data-theme="dark"] {
@@ -72,6 +79,13 @@
             --tile-4: #101e0f; /* dark green */
             --tile-5: #101a24; /* dark blue */
             --tile-6: #2b1120; /* dark pink */
+
+            /* Badge Colors for Dark Theme */
+            --badge-green-color: #86efac; /* pastel green */
+            --badge-amber-color: #fde047; /* pastel gold/yellow */
+            --badge-blue-color: #93c5fd;  /* pastel blue */
+            --badge-red-color: #fca5a5;   /* pastel red */
+            --badge-border: rgba(255,255,255,0.15);
         }
 
         * {
@@ -265,24 +279,27 @@
             font: 700 10.5px/1 var(--mono);
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: #1a1714 !important; /* Pastel badges always use dark text */
-            border: 1px solid rgba(0,0,0,0.08);
+            border: 1px solid var(--badge-border);
         }
 
         .badge-green {
             background: var(--tile-4);
+            color: var(--badge-green-color) !important;
         }
         
         .badge-amber {
             background: var(--tile-1);
+            color: var(--badge-amber-color) !important;
         }
         
         .badge-blue {
             background: var(--tile-5);
+            color: var(--badge-blue-color) !important;
         }
         
         .badge-red {
             background: var(--tile-2);
+            color: var(--badge-red-color) !important;
         }
         
         .badge-gray {
