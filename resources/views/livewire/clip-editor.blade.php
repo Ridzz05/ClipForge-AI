@@ -30,55 +30,58 @@
         <!-- Left Column: Live 9:16 & 16:9 Preview Canvas -->
         <div class="grid" style="gap: 20px;">
             <!-- 9:16 Vertical Live Preview Box (Ref: orient.webp & clip_caption.png) -->
-            <div class="panel" style="padding: 24px; background: var(--bg-surface); text-align: center; display: flex; flex-direction: column; align-items: center;">
+            <div class="panel" style="padding: 24px; background: var(--bg-surface); text-align: center;">
+
                 <div class="row between" style="width: 100%; margin-bottom: 16px;">
                     <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase;">LIVE 9:16 CANVAS PREVIEW</span>
                     <span class="badge badge-purple" style="padding: 4px 10px;">{{ strtoupper($renderFormat) }}</span>
                 </div>
 
                 <!-- 9:16 Simulated Mobile Player Screen -->
-                <div id="live-canvas-frame" style="width: 260px; height: 460px; background: #000; border-radius: 18px; overflow: hidden; position: relative; box-shadow: 0 15px 40px rgba(0,0,0,0.3); border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; margin: 0 auto;">
-                    <video id="editor-video" controls preload="metadata" 
-                           onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
-                           style="width: 100%; height: 100%; object-fit: cover; display: block;" 
-                           src="/videos/{{ $candidate->video_id }}/source">
-                    </video>
+                <div style="display: flex; justify-content: center; width: 100%; margin-bottom: 20px;">
+                    <div id="live-canvas-frame" style="width: 250px; height: 444px; background: #000; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 12px 36px rgba(0,0,0,0.3); border: 2px solid var(--border-color);">
+                        <video id="editor-video" controls preload="metadata" 
+                               onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
+                               style="width: 100%; height: 100%; object-fit: cover; display: block;" 
+                               src="/videos/{{ $candidate->video_id }}/source">
+                        </video>
 
-
-                    <!-- Real-Time Subtitle Overlay Preview -->
-                    @if($burnSubtitles === 'on')
-                        <div id="subtitle-overlay" style="position: absolute; bottom: {{ ($captionPosY / 1920) * 100 }}%; left: 10%; right: 10%; text-align: center; pointer-events: none; z-index: 10;">
-                            <span style="
-                                font-family: 'Outfit', sans-serif;
-                                font-size: {{ ($captionFontSize / 1920) * 500 }}px;
-                                font-weight: 900;
-                                text-transform: uppercase;
-                                color: {{ $subtitleColor === 'yellow' ? '#ffff00' : ($subtitleColor === 'pink' ? '#ff4d6d' : ($subtitleColor === 'orange' ? '#ff8c32' : '#ffffff')) }};
-                                text-shadow: 0 2px 8px rgba(0,0,0,0.9), -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
-                                letter-spacing: 0.02em;
-                                line-height: 1.2;
-                                display: inline-block;
-                            " class="animated-caption-type">
-                                CLIPFORGE LIVE CAPTION
-                            </span>
-                        </div>
-                    @endif
+                        <!-- Real-Time Subtitle Overlay Preview -->
+                        @if($burnSubtitles === 'on')
+                            <div id="subtitle-overlay" style="position: absolute; bottom: {{ ($captionPosY / 1920) * 100 }}%; left: 6%; right: 6%; text-align: center; pointer-events: none; z-index: 10;">
+                                <span style="
+                                    font-family: 'Outfit', sans-serif;
+                                    font-size: {{ ($captionFontSize / 1920) * 450 }}px;
+                                    font-weight: 900;
+                                    text-transform: uppercase;
+                                    color: {{ $subtitleColor === 'yellow' ? '#ffff00' : ($subtitleColor === 'pink' ? '#ff4d6d' : ($subtitleColor === 'orange' ? '#ff8c32' : '#ffffff')) }};
+                                    text-shadow: 0 2px 8px rgba(0,0,0,0.9), -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
+                                    letter-spacing: 0.02em;
+                                    line-height: 1.2;
+                                    display: inline-block;
+                                " class="animated-caption-type">
+                                    CLIPFORGE LIVE CAPTION
+                                </span>
+                            </div>
+                        @endif
+                    </div>
                 </div>
 
                 <!-- Player Action Buttons -->
-
-                <div class="row" style="gap: 10px; margin-top: 20px; justify-content: center; width: 100%;">
-                    <button type="button" class="btn btn-sm btn-primary" onclick="playPreview(Livewire.find('{{ $this->getId() }}').get('editStartMs'), Livewire.find('{{ $this->getId() }}').get('editEndMs'))" style="flex: 2; padding: 10px;">
+                <div style="display: flex; gap: 8px; justify-content: center; width: 100%;">
+                    <button type="button" class="btn btn-sm btn-primary" onclick="playPreview(Livewire.find('{{ $this->getId() }}').get('editStartMs'), Livewire.find('{{ $this->getId() }}').get('editEndMs'))" style="flex: 2; padding: 10px; font-weight: 800; background: var(--purple-gradient);">
                         <i class="ph ph-play-circle" style="font-size: 16px;"></i> Play Loop Preview
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="jumpToStart(Livewire.find('{{ $this->getId() }}').get('editStartMs'))" style="flex: 1;">
+                    <button type="button" class="btn btn-sm btn-outline" onclick="jumpToStart(Livewire.find('{{ $this->getId() }}').get('editStartMs'))" style="flex: 1; font-weight: 700;">
                         <i class="ph ph-caret-double-left"></i> Awal
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="jumpToEnd(Livewire.find('{{ $this->getId() }}').get('editEndMs'))" style="flex: 1;">
+                    <button type="button" class="btn btn-sm btn-outline" onclick="jumpToEnd(Livewire.find('{{ $this->getId() }}').get('editEndMs'))" style="flex: 1; font-weight: 700;">
                         <i class="ph ph-caret-double-right"></i> Akhir
                     </button>
                 </div>
             </div>
+
+
 
             <!-- Timestamp In/Out Precision Selector -->
             <div class="panel" style="padding: 20px; background: var(--bg-surface);">
