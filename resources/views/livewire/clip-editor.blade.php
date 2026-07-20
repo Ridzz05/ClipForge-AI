@@ -102,25 +102,66 @@
 
 
 
-            <!-- Timestamp In/Out Precision Selector -->
+            <!-- VISUAL TIMELINE FRAMING -->
             <div class="panel" style="padding: 20px; background: var(--bg-surface);">
-                <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--text-muted); display: block; margin-bottom: 14px;">TIMESTAMP MARKERS (MS)</span>
-                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px;">
+                <div class="row between" style="margin-bottom: 12px;">
+                    <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--text-muted);">TIMELINE FRAMING</span>
+                    <span id="timeline-duration" style="font-size: 10px; font-weight: 700; color: var(--purple-primary); font-family: var(--font-mono);">DUR: --:--</span>
+                </div>
+
+                <!-- Start / End time labels -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px;">
                     <div>
-                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">START (MS)</label>
-                        <input type="number" wire:model.live.debounce.300ms="editStartMs">
+                        <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; margin-bottom: 2px;">▶ START</div>
+                        <div id="tl-start-label" style="font-size: 15px; font-weight: 900; color: #4ade80; font-family: var(--font-mono); letter-spacing: 0.05em;">00:00</div>
                     </div>
-                    <div>
-                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">END (MS)</label>
-                        <input type="number" wire:model.live.debounce.300ms="editEndMs">
+                    <div style="text-align: right;">
+                        <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; margin-bottom: 2px;">END ⬛</div>
+                        <div id="tl-end-label" style="font-size: 15px; font-weight: 900; color: #f87171; font-family: var(--font-mono); letter-spacing: 0.05em;">00:00</div>
                     </div>
                 </div>
-                <div class="row" style="gap: 10px;">
-                    <button type="button" class="btn btn-sm btn-outline" onclick="setStartToCurrent(Livewire.find('{{ $this->getId() }}'))" style="flex: 1;">
-                        <i class="ph ph-map-pin-line"></i> Set Start to Current
+
+                <!-- Timeline track -->
+                <div id="timeline-track"
+                     style="position: relative; height: 38px; background: var(--bg-surface-subtle); border-radius: 8px; cursor: pointer; border: 1px solid var(--border-color); margin-bottom: 12px; user-select: none;">
+
+                    <!-- Selection region -->
+                    <div id="tl-selection"
+                         style="position: absolute; top: 0; bottom: 0; background: rgba(74,222,128,0.15); border-left: 2px solid #4ade80; border-right: 2px solid #f87171; border-radius: 4px; pointer-events: none;">
+                    </div>
+
+                    <!-- Playhead -->
+                    <div id="tl-playhead"
+                         style="position: absolute; top: -5px; bottom: -5px; width: 2px; background: var(--purple-primary); border-radius: 99px; pointer-events: none; z-index: 5; box-shadow: 0 0 8px rgba(154,85,255,0.8); transition: left 0.05s linear;">
+                        <div style="position: absolute; top: -1px; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; background: var(--purple-primary); border-radius: 50%; box-shadow: 0 0 6px rgba(154,85,255,0.9);"></div>
+                    </div>
+
+                    <!-- Start handle -->
+                    <div id="tl-handle-start"
+                         title="Drag to set Start"
+                         style="position: absolute; top: 0; bottom: 0; width: 12px; background: #4ade80; border-radius: 4px 2px 2px 4px; cursor: ew-resize; transform: translateX(-50%); z-index: 4; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+                        <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+                            <div style="width: 2px; height: 14px; background: rgba(0,0,0,0.3); border-radius: 1px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- End handle -->
+                    <div id="tl-handle-end"
+                         title="Drag to set End"
+                         style="position: absolute; top: 0; bottom: 0; width: 12px; background: #f87171; border-radius: 2px 4px 4px 2px; cursor: ew-resize; transform: translateX(-50%); z-index: 4; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+                        <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+                            <div style="width: 2px; height: 14px; background: rgba(0,0,0,0.3); border-radius: 1px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shortcut buttons -->
+                <div class="row" style="gap: 8px;">
+                    <button type="button" class="btn btn-sm btn-outline" onclick="setStartToCurrent(Livewire.find('{{ $this->getId() }}'))" style="flex: 1; font-size: 11px;">
+                        <i class="ph ph-map-pin-line"></i> Set Start
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="setEndToCurrent(Livewire.find('{{ $this->getId() }}'))" style="flex: 1;">
-                        <i class="ph ph-flag-banner"></i> Set End to Current
+                    <button type="button" class="btn btn-sm btn-outline" onclick="setEndToCurrent(Livewire.find('{{ $this->getId() }}'))" style="flex: 1; font-size: 11px;">
+                        <i class="ph ph-flag-banner"></i> Set End
                     </button>
                 </div>
             </div>
@@ -431,7 +472,9 @@
             const video = document.getElementById('editor-video');
             if (video && comp) {
                 const currentMs = Math.round(video.currentTime * 1000);
+                window.cfStartMs = currentMs;
                 comp.set('editStartMs', currentMs);
+                if (window.cfTimelineUpdate) window.cfTimelineUpdate();
             }
         };
 
@@ -439,9 +482,120 @@
             const video = document.getElementById('editor-video');
             if (video && comp) {
                 const currentMs = Math.round(video.currentTime * 1000);
+                window.cfEndMs = currentMs;
                 comp.set('editEndMs', currentMs);
+                if (window.cfTimelineUpdate) window.cfTimelineUpdate();
             }
         };
+
+        // ✅ Visual Timeline Scrubber Engine
+        window.initTimelineScrubber = function() {
+            const video = document.getElementById('editor-video');
+            const track = document.getElementById('timeline-track');
+            if (!video || !track) return;
+
+            const toMMSS = ms => {
+                const s = Math.floor(Math.max(0, ms) / 1000);
+                const m = Math.floor(s / 60);
+                return `${String(m).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
+            };
+
+            const updateUI = () => {
+                const durMs  = (video.duration || 0) * 1000;
+                const sMs    = Math.max(0, window.cfStartMs || 0);
+                const eMs    = Math.min(durMs, window.cfEndMs || durMs);
+                const trackW = track.offsetWidth;
+
+                const sPct = durMs > 0 ? sMs / durMs : 0;
+                const ePct = durMs > 0 ? eMs / durMs : 1;
+
+                const hS = document.getElementById('tl-handle-start');
+                const hE = document.getElementById('tl-handle-end');
+                const sel = document.getElementById('tl-selection');
+                const lS  = document.getElementById('tl-start-label');
+                const lE  = document.getElementById('tl-end-label');
+                const dur  = document.getElementById('timeline-duration');
+
+                if (hS) hS.style.left = (sPct * trackW) + 'px';
+                if (hE) hE.style.left = (ePct * trackW) + 'px';
+                if (sel) {
+                    sel.style.left  = (sPct * trackW) + 'px';
+                    sel.style.width = ((ePct - sPct) * trackW) + 'px';
+                }
+                if (lS) lS.textContent = toMMSS(sMs);
+                if (lE) lE.textContent = toMMSS(eMs);
+                if (dur) {
+                    const durSec = Math.round((eMs - sMs) / 1000);
+                    const dm = Math.floor(durSec / 60), ds = durSec % 60;
+                    dur.textContent = `DUR: ${dm > 0 ? dm + 'm ' : ''}${ds}s`;
+                }
+            };
+            window.cfTimelineUpdate = updateUI;
+
+            // Playhead follows video
+            video.addEventListener('timeupdate', () => {
+                const ph = document.getElementById('tl-playhead');
+                if (!ph || !video.duration) return;
+                const pct = video.currentTime / video.duration;
+                ph.style.left = (pct * track.offsetWidth) + 'px';
+            });
+
+            // Click-to-seek on track
+            track.addEventListener('click', e => {
+                if (e.target.id === 'tl-handle-start' || e.target.id === 'tl-handle-end') return;
+                const rect = track.getBoundingClientRect();
+                const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                video.currentTime = pct * (video.duration || 0);
+            });
+
+            // Drag factory
+            const makeDraggable = (handleId, isStart) => {
+                const handle = document.getElementById(handleId);
+                if (!handle) return;
+                handle.addEventListener('mousedown', e => {
+                    e.preventDefault(); e.stopPropagation();
+                    const onMove = ev => {
+                        const rect = track.getBoundingClientRect();
+                        const pct  = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+                        const ms   = Math.round(pct * (video.duration || 0) * 1000);
+                        const comp = window.cfLivewireComp;
+                        if (isStart) {
+                            window.cfStartMs = ms;
+                            if (comp) comp.set('editStartMs', ms);
+                        } else {
+                            window.cfEndMs = ms;
+                            if (comp) comp.set('editEndMs', ms);
+                        }
+                        updateUI();
+                    };
+                    const onUp = () => {
+                        document.removeEventListener('mousemove', onMove);
+                        document.removeEventListener('mouseup', onUp);
+                    };
+                    document.addEventListener('mousemove', onMove);
+                    document.addEventListener('mouseup', onUp);
+                });
+            };
+
+            makeDraggable('tl-handle-start', true);
+            makeDraggable('tl-handle-end', false);
+
+            // Init on metadata loaded
+            const doInit = () => {
+                window.cfStartMs = {{ $editStartMs }};
+                window.cfEndMs   = {{ $editEndMs }};
+                updateUI();
+            };
+            if (video.readyState >= 1) doInit();
+            else video.addEventListener('loadedmetadata', doInit);
+        };
+
+        // Boot timeline after subtitle sync
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', window.initTimelineScrubber);
+        } else {
+            window.initTimelineScrubber();
+        }
 
         window.jumpToStart = window.jumpToStart || function(startMs) {
             seekEditorVideoTo(startMs);
