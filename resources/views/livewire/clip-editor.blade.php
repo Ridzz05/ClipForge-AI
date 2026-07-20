@@ -358,7 +358,7 @@
                 if (activeIdx === -1 || activeIdx === window.lastCaptionActiveIdx) return;
                 window.lastCaptionActiveIdx = activeIdx;
 
-                const WINDOW = 1;
+                const WINDOW = 0;
                 const start = Math.max(0, activeIdx - WINDOW);
                 const end   = Math.min(words.length - 1, activeIdx + WINDOW);
                 const group = words.slice(start, end + 1);
