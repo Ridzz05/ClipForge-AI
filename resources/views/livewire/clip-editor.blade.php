@@ -190,11 +190,19 @@
                     </div>
                 </div>
 
-                <!-- CTA INPUT -->
+                <!-- CTA INPUT & PRESETS -->
                 <div style="margin-bottom: 20px;">
                     <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px;">CALL TO ACTION OVERLAY (CTA)</label>
-                    <input type="text" wire:model="ctaText" placeholder="Contoh: Subscribe / Follow Now">
+                    <input type="text" wire:model="ctaText" placeholder="Contoh: Follow Halaman Ini 🔔" style="margin-bottom: 8px;">
+                    
+                    <select wire:model.live="ctaText" style="width: 100%; padding: 8px 12px; border-radius: 8px; font-size: 11px; background: var(--bg-surface-subtle); border: 1px solid var(--border-color); color: var(--text-color); cursor: pointer;">
+                        <option value="">-- Pilih Preset CTA Facebook --</option>
+                        @foreach($this->ctaPresets() as $preset)
+                            <option value="{{ $preset }}">{{ $preset }}</option>
+                        @endforeach
+                    </select>
                 </div>
+
 
                 <!-- EXPORT BUTTON -->
                 <button type="button" wire:click="saveAndApprove" class="btn" style="width: 100%; padding: 14px; font-size: 14px; font-weight: 800; background: var(--purple-gradient); box-shadow: 0 4px 18px rgba(154, 85, 255, 0.4); border-radius: 99px;">

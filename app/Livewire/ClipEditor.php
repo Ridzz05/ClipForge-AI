@@ -35,7 +35,19 @@ class ClipEditor extends Component
 
     public ?string $error = null;
 
+    public function ctaPresets(): array
+    {
+        return [
+            "Follow Halaman Ini untuk Insight Setiap Hari 🔔",
+            "Share ke Teman Kamu yang Butuh Ini ↗️",
+            "Tulis Pendapatmu di Kolom Komentar 💬",
+            "Ikuti Halaman Ini Agar Tidak Ketinggalan 🚀",
+            "IT'S OUT. IT'S ACTUALLY OUT.",
+        ];
+    }
+
     public function mount(ClipCandidate $candidate): void
+
     {
         $this->candidate = $candidate->load(['video', 'video.transcript']);
         $this->editStartMs = $candidate->start_ms;
