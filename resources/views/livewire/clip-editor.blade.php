@@ -49,7 +49,7 @@
                         <!-- Real-Time Subtitle Overlay Preview -->
                         @if($burnSubtitles === 'on')
                             <div id="subtitle-overlay" style="position: absolute; bottom: {{ ($captionPosY / 1920) * 100 }}%; left: 6%; right: 6%; text-align: center; pointer-events: none; z-index: 10;">
-                                <span style="
+                                <div id="live-word-box" style="
                                     font-family: 'Outfit', sans-serif;
                                     font-size: {{ ($captionFontSize / 1920) * 450 }}px;
                                     font-weight: 900;
@@ -59,12 +59,14 @@
                                     letter-spacing: 0.02em;
                                     line-height: 1.2;
                                     display: inline-block;
-                                " class="animated-caption-type">
-                                    CLIPFORGE LIVE CAPTION
-                                </span>
+                                    transition: transform 0.1s ease, opacity 0.1s ease;
+                                ">
+                                    <span id="active-live-caption">CLIPFORGE LIVE CAPTION</span>
+                                </div>
                             </div>
                         @endif
                     </div>
+
                 </div>
 
                 <!-- Player Action Buttons -->
@@ -138,6 +140,21 @@
                     <span class="badge badge-purple" style="font-size: 10px;">CAPTION MOOD</span>
                 </div>
 
+                <!-- LIVE TRANSLATION SELECTOR -->
+                <div style="margin-bottom: 18px;">
+                    <div class="row between" style="margin-bottom: 6px;">
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin: 0;">TARGET TRANSLATION LANGUAGE</label>
+                        <span wire:loading wire:target="updatedTargetLanguage" class="badge badge-amber" style="font-size: 9px;">
+                            <i class="ph ph-spinner-gap spin-rotate"></i> Translating...
+                        </span>
+                    </div>
+                    <select wire:model.live="targetLanguage" style="width: 100%; padding: 8px 12px; border-radius: 8px; font-size: 11px; background: var(--bg-surface-subtle); border: 1px solid var(--border-color); color: var(--text-color); cursor: pointer; font-weight: 700;">
+                        @foreach(\App\Services\TranslationService::LANGUAGES as $code => $name)
+                            <option value="{{ $code }}">{{ $name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
                 <!-- BURN SUBTITLES TOGGLE -->
                 <div style="margin-bottom: 18px;">
                     <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 8px;">BURN SUBTITLES INTO CLIP</label>
@@ -146,6 +163,7 @@
                         <button type="button" wire:click="$set('burnSubtitles', 'off')" style="flex: 1; padding: 7px; border-radius: 99px; border: none; font-weight: 700; font-size: 11px; cursor: pointer;" class="{{ $burnSubtitles === 'off' ? 'btn' : 'btn-outline' }}">OFF</button>
                     </div>
                 </div>
+
 
                 <!-- COLOR PRESET -->
                 <div style="margin-bottom: 18px;">
@@ -212,10 +230,48 @@
         </div>
     </div>
 
-    <!-- JS Studio Player Controls -->
+    <!-- JS Studio Player Controls & Live Subtitle Engine -->
     <script>
         if (typeof window.previewInterval === 'undefined') {
             window.previewInterval = null;
+        }
+
+        window.clipWordsData = @json($clipWords);
+
+        window.addEventListener('words-updated', (event) => {
+            if (event.detail && event.detail.words) {
+                window.clipWordsData = event.detail.words;
+            }
+        });
+
+        window.initLiveSubtitleSync = window.initLiveSubtitleSync || function() {
+            const video = document.getElementById('editor-video');
+            const captionEl = document.getElementById('active-live-caption');
+            const boxEl = document.getElementById('live-word-box');
+
+            if (!video || !captionEl) return;
+
+            video.addEventListener('timeupdate', () => {
+                if (!window.clipWordsData || window.clipWordsData.length === 0) return;
+                const currentMs = Math.round(video.currentTime * 1000);
+
+                const activeWord = window.clipWordsData.find(w => currentMs >= w.start_ms && currentMs <= w.end_ms);
+                
+                if (activeWord) {
+                    captionEl.innerText = activeWord.word;
+                    
+                    if (boxEl) {
+                        boxEl.style.transform = 'scale(1.25)';
+                        setTimeout(() => { boxEl.style.transform = 'scale(1.0)'; }, 100);
+                    }
+                }
+            });
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', window.initLiveSubtitleSync);
+        } else {
+            window.initLiveSubtitleSync();
         }
 
         window.seekEditorVideoTo = window.seekEditorVideoTo || function(ms) {
@@ -270,4 +326,5 @@
         };
     </script>
 </div>
+
 

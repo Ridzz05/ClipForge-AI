@@ -33,6 +33,10 @@ class ClipEditor extends Component
     // --- Format & Orientation Selector ---
     public string $renderFormat = 'face_916';
 
+    // --- Live Translation State ---
+    public string $targetLanguage = 'original';
+    public array $clipWords = [];
+
     public ?string $error = null;
 
     public function ctaPresets(): array
@@ -47,15 +51,71 @@ class ClipEditor extends Component
     }
 
     public function mount(ClipCandidate $candidate): void
-
     {
-        $this->candidate = $candidate->load(['video', 'video.transcript']);
+        $this->candidate = $candidate->load(['video', 'video.transcript', 'video.transcript.segments']);
         $this->editStartMs = $candidate->start_ms;
         $this->editEndMs = $candidate->end_ms;
         $this->editHookScore = $candidate->hook_score;
         $this->editRationale = $candidate->score_rationale ?? '';
         $this->ctaText = (string) config('autoclip.render.cta_text', '');
+        $this->loadClipWords();
     }
+
+    public function updatedTargetLanguage(TranslationService $translation): void
+    {
+        $rawWords = $this->extractRawWords();
+        if ($this->targetLanguage === 'original') {
+            $this->clipWords = $rawWords;
+        } else {
+            $this->clipWords = $translation->translateWords($rawWords, $this->targetLanguage);
+        }
+        $this->dispatch('words-updated', words: $this->clipWords);
+    }
+
+    private function loadClipWords(): void
+    {
+        $this->clipWords = $this->extractRawWords();
+    }
+
+    private function extractRawWords(): array
+    {
+        $words = [];
+        if (!$this->candidate->video || !$this->candidate->video->transcript) {
+            return $words;
+        }
+
+        $segments = $this->candidate->video->transcript->segments()
+            ->where('end_ms', '>=', $this->editStartMs)
+            ->where('start_ms', '<=', $this->editEndMs)
+            ->orderBy('start_ms')
+            ->get();
+
+        foreach ($segments as $seg) {
+            $segWords = $seg->words;
+            if (is_array($segWords)) {
+                foreach ($segWords as $w) {
+                    $wStart = isset($w['start_ms']) ? (int) $w['start_ms'] : 0;
+                    $wEnd = isset($w['end_ms']) ? (int) $w['end_ms'] : 0;
+                    if ($wEnd >= $this->editStartMs && $wStart <= $this->editEndMs) {
+                        $words[] = [
+                            'word' => (string) ($w['word'] ?? ''),
+                            'start_ms' => $wStart,
+                            'end_ms' => $wEnd,
+                        ];
+                    }
+                }
+            } else {
+                $words[] = [
+                    'word' => $seg->text,
+                    'start_ms' => $seg->start_ms,
+                    'end_ms' => $seg->end_ms,
+                ];
+            }
+        }
+
+        return $words;
+    }
+
 
     public function saveAndApprove(ClipReviewService $review)
     {
