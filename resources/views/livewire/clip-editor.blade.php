@@ -46,22 +46,27 @@
                                src="/videos/{{ $candidate->video_id }}/source">
                         </video>
 
-                        <!-- Real-Time Subtitle Overlay Preview -->
+                        <!-- Real-Time Subtitle Overlay Preview (Opus Clip Style) -->
                         @if($burnSubtitles === 'on')
-                            <div id="subtitle-overlay" style="position: absolute; bottom: {{ ($captionPosY / 1920) * 100 }}%; left: 6%; right: 6%; text-align: center; pointer-events: none; z-index: 10;">
-                                <div id="live-word-box" style="
-                                    font-family: 'Outfit', sans-serif;
-                                    font-size: {{ ($captionFontSize / 1920) * 450 }}px;
-                                    font-weight: 900;
-                                    text-transform: uppercase;
-                                    color: {{ $subtitleColor === 'yellow' ? '#ffff00' : ($subtitleColor === 'pink' ? '#ff4d6d' : ($subtitleColor === 'orange' ? '#ff8c32' : '#ffffff')) }};
-                                    text-shadow: 0 2px 8px rgba(0,0,0,0.9), -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
-                                    letter-spacing: 0.02em;
-                                    line-height: 1.2;
-                                    display: inline-block;
-                                    transition: transform 0.1s ease, opacity 0.1s ease;
-                                ">
-                                    <span id="active-live-caption">CLIPFORGE LIVE CAPTION</span>
+                            <div id="subtitle-overlay" style="position: absolute; bottom: {{ ($captionPosY / 1920) * 100 }}%; left: 4%; right: 4%; text-align: center; pointer-events: none; z-index: 10;">
+                                <div id="caption-word-group"
+                                    data-animation="{{ $captionAnimation }}"
+                                    data-color="{{ $subtitleColor }}"
+                                    data-fontsize="{{ ($captionFontSize / 1920) * 450 }}"
+                                    style="
+                                        font-family: 'Outfit', sans-serif;
+                                        font-size: {{ ($captionFontSize / 1920) * 450 }}px;
+                                        font-weight: 900;
+                                        text-transform: uppercase;
+                                        letter-spacing: 0.03em;
+                                        line-height: 1.3;
+                                        display: flex;
+                                        flex-wrap: wrap;
+                                        justify-content: center;
+                                        gap: 0 5px;
+                                        min-height: 1.5em;
+                                    ">
+                                    <!-- JS renders word spans here -->
                                 </div>
                             </div>
                         @endif
@@ -230,10 +235,44 @@
         </div>
     </div>
 
+    <!-- CSS: 5 Premium Caption Animation Presets (Opus Clip / CapCut / Vizard style) -->
+    <style>
+        /* Base word span */
+        .cw { display: inline-block; transition: color 0.08s, text-shadow 0.08s; }
+
+        /* KARAOKE: active word neon highlight, others white */
+        .anim-karaoke .cw { color: #ffffff; text-shadow: 0 1px 6px rgba(0,0,0,0.9), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
+        .anim-karaoke .cw.active { animation: cwKaraoke 0.12s ease-out forwards; }
+        @keyframes cwKaraoke { 0% { transform: scale(1.0); } 40% { transform: scale(1.18); } 100% { transform: scale(1.06); } }
+
+        /* POP: CapCut spring pop on each new word */
+        .anim-pop .cw { color: #ffffff; text-shadow: 0 1px 6px rgba(0,0,0,0.9), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; opacity: 0.55; }
+        .anim-pop .cw.active { opacity: 1; animation: cwPop 0.18s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+        @keyframes cwPop { 0% { transform: scale(0.55) rotate(-4deg); opacity: 0; } 65% { transform: scale(1.12) rotate(1.5deg); } 100% { transform: scale(1.0) rotate(0); opacity: 1; } }
+
+        /* GLOW: Vizard/Hormozi neon glow on active word */
+        .anim-glow .cw { color: #ffffff; text-shadow: 0 1px 6px rgba(0,0,0,0.9); opacity: 0.6; }
+        .anim-glow .cw.active { opacity: 1; animation: cwGlow 0.3s ease-in-out infinite alternate; }
+        @keyframes cwGlow { 0% { text-shadow: 0 0 6px currentColor, 0 0 12px currentColor; } 100% { text-shadow: 0 0 20px currentColor, 0 0 40px currentColor, 0 0 60px currentColor; } }
+
+        /* RISE: slide up entrance per new word */
+        .anim-rise .cw { color: #ffffff; text-shadow: 0 1px 6px rgba(0,0,0,0.9), -1px -1px 0 #000, 1px 1px 0 #000; opacity: 0.5; }
+        .anim-rise .cw.active { opacity: 1; animation: cwRise 0.2s ease-out forwards; }
+        @keyframes cwRise { 0% { transform: translateY(14px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+
+        /* BLOCK: MrBeast/IShowSpeed background block highlight */
+        .anim-block .cw { color: #ffffff; text-shadow: none; border-radius: 4px; padding: 1px 4px; transition: background 0.08s, color 0.08s; }
+        .anim-block .cw.active { color: #000000 !important; background: var(--block-color, #ffff00); text-shadow: none; animation: cwBlock 0.1s ease-out forwards; }
+        @keyframes cwBlock { 0% { transform: scale(0.9); } 100% { transform: scale(1.0); } }
+    </style>
+
     <!-- JS Studio Player Controls & Live Subtitle Engine -->
     <script>
         if (typeof window.previewInterval === 'undefined') {
             window.previewInterval = null;
+        }
+        if (typeof window.lastCaptionActiveIdx === 'undefined') {
+            window.lastCaptionActiveIdx = -1;
         }
 
         window.clipWordsData = @json($clipWords);
@@ -241,30 +280,78 @@
         window.addEventListener('words-updated', (event) => {
             if (event.detail && event.detail.words) {
                 window.clipWordsData = event.detail.words;
+                window.lastCaptionActiveIdx = -1; // force re-render
             }
         });
 
-        window.initLiveSubtitleSync = window.initLiveSubtitleSync || function() {
-            const video = document.getElementById('editor-video');
-            const captionEl = document.getElementById('active-live-caption');
-            const boxEl = document.getElementById('live-word-box');
+        window.cfColorMap = {
+            yellow: '#ffff00',
+            pink:   '#ff4d6d',
+            orange: '#ff8c32',
+            white:  '#ffffff',
+        };
 
-            if (!video || !captionEl) return;
+        window.renderCaptionGroup = function(groupWords, activeIdxInGroup, animation, activeColor) {
+            const container = document.getElementById('caption-word-group');
+            if (!container) return;
+
+            container.className = 'anim-' + animation;
+            container.style.setProperty('--block-color', activeColor);
+
+            // Build spans
+            let html = '';
+            groupWords.forEach((w, i) => {
+                const isActive = (i === activeIdxInGroup);
+                const colorStyle = isActive ? `color:${activeColor};` : '';
+                const activeClass = isActive ? ' active' : '';
+                html += `<span class="cw${activeClass}" style="${colorStyle}">${w.word}</span>`;
+            });
+            container.innerHTML = html;
+        };
+
+        window.initLiveSubtitleSync = function() {
+            const video = document.getElementById('editor-video');
+            if (!video) return;
 
             video.addEventListener('timeupdate', () => {
-                if (!window.clipWordsData || window.clipWordsData.length === 0) return;
+                const words = window.clipWordsData;
+                if (!words || words.length === 0) return;
+
                 const currentMs = Math.round(video.currentTime * 1000);
 
-                const activeWord = window.clipWordsData.find(w => currentMs >= w.start_ms && currentMs <= w.end_ms);
-                
-                if (activeWord) {
-                    captionEl.innerText = activeWord.word;
-                    
-                    if (boxEl) {
-                        boxEl.style.transform = 'scale(1.25)';
-                        setTimeout(() => { boxEl.style.transform = 'scale(1.0)'; }, 100);
+                // Find active word index
+                let activeIdx = -1;
+                for (let i = 0; i < words.length; i++) {
+                    if (currentMs >= words[i].start_ms && currentMs <= words[i].end_ms) {
+                        activeIdx = i;
+                        break;
                     }
                 }
+
+                // Between words: find nearest upcoming
+                if (activeIdx === -1) {
+                    for (let i = 0; i < words.length; i++) {
+                        if (currentMs < words[i].start_ms) { activeIdx = i; break; }
+                    }
+                }
+
+                if (activeIdx === -1 || activeIdx === window.lastCaptionActiveIdx) return;
+                window.lastCaptionActiveIdx = activeIdx;
+
+                // Build word group window: 3 before + active + 3 after
+                const WINDOW = 3;
+                const start = Math.max(0, activeIdx - WINDOW);
+                const end   = Math.min(words.length - 1, activeIdx + WINDOW);
+                const group = words.slice(start, end + 1);
+                const activeInGroup = activeIdx - start;
+
+                // Read animation + color from DOM data attributes (stays reactive to Livewire)
+                const container = document.getElementById('caption-word-group');
+                const animation = (container && container.dataset.animation) ? container.dataset.animation : 'karaoke';
+                const colorKey  = (container && container.dataset.color) ? container.dataset.color : 'yellow';
+                const activeColor = window.cfColorMap[colorKey] || '#ffff00';
+
+                window.renderCaptionGroup(group, activeInGroup, animation, activeColor);
             });
         };
 
