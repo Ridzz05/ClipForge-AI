@@ -1,5 +1,5 @@
 """
-MediaPipe face-tracking service for Auto-Clip (Stage 4, spec section 5.4).
+Face-tracking service for Auto-Clip (Stage 4, spec section 5.4).
 
 Runs as its own process (mirrors whisper/ollama). Given a media file and a clip
 range, it samples the horizontal centre of the primary face over time. The
@@ -14,17 +14,32 @@ cx is the face centre X normalised to 0..1 across the frame width.
 """
 import os
 import tempfile
-
 import cv2
-import mediapipe as mp
+
+try:
+    import mediapipe as mp
+except ImportError:
+    mp = None
+
 from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
+# Face detector initialization: MediaPipe or OpenCV Cascade fallback
+mp_face = None
+cascade_detector = None
+
 try:
-    mp_face = mp.solutions.face_detection
-except AttributeError:
+    if mp and hasattr(mp, "solutions") and hasattr(mp.solutions, "face_detection"):
+        mp_face = mp.solutions.face_detection
+except Exception:
     mp_face = None
+
+cascade_xml = os.path.join(os.path.dirname(__file__), "haarcascade_frontalface_default.xml")
+if os.path.exists(cascade_xml):
+    detector = cv2.CascadeClassifier(cascade_xml)
+    if not detector.empty():
+        cascade_detector = detector
 
 # Sample at most this many points per clip — enough for a smooth pan without
 # processing every frame.
@@ -33,8 +48,8 @@ SAMPLE_HZ = float(os.environ.get("FACE_SAMPLE_HZ", "4"))
 
 @app.get("/health")
 def health():
-    return jsonify(status="ok", sample_hz=SAMPLE_HZ, has_mediapipe_solutions=(mp_face is not None))
-
+    active_detector = "mediapipe" if mp_face else ("opencv_cascade" if cascade_detector else "none")
+    return jsonify(status="ok", sample_hz=SAMPLE_HZ, detector=active_detector, has_detector=(active_detector != "none"))
 
 
 @app.post("/track")
@@ -62,11 +77,10 @@ def track():
 
 
 def _sample_centers(path: str, start_ms: int, end_ms: int) -> list[dict]:
-    if not mp_face:
+    if not mp_face and not cascade_detector:
         return []
 
     cap = cv2.VideoCapture(path)
-
     if not cap.isOpened():
         return []
 
@@ -80,7 +94,43 @@ def _sample_centers(path: str, start_ms: int, end_ms: int) -> list[dict]:
     centers: list[dict] = []
     next_target_ms = start_ms
 
-    with mp_face.FaceDetection(model_selection=1, min_detection_confidence=0.5) as fd:
+    if mp_face:
+        with mp_face.FaceDetection(model_selection=1, min_detection_confidence=0.5) as fd:
+            while True:
+                ok, frame = cap.read()
+                if not ok:
+                    break
+
+                current_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
+                if current_ms > end_ms:
+                    break
+
+                if current_ms >= next_target_ms:
+                    h, w = frame.shape[:2]
+                    if w > 640:
+                        target_h = max(1, int(h * (640.0 / w)))
+                        proc_frame = cv2.resize(frame, (640, target_h), interpolation=cv2.INTER_NEAREST)
+                    else:
+                        proc_frame = frame
+
+                    rgb = cv2.cvtColor(proc_frame, cv2.COLOR_BGR2RGB)
+                    result = fd.process(rgb)
+
+                    if result.detections:
+                        best = max(
+                            result.detections,
+                            key=lambda d: d.location_data.relative_bounding_box.width,
+                        )
+                        box = best.location_data.relative_bounding_box
+                        cx = box.xmin + box.width / 2.0
+                        centers.append({"t_ms": int(current_ms), "cx": max(0.0, min(1.0, float(cx)))})
+
+                    next_target_ms += step_ms
+                    while current_ms < next_target_ms - frame_delay:
+                        if not cap.grab():
+                            break
+                        current_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
+    elif cascade_detector:
         while True:
             ok, frame = cap.read()
             if not ok:
@@ -90,10 +140,7 @@ def _sample_centers(path: str, start_ms: int, end_ms: int) -> list[dict]:
             if current_ms > end_ms:
                 break
 
-            # Process frame if we have reached or passed the target timestamp
             if current_ms >= next_target_ms:
-                # Downscale large frames to 640px width to speed up face detection by up to 5-10x
-                # while preserving accurate normalized cx (0..1) bounding box coordinates.
                 h, w = frame.shape[:2]
                 if w > 640:
                     target_h = max(1, int(h * (640.0 / w)))
@@ -101,22 +148,18 @@ def _sample_centers(path: str, start_ms: int, end_ms: int) -> list[dict]:
                 else:
                     proc_frame = frame
 
-                rgb = cv2.cvtColor(proc_frame, cv2.COLOR_BGR2RGB)
-                result = fd.process(rgb)
+                gray = cv2.cvtColor(proc_frame, cv2.COLOR_BGR2GRAY)
+                faces = cascade_detector.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4, minSize=(30, 30))
 
-
-                if result.detections:
-                    best = max(
-                        result.detections,
-                        key=lambda d: d.location_data.relative_bounding_box.width,
-                    )
-                    box = best.location_data.relative_bounding_box
-                    cx = box.xmin + box.width / 2.0
+                if len(faces) > 0:
+                    # Find largest face (primary speaker)
+                    largest = max(faces, key=lambda f: f[2] * f[3])
+                    fx, fy, fw, fh = largest
+                    # Compute normalized center X relative to proc_frame width
+                    cx = (fx + fw / 2.0) / proc_frame.shape[1]
                     centers.append({"t_ms": int(current_ms), "cx": max(0.0, min(1.0, float(cx)))})
 
                 next_target_ms += step_ms
-
-                # Fast forward / skip decoding using grab() until we are close to next target
                 while current_ms < next_target_ms - frame_delay:
                     if not cap.grab():
                         break
