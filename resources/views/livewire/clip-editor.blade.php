@@ -18,6 +18,9 @@
             <a href="/videos/{{ $candidate->video_id }}/review" wire:navigate class="btn btn-outline">
                 <i class="ph ph-arrow-left"></i> Kembali ke Daftar
             </a>
+            <a href="/openreel/?video_url={{ urlencode('/videos/' . $candidate->video_id . '/source') }}" target="_blank" class="btn btn-outline" style="border-color: #3b82f6; color: #3b82f6; font-weight: 700;">
+                <i class="ph ph-video" style="font-size: 16px;"></i> Edit di OpenReel
+            </a>
             <button type="button" wire:click="saveAndApprove" class="btn" style="background: var(--purple-gradient); box-shadow: 0 4px 16px rgba(154, 85, 255, 0.4);">
                 ⚡ Export &amp; Render Klip Ini
             </button>

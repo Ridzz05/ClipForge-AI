@@ -91,6 +91,9 @@
                                 <td style="text-align: right;">
                                     @if($e->status==='rendered' && $e->output_path)
                                         <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center;">
+                                            <a href="/openreel/?video_url={{ urlencode('/api/exports/' . $e->id . '/download') }}" target="_blank" class="btn btn-sm btn-outline" style="border-color: #3b82f6; color: #3b82f6; font-weight: 700;">
+                                                <i class="ph ph-video"></i> Edit di OpenReel
+                                            </a>
                                             <a href="/api/exports/{{ $e->id }}/download" class="btn btn-sm">
                                                 <i class="ph ph-download-simple"></i> Download MP4
                                             </a>
