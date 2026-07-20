@@ -84,11 +84,12 @@
                 <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px;">
                     <div>
                         <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">START (MS)</label>
-                        <input type="number" wire:model.live="editStartMs">
+                        <input type="number" wire:model.live.debounce.300ms="editStartMs">
                     </div>
                     <div>
                         <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">END (MS)</label>
-                        <input type="number" wire:model.live="editEndMs">
+                        <input type="number" wire:model.live.debounce.300ms="editEndMs">
+
                     </div>
                 </div>
                 <div class="row" style="gap: 10px;">
@@ -174,14 +175,15 @@
                             <span>FONT SIZE</span>
                             <span>{{ $captionFontSize }}</span>
                         </div>
-                        <input type="range" min="40" max="120" wire:model.live="captionFontSize" style="width:100%; accent-color: var(--purple-primary);">
+                        <input type="range" min="40" max="120" wire:model.live.debounce.300ms="captionFontSize" style="width:100%; accent-color: var(--purple-primary);">
                     </div>
                     <div>
                         <div class="row between" style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">
                             <span>CAPTION Y POSITION</span>
                             <span>{{ $captionPosY }}</span>
                         </div>
-                        <input type="range" min="200" max="1800" wire:model.live="captionPosY" style="width:100%; accent-color: var(--purple-primary);">
+                        <input type="range" min="200" max="1800" wire:model.live.debounce.300ms="captionPosY" style="width:100%; accent-color: var(--purple-primary);">
+
                     </div>
                 </div>
 

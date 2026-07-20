@@ -23,7 +23,8 @@ app = Flask(__name__)
 _MODEL_NAME = os.environ.get("WHISPER_MODEL", "small")
 _DEVICE = os.environ.get("WHISPER_DEVICE", "cpu")
 _COMPUTE_TYPE = os.environ.get("WHISPER_COMPUTE_TYPE", "int8")
-_CPU_THREADS = int(os.environ.get("WHISPER_CPU_THREADS", str(os.cpu_count() or 4)))
+_CPU_THREADS = int(os.environ.get("WHISPER_CPU_THREADS", str(min(4, os.cpu_count() or 4))))
+
 _BEAM_SIZE = int(os.environ.get("WHISPER_BEAM_SIZE", "5"))
 
 _model_cache: dict[str, WhisperModel] = {}
