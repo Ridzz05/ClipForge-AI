@@ -94,6 +94,7 @@
                     <!-- 16:9 Full Source Container + Draggable 9:16 Manual Crop Box -->
                     <div style="display: flex; flex-direction: column; align-items: center; width: 100%; margin-bottom: 20px;">
                         <div id="manual-crop-container" 
+                             onclick="positionManualCropOnClick(event)"
                              style="width: 100%; max-width: 560px; height: 315px; background: #080c14; border-radius: 16px; position: relative; overflow: hidden; border: 2px solid var(--purple-primary, #6366f1); box-shadow: 0 12px 36px rgba(0,0,0,0.4); user-select: none;">
                             
                             <!-- Source 16:9 Video -->
@@ -105,6 +106,8 @@
 
                             <!-- 9:16 Draggable Overlay Window -->
                             <div id="manual-crop-window" 
+                                 onmousedown="startManualCropDrag(event)"
+                                 ontouchstart="startManualCropDrag(event)"
                                  style="
                                      position: absolute; 
                                      top: 0; 
@@ -726,46 +729,41 @@
             }
         };
 
-        // ✅ Interactive 9:16 Manual Crop Drag Engine
-        window.initManualCropDrag = function() {
-            const container = document.getElementById('manual-crop-container');
+        // ✅ Interactive 9:16 Manual Crop Drag Engine (Direct Inline + Global Window Handlers)
+        window.startManualCropDrag = function(e) {
             const cropBox = document.getElementById('manual-crop-window');
+            const container = document.getElementById('manual-crop-container');
             const label = document.getElementById('manual-crop-x-label');
-            if (!container || !cropBox) return;
+            if (!cropBox || !container) return;
 
-            let isDragging = false;
-            let startX = 0;
-            let startLeft = 0;
+            let isDragging = true;
+            cropBox.style.cursor = 'grabbing';
 
-            function getEventX(e) {
-                return e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+            function getEventX(ev) {
+                if (ev.touches && ev.touches.length > 0) {
+                    return ev.touches[0].clientX;
+                }
+                return ev.clientX || 0;
             }
 
-            function onPointerDown(e) {
-                isDragging = true;
-                cropBox.style.cursor = 'grabbing';
-                startX = getEventX(e);
-                const rect = container.getBoundingClientRect();
-                const boxRect = cropBox.getBoundingClientRect();
-                startLeft = boxRect.left - rect.left;
-                e.preventDefault();
-            }
+            const startX = getEventX(e);
+            const containerRect = container.getBoundingClientRect();
+            const boxRect = cropBox.getBoundingClientRect();
+            const startLeft = boxRect.left - containerRect.left;
 
-            function onPointerMove(e) {
+            function onMove(ev) {
                 if (!isDragging) return;
-                const currentX = getEventX(e);
+                const currentX = getEventX(ev);
                 const deltaX = currentX - startX;
-                const rect = container.getBoundingClientRect();
-                const boxWidth = cropBox.offsetWidth;
-                const maxLeft = rect.width - boxWidth;
+                const maxLeft = containerRect.width - boxRect.width;
 
                 let newLeft = startLeft + deltaX;
                 newLeft = Math.max(0, Math.min(maxLeft, newLeft));
 
                 cropBox.style.left = newLeft + 'px';
 
-                const centerX = newLeft + (boxWidth / 2);
-                const normPct = Math.max(0, Math.min(1, centerX / rect.width));
+                const centerX = newLeft + (boxRect.width / 2);
+                const normPct = Math.max(0, Math.min(1, centerX / containerRect.width));
 
                 if (label) {
                     label.textContent = (normPct * 100).toFixed(1) + '%';
@@ -777,36 +775,86 @@
                         const rootElem = container.closest('[wire\\:id]');
                         if (rootElem) {
                             const compId = rootElem.getAttribute('wire:id');
-                            if (compId && Livewire.find(compId)) {
-                                Livewire.find(compId).set('manualCropX', parseFloat(normPct.toFixed(4)));
+                            const comp = Livewire.find(compId);
+                            if (comp) {
+                                comp.set('manualCropX', parseFloat(normPct.toFixed(4)));
                             }
                         }
                     }
-                }, 150);
+                }, 100);
             }
 
-            function onPointerUp() {
-                if (isDragging) {
-                    isDragging = false;
-                    cropBox.style.cursor = 'grab';
-                }
+            function onEnd() {
+                isDragging = false;
+                cropBox.style.cursor = 'grab';
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('touchmove', onMove);
+                window.removeEventListener('mouseup', onEnd);
+                window.removeEventListener('touchend', onEnd);
             }
 
-            cropBox.addEventListener('mousedown', onPointerDown);
-            cropBox.addEventListener('touchstart', onPointerDown, { passive: false });
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('touchmove', onMove, { passive: false });
+            window.addEventListener('mouseup', onEnd);
+            window.addEventListener('touchend', onEnd);
 
-            window.addEventListener('mousemove', onPointerMove);
-            window.addEventListener('touchmove', onPointerMove, { passive: false });
-
-            window.addEventListener('mouseup', onPointerUp);
-            window.addEventListener('touchend', onPointerUp);
+            if (e.cancelable) {
+                e.preventDefault();
+            }
         };
 
-        setTimeout(function() {
-            window.initManualCropDrag();
+        window.positionManualCropOnClick = function(e) {
+            if (e.target.closest('#manual-crop-window')) return;
+            const container = document.getElementById('manual-crop-container');
+            const cropBox = document.getElementById('manual-crop-window');
+            const label = document.getElementById('manual-crop-x-label');
+            if (!container || !cropBox) return;
+
+            const rect = container.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const boxWidth = cropBox.offsetWidth;
+            const maxLeft = rect.width - boxWidth;
+
+            let newLeft = clickX - (boxWidth / 2);
+            newLeft = Math.max(0, Math.min(maxLeft, newLeft));
+
+            cropBox.style.left = newLeft + 'px';
+
+            const centerX = newLeft + (boxWidth / 2);
+            const normPct = Math.max(0, Math.min(1, centerX / rect.width));
+
+            if (label) {
+                label.textContent = (normPct * 100).toFixed(1) + '%';
+            }
+
+            if (window.Livewire) {
+                const rootElem = container.closest('[wire\\:id]');
+                if (rootElem) {
+                    const compId = rootElem.getAttribute('wire:id');
+                    const comp = Livewire.find(compId);
+                    if (comp) {
+                        comp.set('manualCropX', parseFloat(normPct.toFixed(4)));
+                    }
+                }
+            }
+        };
+
+        const bootEditorEngines = function() {
             window.initLiveSubtitleSync();
             window.initTimelineScrubber();
-        }, 100);
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootEditorEngines);
+        } else {
+            bootEditorEngines();
+        }
+
+        document.addEventListener('livewire:initialized', () => {
+            Livewire.hook('morph.updated', () => {
+                bootEditorEngines();
+            });
+        });
     </script>
 </div>
 
