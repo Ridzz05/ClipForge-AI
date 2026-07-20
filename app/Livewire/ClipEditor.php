@@ -138,10 +138,14 @@ class ClipEditor extends Component
         ]);
 
         try {
+            $styleKey = $this->burnSubtitles === 'off'
+                ? 'none'
+                : ($this->subtitleColor === 'yellow' ? 'karaoke_yellow' : ($this->subtitleColor === 'pink' ? 'tiktok_green' : 'default'));
+
             $export = $review->approve(
                 $this->candidate,
                 $this->ctaText,
-                $this->subtitleColor === 'yellow' ? 'karaoke_yellow' : ($this->subtitleColor === 'pink' ? 'tiktok_green' : 'default'),
+                $styleKey,
                 $this->captionPosY,
                 $this->renderFormat === 'face_916' ? 'single' : 'split_gaming'
             );

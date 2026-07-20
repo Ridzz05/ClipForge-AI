@@ -161,10 +161,12 @@ class ReviewVideo extends Component
         }
 
         try {
+            $styleKey = $this->burnSubtitles === 'off' ? 'none' : $this->captionStyle;
+
             $export = $review->approve(
                 $candidate,
                 $this->ctaText,
-                $this->captionStyle,
+                $styleKey,
                 $this->captionMarginV,
                 $this->layout
             );
