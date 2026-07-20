@@ -18,7 +18,7 @@ const DYNAMIC_CACHE_NAME = "openreel-dynamic-v1";
  * Static assets to cache on install
  * These are the core application files needed for offline functionality
  */
-const STATIC_ASSETS = ["/", "/index.html", "/manifest.json"];
+const STATIC_ASSETS = ["/openreel/", "/openreel/index.html", "/openreel/manifest.json"];
 
 /**
  * Patterns for assets that should be cached dynamically
