@@ -271,6 +271,20 @@
         /* OFF: show only active word, no animation */
         .anim-off .cw { display: none; }
         .anim-off .cw.active { display: inline-block; color: #ffffff; text-shadow: 0 1px 6px rgba(0,0,0,0.9), -1px -1px 0 #000, 1px 1px 0 #000; }
+
+        /* Canvas Jiggle-Drop — phone frame drops & bounces when Play is clicked */
+        @keyframes canvasJiggleDrop {
+            0%   { transform: translateY(0px)  rotate(0deg);    }
+            12%  { transform: translateY(-6px) rotate(-0.4deg); }
+            30%  { transform: translateY(8px)  rotate( 0.35deg);}
+            50%  { transform: translateY(-3px) rotate(-0.2deg); }
+            68%  { transform: translateY(2px)  rotate( 0.1deg); }
+            84%  { transform: translateY(-1px) rotate(0deg);    }
+            100% { transform: translateY(0px)  rotate(0deg);    }
+        }
+        #live-canvas-frame.canvas-jiggle {
+            animation: canvasJiggleDrop 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+        }
     </style>
 
     <!-- JS Studio Player Controls & Live Subtitle Engine -->
@@ -419,6 +433,14 @@
             if (video) {
                 video.currentTime = (startMs || 0) / 1000;
                 video.play();
+
+                // Jiggle-drop effect on 9:16 canvas frame
+                const frame = document.getElementById('live-canvas-frame');
+                if (frame) {
+                    frame.classList.remove('canvas-jiggle');
+                    void frame.offsetWidth; // force reflow so animation always restarts
+                    frame.classList.add('canvas-jiggle');
+                }
 
                 if (window.previewInterval) clearInterval(window.previewInterval);
 
