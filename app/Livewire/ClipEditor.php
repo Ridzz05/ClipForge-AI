@@ -26,7 +26,7 @@ class ClipEditor extends Component
     public string $burnSubtitles = 'on';
     public string $subtitleColor = 'yellow';
     public bool $glowEffect = false;
-    public string $captionAnimation = 'rise';
+    public string $captionAnimation = 'karaoke';
     public int $captionFontSize = 76;
     public int $captionPosY = 960;
     public int $captionPosX = 540;
