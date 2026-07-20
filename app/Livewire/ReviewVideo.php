@@ -50,17 +50,17 @@ class ReviewVideo extends Component
     public function ctaPresets(): array
     {
         return [
+            "Follow Halaman Ini untuk Tips Bisnis Rumahan 💡",
+            "Share ke Grup FB / WhatsApp Bunda 📩",
+            "Komen 'BISA' kalau Bunda Siap Mulai Usaha 💬",
+            "Simpan Video Ini untuk Catatan Keuangan Bunda 📌",
             "Follow Halaman Ini untuk Insight Setiap Hari 🔔",
             "Share ke Teman Kamu yang Butuh Ini ↗️",
             "Tulis Pendapatmu di Kolom Komentar 💬",
             "Ikuti Halaman Ini Agar Tidak Ketinggalan 🚀",
-            "IT'S OUT. IT'S ACTUALLY OUT.",
-            "we got new Backyard Baseball before GTA 6 💀",
-            "Pablo Sanchez is back and he's still HIM",
-            "bought my childhood back on Steam today",
-            "dropped everything to play Backyard Baseball. no regrets",
         ];
     }
+
 
 
     public function mount(Video $video): void
