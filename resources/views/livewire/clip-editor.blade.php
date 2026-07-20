@@ -94,13 +94,14 @@
                     <!-- 16:9 Full Source Container + Draggable 9:16 Manual Crop Box -->
                     <div style="display: flex; flex-direction: column; align-items: center; width: 100%; margin-bottom: 20px;">
                         <div id="manual-crop-container" 
+                             wire:ignore.self
                              onclick="positionManualCropOnClick(event)"
-                             style="width: 100%; max-width: 560px; height: 315px; background: #080c14; border-radius: 16px; position: relative; overflow: hidden; border: 2px solid var(--purple-primary, #6366f1); box-shadow: 0 12px 36px rgba(0,0,0,0.4); user-select: none;">
+                             style="width: 100%; max-width: 560px; height: 315px; background: #080c14; border-radius: 16px; position: relative; overflow: hidden; border: 2px solid #00f0ff; box-shadow: 0 12px 36px rgba(0,0,0,0.4); user-select: none;">
                             
-                            <!-- Source 16:9 Video -->
-                            <video id="editor-video-manual" controls preload="metadata" 
+                            <!-- Source 16:9 Video (pointer-events: none prevents video shadow DOM from capturing mouse events) -->
+                            <video id="editor-video-manual" preload="metadata" 
                                    onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
-                                   style="width: 100%; height: 100%; object-fit: contain; display: block;" 
+                                   style="width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none;" 
                                    src="/videos/{{ $candidate->video_id }}/source">
                             </video>
 
@@ -115,8 +116,8 @@
                                      width: 177px; 
                                      left: calc({{ $manualCropX * 100 }}% - 88.5px);
                                      border: 2.5px solid #00f0ff; 
-                                     background: rgba(0, 240, 255, 0.12); 
-                                     box-shadow: 0 0 20px rgba(0, 240, 255, 0.5), inset 0 0 15px rgba(0, 240, 255, 0.2); 
+                                     background: rgba(0, 240, 255, 0.15); 
+                                     box-shadow: 0 0 24px rgba(0, 240, 255, 0.6), inset 0 0 15px rgba(0, 240, 255, 0.25); 
                                      cursor: grab; 
                                      z-index: 10;
                                      display: flex;
@@ -155,15 +156,29 @@
                                 @endif
 
                                 <!-- Bottom Position Badge -->
-                                <div style="background: rgba(0, 0, 0, 0.75); color: #00f0ff; font-size: 9px; font-weight: 800; padding: 3px; text-align: center; font-family: var(--font-mono); pointer-events: none; border-top: 1px solid rgba(0, 240, 255, 0.4);">
+                                <div style="background: rgba(0, 0, 0, 0.85); color: #00f0ff; font-size: 9px; font-weight: 800; padding: 3px; text-align: center; font-family: var(--font-mono); pointer-events: none; border-top: 1px solid rgba(0, 240, 255, 0.4);">
                                     POS X: <span id="manual-crop-x-label">{{ round($manualCropX * 100, 1) }}%</span>
                                 </div>
                             </div>
                         </div>
                         
+                        <!-- Interactive Framing Slider Bar -->
+                        <div style="display: flex; align-items: center; gap: 12px; width: 100%; max-width: 560px; margin-top: 10px; padding: 8px 16px; background: rgba(0,240,255,0.06); border: 1px solid rgba(0,240,255,0.25); border-radius: 12px;">
+                            <span style="font-size: 10px; font-weight: 800; color: #00f0ff; font-family: var(--font-mono); white-space: nowrap;">⟵ KIRI</span>
+                            <input type="range" 
+                                   id="manual-crop-range" 
+                                   min="0" 
+                                   max="1" 
+                                   step="0.002" 
+                                   value="{{ $manualCropX }}" 
+                                   oninput="window.updateCropBoxUI(parseFloat(this.value))"
+                                   style="flex: 1; height: 6px; border-radius: 4px; accent-color: #00f0ff; cursor: pointer;">
+                            <span style="font-size: 10px; font-weight: 800; color: #00f0ff; font-family: var(--font-mono); white-space: nowrap;">KANAN ⟶</span>
+                        </div>
+
                         <!-- Instruction Banner -->
-                        <div style="margin-top: 8px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: center;">
-                            💡 <span style="color: #00f0ff;">Tarik bingkai cyan ke kiri / kanan</span> untuk menentukan area 9:16 yang akan dipangkas.
+                        <div style="margin-top: 6px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: center;">
+                            💡 Geser bingkai cyan 9:16 di atas video atau geser **Slider** untuk menentukan area pangkas.
                         </div>
                     </div>
                 @endif
@@ -729,11 +744,42 @@
             }
         };
 
+        window.updateCropBoxUI = function(normPct) {
+            const container = document.getElementById('manual-crop-container');
+            const cropBox = document.getElementById('manual-crop-window');
+            const label = document.getElementById('manual-crop-x-label');
+            const slider = document.getElementById('manual-crop-range');
+            if (!container || !cropBox) return;
+
+            const containerW = container.offsetWidth || 560;
+            const boxW = cropBox.offsetWidth || 177;
+            const maxLeft = containerW - boxW;
+
+            let newLeft = (normPct * containerW) - (boxW / 2);
+            newLeft = Math.max(0, Math.min(maxLeft, newLeft));
+
+            cropBox.style.left = newLeft + 'px';
+
+            if (label) label.textContent = (normPct * 100).toFixed(1) + '%';
+            if (slider && document.activeElement !== slider) slider.value = normPct;
+
+            if (window.manualCropTimer) clearTimeout(window.manualCropTimer);
+            window.manualCropTimer = setTimeout(function() {
+                const rootElem = container.closest('[wire\\:id]');
+                if (rootElem && window.Livewire) {
+                    const compId = rootElem.getAttribute('wire:id');
+                    const comp = Livewire.find(compId);
+                    if (comp) {
+                        comp.set('manualCropX', parseFloat(normPct.toFixed(4)));
+                    }
+                }
+            }, 80);
+        };
+
         // ✅ Interactive 9:16 Manual Crop Drag Engine (Direct Inline + Global Window Handlers)
         window.startManualCropDrag = function(e) {
             const cropBox = document.getElementById('manual-crop-window');
             const container = document.getElementById('manual-crop-container');
-            const label = document.getElementById('manual-crop-x-label');
             if (!cropBox || !container) return;
 
             let isDragging = true;
@@ -755,33 +801,14 @@
                 if (!isDragging) return;
                 const currentX = getEventX(ev);
                 const deltaX = currentX - startX;
-                const maxLeft = containerRect.width - boxRect.width;
 
                 let newLeft = startLeft + deltaX;
-                newLeft = Math.max(0, Math.min(maxLeft, newLeft));
-
-                cropBox.style.left = newLeft + 'px';
+                newLeft = Math.max(0, Math.min(containerRect.width - boxRect.width, newLeft));
 
                 const centerX = newLeft + (boxRect.width / 2);
                 const normPct = Math.max(0, Math.min(1, centerX / containerRect.width));
 
-                if (label) {
-                    label.textContent = (normPct * 100).toFixed(1) + '%';
-                }
-
-                if (window.manualCropTimer) clearTimeout(window.manualCropTimer);
-                window.manualCropTimer = setTimeout(function() {
-                    if (window.Livewire) {
-                        const rootElem = container.closest('[wire\\:id]');
-                        if (rootElem) {
-                            const compId = rootElem.getAttribute('wire:id');
-                            const comp = Livewire.find(compId);
-                            if (comp) {
-                                comp.set('manualCropX', parseFloat(normPct.toFixed(4)));
-                            }
-                        }
-                    }
-                }, 100);
+                window.updateCropBoxUI(normPct);
             }
 
             function onEnd() {
@@ -798,45 +825,22 @@
             window.addEventListener('mouseup', onEnd);
             window.addEventListener('touchend', onEnd);
 
+            e.stopPropagation();
             if (e.cancelable) {
                 e.preventDefault();
             }
         };
 
         window.positionManualCropOnClick = function(e) {
-            if (e.target.closest('#manual-crop-window')) return;
+            if (e.target.closest('#manual-crop-window') || e.target.closest('input')) return;
             const container = document.getElementById('manual-crop-container');
-            const cropBox = document.getElementById('manual-crop-window');
-            const label = document.getElementById('manual-crop-x-label');
-            if (!container || !cropBox) return;
+            if (!container) return;
 
             const rect = container.getBoundingClientRect();
             const clickX = e.clientX - rect.left;
-            const boxWidth = cropBox.offsetWidth;
-            const maxLeft = rect.width - boxWidth;
+            const normPct = Math.max(0, Math.min(1, clickX / rect.width));
 
-            let newLeft = clickX - (boxWidth / 2);
-            newLeft = Math.max(0, Math.min(maxLeft, newLeft));
-
-            cropBox.style.left = newLeft + 'px';
-
-            const centerX = newLeft + (boxWidth / 2);
-            const normPct = Math.max(0, Math.min(1, centerX / rect.width));
-
-            if (label) {
-                label.textContent = (normPct * 100).toFixed(1) + '%';
-            }
-
-            if (window.Livewire) {
-                const rootElem = container.closest('[wire\\:id]');
-                if (rootElem) {
-                    const compId = rootElem.getAttribute('wire:id');
-                    const comp = Livewire.find(compId);
-                    if (comp) {
-                        comp.set('manualCropX', parseFloat(normPct.toFixed(4)));
-                    }
-                }
-            }
+            window.updateCropBoxUI(normPct);
         };
 
         const bootEditorEngines = function() {
