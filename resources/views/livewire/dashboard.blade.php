@@ -21,36 +21,31 @@
 
     <!-- Purple Admin Stat Cards (3 Gradient Cards Reference) -->
     <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
-        <!-- Stat Card 1: Ingested Videos (Coral/Pink Gradient) -->
-        <div class="stat-card card-coral">
-            <div class="card-title">
-                <span>Total Video Ingested</span>
-                <i class="ph ph-video-camera"></i>
-            </div>
-            <div class="card-value">{{ $videos->count() }}</div>
-            <div class="card-subtitle">Video sumber dalam sistem</div>
-        </div>
+        <x-stat-card 
+            title="Total Video Ingested" 
+            :value="$videos->count()" 
+            subtitle="Video sumber dalam sistem" 
+            icon="video-camera" 
+            gradient="coral" 
+        />
 
-        <!-- Stat Card 2: AI Clip Candidates (Blue Gradient) -->
-        <div class="stat-card card-blue">
-            <div class="card-title">
-                <span>Kandidat Klip AI</span>
-                <i class="ph ph-scissors"></i>
-            </div>
-            <div class="card-value">{{ \App\Models\ClipCandidate::count() }}</div>
-            <div class="card-subtitle">Hook viral terdeteksi oleh LLM</div>
-        </div>
+        <x-stat-card 
+            title="Kandidat Klip AI" 
+            :value="\App\Models\ClipCandidate::count()" 
+            subtitle="Hook viral terdeteksi oleh LLM" 
+            icon="scissors" 
+            gradient="blue" 
+        />
 
-        <!-- Stat Card 3: Ready Exports (Teal/Emerald Gradient) -->
-        <div class="stat-card card-teal">
-            <div class="card-title">
-                <span>Hasil Ekspor Completed</span>
-                <i class="ph ph-download-simple"></i>
-            </div>
-            <div class="card-value">{{ \App\Models\Export::where('status', 'completed')->count() }}</div>
-            <div class="card-subtitle">Klip vertical (9:16) siap unduh</div>
-        </div>
+        <x-stat-card 
+            title="Hasil Ekspor Completed" 
+            :value="\App\Models\Export::where('status', 'completed')->count()" 
+            subtitle="Klip vertical (9:16) siap unduh" 
+            icon="download-simple" 
+            gradient="teal" 
+        />
     </div>
+
 
     <!-- System Status & Control Bar (Purple Admin Style) -->
     <div class="panel" style="padding: 20px 24px;">

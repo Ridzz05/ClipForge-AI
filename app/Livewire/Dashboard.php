@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Livewire;
 
 use App\Exceptions\IngestValidationException;
 use App\Jobs\IngestUrlJob;
 use App\Models\Video;
+use App\Services\SystemHealthService;
 use App\Services\VideoIngestService;
 use App\Services\YtDlpService;
 use Illuminate\Http\UploadedFile;
@@ -17,25 +20,16 @@ class Dashboard extends Component
 {
     use WithFileUploads;
 
-    /**
-     * Temp uploaded file (Livewire manages the temp storage). No #[Validate]
-     * attribute on purpose: that enables real-time auto-validation, which made
-     * the "upload required" error leak onto the page while the operator was
-     * using the separate URL form. We validate explicitly inside save() only.
-     */
     public $upload;
 
-    /** Public video URL to ingest via yt-dlp. */
     public string $url = '';
 
-    /** Video resolution limit for yt-dlp. */
     public string $resolution = 'best';
 
     public bool $autoClip = false;
 
     public ?string $flash = null;
 
-    /** Errors are scoped per form so one form's failure can't confuse the other. */
     public ?string $uploadError = null;
 
     public ?string $urlError = null;
@@ -48,45 +42,26 @@ class Dashboard extends Component
 
     public function updatedUpload(): void
     {
-        // Clear stale messages when a new file is chosen.
         $this->flash = null;
         $this->uploadError = null;
         $this->resetValidation();
     }
 
-    public function restartQueue(): void
+    public function restartQueue(SystemHealthService $health): void
     {
-        \Illuminate\Support\Facades\Cache::forget('service_statuses');
-        \Illuminate\Support\Facades\Artisan::call('queue:restart');
+        $health->restartQueue();
         $this->dispatch('toast', message: "Sinyal restart antrean dikirim ke Queue Worker.", type: 'success');
     }
 
-    public function wakeUpQueue(): void
+    public function wakeUpQueue(SystemHealthService $health): void
     {
-        \Illuminate\Support\Facades\Cache::forget('service_statuses');
-        $statuses = $this->checkServiceStatuses();
-        if ($statuses['queue']) {
+        if ($health->wakeUpQueue()) {
             $this->dispatch('toast', message: "Antrean (Queue Worker) sudah berjalan aktif.", type: 'info');
-            return;
-        }
-
-        try {
-            $phpBinary = '"' . PHP_BINARY . '"';
-            $artisanPath = '"' . base_path('artisan') . '"';
-
-            if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
-                // Window start needs empty title parameter when executable is quoted
-                $command = "start /B \"\" {$phpBinary} {$artisanPath} queue:work --tries=3";
-                pclose(popen($command, "r"));
-            } else {
-                $command = "{$phpBinary} {$artisanPath} queue:work --tries=3 > /dev/null 2>&1 &";
-                exec($command);
-            }
-            $this->dispatch('toast', message: "Antrean (Queue Worker) berhasil dibangunkan di latar belakang!", type: 'success');
-        } catch (\Throwable $e) {
-            $this->dispatch('toast', message: "Gagal membangunkan antrean: " . $e->getMessage(), type: 'error');
+        } else {
+            $this->dispatch('toast', message: "Gagal membangunkan antrean.", type: 'error');
         }
     }
+
 
     public function save(VideoIngestService $ingest): void
     {
@@ -210,60 +185,7 @@ class Dashboard extends Component
         $this->showStatusModal = false;
     }
 
-    private function checkServiceStatuses(): array
-    {
-        return \Illuminate\Support\Facades\Cache::remember('service_statuses', 5, function () {
-            $whisperUrl = (string) config('autoclip.whisper.endpoint', 'http://127.0.0.1:9000');
-            $whisperOnline = false;
-            try {
-                $whisperOnline = \Illuminate\Support\Facades\Http::timeout(1)->withoutVerifying()->get($whisperUrl . '/health')->successful();
-            } catch (\Throwable $e) {}
-
-            $faceUrl = (string) config('autoclip.face.endpoint', 'http://127.0.0.1:9100');
-            $faceOnline = false;
-            try {
-                $faceOnline = \Illuminate\Support\Facades\Http::timeout(1)->withoutVerifying()->get($faceUrl . '/health')->successful();
-            } catch (\Throwable $e) {}
-
-            $llmDriver = (string) config('autoclip.llm.driver', 'ollama');
-            $llmEndpoint = (string) config('autoclip.llm.endpoint', 'http://127.0.0.1:11434');
-            $llmOnline = false;
-            try {
-                if ($llmDriver === 'ollama') {
-                    $llmOnline = \Illuminate\Support\Facades\Http::timeout(1)->withoutVerifying()->get($llmEndpoint)->successful();
-                } else {
-                    // Cloud/router check
-                    $llmOnline = \Illuminate\Support\Facades\Http::timeout(2)->withoutVerifying()->get($llmEndpoint)->status() !== 0;
-                }
-            } catch (\Throwable $e) {}
-
-            $queueOnline = false;
-            try {
-                if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
-                    @exec("wmic process where \"CommandLine like '%queue:work%' and name='php.exe'\" get ProcessId 2>&1", $winOutput);
-                    foreach ($winOutput as $line) {
-                        if (is_numeric(trim($line))) {
-                            $queueOnline = true;
-                            break;
-                        }
-                    }
-                } else {
-                    @exec('pgrep -f "queue:work"', $unixOutput);
-                    $queueOnline = count($unixOutput) > 0;
-                }
-            } catch (\Throwable $e) {}
-
-            return [
-                'whisper' => $whisperOnline,
-                'face' => $faceOnline,
-                'llm' => $llmOnline,
-                'llm_driver' => $llmDriver,
-                'queue' => $queueOnline,
-            ];
-        });
-    }
-
-    public function render()
+    public function render(SystemHealthService $health)
     {
         $videos = Video::query()
             ->withCount(['clipCandidates'])
@@ -271,9 +193,8 @@ class Dashboard extends Component
             ->limit(50)
             ->get();
 
-        $this->statuses = $this->checkServiceStatuses();
+        $this->statuses = $health->getStatuses();
 
-        // Keep polling while any video is still processing OR if the status modal is open!
         $anyProcessing = $videos->contains(fn (Video $v) => $v->isProcessing()) || $this->showStatusModal;
 
         $selectedVideo = $this->selectedVideoId 
@@ -287,3 +208,4 @@ class Dashboard extends Component
         ]);
     }
 }
+
