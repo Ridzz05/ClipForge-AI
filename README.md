@@ -6,21 +6,12 @@ It functions similarly to services like OpusClip or Vizard, but runs entirely on
 
 ---
 
-## 📸 User Interface Showcase
+## 🎬 User Interface Showcase & Screencast Demo
 
-Below are screenshots of the premium obsidian-dark glassmorphism dashboard and the built-in video editor:
+Below is the live screencast demonstration of the **Purple Admin Edition** dashboard and automated clip generation pipeline:
 
-| Main Dashboard & Pipeline Status | Live Video Editor Workspace |
-| :---: | :---: |
-| ![Dashboard](docs/images/screenshot_16.webp) | ![Editor Workspace](docs/images/screenshot_17.webp) |
+![ClipForge AI Screencast Demo](docs/demo.mp4)
 
-| Export & Final Deliverables | Activity Feed & Pipeline Timeline |
-| :---: | :---: |
-| ![Exports](docs/images/screenshot_18.webp) | ![Activity Timeline](docs/images/screenshot_19.webp) |
-
-| Video Ingest & Queue Manager |
-| :---: |
-| ![Ingest Panel](docs/images/screenshot_20.webp) |
 
 ---
 

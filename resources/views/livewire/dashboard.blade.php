@@ -1,171 +1,207 @@
-<div @if($poll) wire:poll.2s @endif class="grid" style="gap: 32px;">
-    <!-- Page Header -->
-    <div class="row between" style="align-items: flex-start;">
-        <div>
+<div @if($poll) wire:poll.2s @endif class="grid" style="gap: 28px;">
+
+    <!-- Page Header (Purple Admin Style) -->
+    <div class="row between" style="align-items: center; margin-bottom: 4px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 34px; height: 34px; border-radius: 8px; background: var(--purple-gradient); display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 12px rgba(154, 85, 255, 0.3);">
+                <i class="ph ph-house" style="font-size: 18px;"></i>
+            </div>
             <h1 class="page-title">Dashboard</h1>
-            <p class="page-sub" style="margin-bottom:0;">Unggah video panjang Anda untuk dipotong secara cerdas menjadi klip-klip vertical viral oleh AI.</p>
         </div>
-        @if($poll)
-            <span class="badge badge-blue" style="background: var(--tile-5); color: var(--ink); border: 1px solid rgba(0,0,0,0.06);">
-                <i class="ph ph-spinner-gap spin-rotate" style="font-size: 14px;"></i>&nbsp;Memproses Queue
-            </span>
-        @endif
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 12.5px; color: var(--text-muted); font-weight: 600; cursor: pointer;">Overview <i class="ph ph-info" style="font-size: 14px; vertical-align: middle;"></i></span>
+            @if($poll)
+                <span class="badge badge-purple" style="padding: 6px 14px; font-size: 11px;">
+                    <i class="ph ph-spinner-gap spin-rotate"></i>&nbsp;Memproses Queue
+                </span>
+            @endif
+        </div>
     </div>
 
-    <!-- System Status & Control Bar -->
-    <div class="panel" style="padding: 18px 24px; background: var(--stage-2); border: 1px dashed var(--border-stage); border-radius: 18px; color: var(--text-title);">
+
+    <!-- Purple Admin Stat Cards (3 Gradient Cards Reference) -->
+    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+        <!-- Stat Card 1: Ingested Videos (Coral/Pink Gradient) -->
+        <div class="stat-card card-coral">
+            <div class="card-title">
+                <span>Total Video Ingested</span>
+                <i class="ph ph-video-camera"></i>
+            </div>
+            <div class="card-value">{{ $videos->count() }}</div>
+            <div class="card-subtitle">Video sumber dalam sistem</div>
+        </div>
+
+        <!-- Stat Card 2: AI Clip Candidates (Blue Gradient) -->
+        <div class="stat-card card-blue">
+            <div class="card-title">
+                <span>Kandidat Klip AI</span>
+                <i class="ph ph-scissors"></i>
+            </div>
+            <div class="card-value">{{ \App\Models\ClipCandidate::count() }}</div>
+            <div class="card-subtitle">Hook viral terdeteksi oleh LLM</div>
+        </div>
+
+        <!-- Stat Card 3: Ready Exports (Teal/Emerald Gradient) -->
+        <div class="stat-card card-teal">
+            <div class="card-title">
+                <span>Hasil Ekspor Completed</span>
+                <i class="ph ph-download-simple"></i>
+            </div>
+            <div class="card-value">{{ \App\Models\Export::where('status', 'completed')->count() }}</div>
+            <div class="card-subtitle">Klip vertical (9:16) siap unduh</div>
+        </div>
+    </div>
+
+    <!-- System Status & Control Bar (Purple Admin Style) -->
+    <div class="panel" style="padding: 20px 24px;">
         <div class="row between" style="gap: 16px; flex-wrap: wrap;">
-            <!-- Left: Status Indicators -->
+            <!-- Status Indicators -->
             <div class="row" style="gap: 20px; flex-wrap: wrap;">
-                <div style="font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.15em;">
-                    Sistem Status:
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em;">
+                    System Status:
                 </div>
                 
                 <!-- Whisper -->
-                <div class="row" style="gap: 8px; font-size: 12px; font-family: var(--mono); letter-spacing: 0.05em;">
-                    <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: {{ ($statuses['whisper'] ?? false) ? '#10b981' : '#ef4444' }}; box-shadow: 0 0 8px {{ ($statuses['whisper'] ?? false) ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)' }};"></span>
-                    <span style="color: var(--muted)">Whisper:</span>
+                <div class="row" style="gap: 8px; font-size: 12.5px; font-weight: 600;">
+                    <span style="width: 9px; height: 9px; border-radius: 50%; display: inline-block; background-color: {{ ($statuses['whisper'] ?? false) ? '#10b981' : '#ef4444' }}; box-shadow: 0 0 10px {{ ($statuses['whisper'] ?? false) ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)' }};"></span>
+                    <span style="color: var(--text-muted)">Whisper:</span>
                     <strong style="color: {{ ($statuses['whisper'] ?? false) ? 'var(--text-title)' : '#ef4444' }};">{{ ($statuses['whisper'] ?? false) ? 'Online' : 'Offline' }}</strong>
                 </div>
 
                 <!-- Face Tracking -->
-                <div class="row" style="gap: 8px; font-size: 12px; font-family: var(--mono); letter-spacing: 0.05em;">
-                    <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: {{ ($statuses['face'] ?? false) ? '#10b981' : '#ef4444' }}; box-shadow: 0 0 8px {{ ($statuses['face'] ?? false) ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)' }};"></span>
-                    <span style="color: var(--muted)">Face Tracker:</span>
+                <div class="row" style="gap: 8px; font-size: 12.5px; font-weight: 600;">
+                    <span style="width: 9px; height: 9px; border-radius: 50%; display: inline-block; background-color: {{ ($statuses['face'] ?? false) ? '#10b981' : '#ef4444' }}; box-shadow: 0 0 10px {{ ($statuses['face'] ?? false) ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)' }};"></span>
+                    <span style="color: var(--text-muted)">Face Tracker:</span>
                     <strong style="color: {{ ($statuses['face'] ?? false) ? 'var(--text-title)' : '#ef4444' }};">{{ ($statuses['face'] ?? false) ? 'Online' : 'Offline' }}</strong>
                 </div>
 
                 <!-- LLM -->
-                <div class="row" style="gap: 8px; font-size: 12px; font-family: var(--mono); letter-spacing: 0.05em;">
-                    <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: {{ ($statuses['llm'] ?? false) ? '#10b981' : '#ef4444' }}; box-shadow: 0 0 8px {{ ($statuses['llm'] ?? false) ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)' }};"></span>
-                    <span style="color: var(--muted)">LLM Scorer ({{ ucfirst($statuses['llm_driver'] ?? 'ollama') }}):</span>
+                <div class="row" style="gap: 8px; font-size: 12.5px; font-weight: 600;">
+                    <span style="width: 9px; height: 9px; border-radius: 50%; display: inline-block; background-color: {{ ($statuses['llm'] ?? false) ? '#10b981' : '#ef4444' }}; box-shadow: 0 0 10px {{ ($statuses['llm'] ?? false) ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)' }};"></span>
+                    <span style="color: var(--text-muted)">LLM ({{ ucfirst($statuses['llm_driver'] ?? 'ollama') }}):</span>
                     <strong style="color: {{ ($statuses['llm'] ?? false) ? 'var(--text-title)' : '#ef4444' }};">{{ ($statuses['llm'] ?? false) ? 'Online' : 'Offline' }}</strong>
                 </div>
 
                 <!-- Queue Worker -->
-                <div class="row" style="gap: 8px; font-size: 12px; font-family: var(--mono); letter-spacing: 0.05em;">
-                    <span style="width: 8px; height: 8px; border-radius: 50%; display: inline-block; background-color: {{ ($statuses['queue'] ?? false) ? '#10b981' : '#ef4444' }}; box-shadow: 0 0 8px {{ ($statuses['queue'] ?? false) ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)' }};"></span>
-                    <span style="color: var(--muted)">Queue Worker (Antrean):</span>
+                <div class="row" style="gap: 8px; font-size: 12.5px; font-weight: 600;">
+                    <span style="width: 9px; height: 9px; border-radius: 50%; display: inline-block; background-color: {{ ($statuses['queue'] ?? false) ? '#10b981' : '#ef4444' }}; box-shadow: 0 0 10px {{ ($statuses['queue'] ?? false) ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)' }};"></span>
+                    <span style="color: var(--text-muted)">Queue Worker:</span>
                     <strong style="color: {{ ($statuses['queue'] ?? false) ? 'var(--text-title)' : '#ef4444' }};">{{ ($statuses['queue'] ?? false) ? 'Running' : 'Stopped' }}</strong>
                 </div>
             </div>
 
-            <!-- Right: Restart Actions -->
-            <div class="row" style="gap: 12px; flex-wrap: wrap;">
+            <!-- Control Actions -->
+            <div class="row" style="gap: 10px;">
                 @if(!($statuses['queue'] ?? false))
-                    <button type="button" wire:click="wakeUpQueue" class="btn btn-sm" style="padding: 6px 12px; background: #eab308; border: 1.5px solid #ca8a04; color: black; font-weight: 700; display: flex; align-items: center; gap: 6px; border-radius: 10px;" wire:loading.attr="disabled">
-                        <i class="ph ph-lightning" wire:loading.class="spin-rotate" wire:target="wakeUpQueue" style="font-size: 14px;"></i>
+                    <button type="button" wire:click="wakeUpQueue" class="btn btn-sm" style="background: #f59e0b; box-shadow: 0 4px 12px rgba(245,158,11,0.3);" wire:loading.attr="disabled">
+                        <i class="ph ph-lightning" wire:loading.class="spin-rotate" wire:target="wakeUpQueue"></i>
                         <span>Bangunkan Antrean</span>
                     </button>
                 @endif
-                <button type="button" wire:click="restartQueue" class="btn btn-sm btn-outline" style="border-color: var(--border-stage); background: rgba(255,255,255,0.03); color: var(--text-title); display: flex; align-items: center; gap: 6px;" wire:loading.attr="disabled">
-                    <i class="ph ph-arrows-clockwise" wire:loading.class="spin-rotate" wire:target="restartQueue" style="font-size: 14px;"></i>
-                    <span>Restart Antrean (.env)</span>
+                <button type="button" wire:click="restartQueue" class="btn btn-sm btn-outline" wire:loading.attr="disabled">
+                    <i class="ph ph-arrows-clockwise" wire:loading.class="spin-rotate" wire:target="restartQueue"></i>
+                    <span>Restart Queue (.env)</span>
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Upload & URL Panels Grid -->
-    <div id="upload-section" class="grid" style="grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch;">
+    <div id="upload-section" class="grid" style="grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px;">
         
-        <!-- Upload panel -->
-        <div class="panel grid" style="gap: 16px; background: var(--tile-2); border-color: rgba(0,0,0,0.05); color: var(--ink);">
-            <h3 style="margin: 0; font-family: var(--serif); font-style: italic; font-size: 24px; font-weight: 700; color: var(--ink);">
-                <i class="ph ph-upload-simple" style="vertical-align: middle; margin-right: 4px;"></i>Upload File Video
+        <!-- File Upload Panel -->
+        <div class="panel grid" style="gap: 20px;">
+            <h3 style="margin: 0; font-family: var(--font-title); font-size: 20px; font-weight: 800; color: var(--text-title); display: flex; align-items: center; gap: 8px;">
+                <i class="ph ph-cloud-arrow-up" style="color: var(--purple-primary); font-size: 24px;"></i>Upload File Video
             </h3>
             
             @if($uploadError)
-                <div class="flash flash-error" style="background: var(--paper);">{{ $uploadError }}</div>
+                <div style="padding: 12px 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; color: #ef4444; font-size: 13px; font-weight: 600;">
+                    {{ $uploadError }}
+                </div>
             @endif
 
-            <form wire:submit="save" class="grid" style="gap: 18px; justify-content: space-between; height: 100%;">
-                <!-- Styled Upload Zone with Livewire Upload Progress -->
+            <form wire:submit="save" class="grid" style="gap: 18px;">
+                <!-- Drag & Drop Zone -->
                 <div x-data="{ isUploading: false, progress: 0 }"
                      x-on:livewire-upload-start="isUploading = true"
                      x-on:livewire-upload-finish="isUploading = false"
                      x-on:livewire-upload-error="isUploading = false"
                      x-on:livewire-upload-progress="progress = $event.detail.progress"
-                     style="border: 2px dashed var(--line); border-radius: 18px; padding: 28px 20px; text-align: center; background: rgba(0,0,0,0.03); transition: border-color 0.2s ease;"
-                     ondragover="this.style.borderColor='var(--ink)'"
-                     ondragleave="this.style.borderColor='var(--line)'">
+                     style="border: 2px dashed var(--border-purple); border-radius: 18px; padding: 28px 20px; text-align: center; background: var(--bg-surface-subtle); transition: all 0.2s ease;">
                     
                     <div x-show="!isUploading">
-                        <i class="ph ph-cloud-arrow-up" style="font-size: 32px; color: var(--ink); margin-bottom: 12px; display: inline-block;"></i>
-                        <div style="margin-bottom: 8px; font-weight: 700; color: var(--ink); font-size: 14px;">Pilih atau seret file video di sini</div>
-                        <div style="font-size: 12px; margin-bottom: 14px; color: var(--muted); font-weight: 500;">Mendukung MP4, MOV, MKV, WebM, AVI (Maks. 3 Jam)</div>
+                        <i class="ph ph-video-camera" style="font-size: 38px; color: var(--purple-primary); margin-bottom: 10px; display: inline-block;"></i>
+                        <div style="font-weight: 700; color: var(--text-title); font-size: 14px; margin-bottom: 4px;">Pilih atau seret berkas video di sini</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Format: MP4, MOV, MKV, WebM, AVI (Maks. 3 Jam)</div>
                         
                         <input type="file" wire:model="upload" id="video-upload-input"
                                accept="video/mp4,video/quicktime,video/x-matroska,video/webm,video/x-msvideo"
                                style="display: none;">
                         <button type="button" class="btn btn-sm btn-outline" onclick="document.getElementById('video-upload-input').click()">
-                            Pilih Berkas
+                            Pilih Berkas Video
                         </button>
                     </div>
 
-                    <!-- Upload Progress Bar -->
+                    <!-- Progress Bar -->
                     <div x-show="isUploading" style="padding: 10px 0; display: none;">
-                        <i class="ph ph-spinner-gap spin-rotate" style="font-size: 36px; color: var(--accent); margin-bottom: 12px; display: inline-block;"></i>
+                        <i class="ph ph-spinner-gap spin-rotate" style="font-size: 32px; color: var(--purple-primary); margin-bottom: 10px; display: inline-block;"></i>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-size: 13px; font-weight: 700; color: var(--ink);">Sedang mengunggah video ke server...</span>
-                            <span x-text="progress + '%'" style="font-size: 13px; font-weight: 700; color: var(--accent);">0%</span>
+                            <span style="font-size: 13px; font-weight: 700; color: var(--text-title);">Sedang mengunggah ke server...</span>
+                            <span x-text="progress + '%'" style="font-size: 13px; font-weight: 700; color: var(--purple-primary);">0%</span>
                         </div>
-                        <div style="width: 100%; height: 10px; background: rgba(0,0,0,0.05); border-radius: 99px; overflow: hidden; border: 1.5px solid var(--line);">
-                            <div :style="`width: ${progress}%; transition: width 0.1s ease;`" style="height: 100%; background: var(--accent); border-radius: 99px;"></div>
+                        <div style="width: 100%; height: 8px; background: rgba(154, 85, 255, 0.15); border-radius: 99px; overflow: hidden;">
+                            <div :style="`width: ${progress}%; transition: width 0.1s ease;`" style="height: 100%; background: var(--purple-gradient); border-radius: 99px;"></div>
                         </div>
-                        <div style="font-size: 11px; margin-top: 8px; color: var(--muted); font-weight: 500;">Mohon tunggu, jangan tutup tab browser ini.</div>
                     </div>
                     
                     @if($upload)
-                        <div style="margin-top: 12px; color: #15803d; font-size: 12px; font-weight: 700;" x-show="!isUploading">
-                            <i class="ph ph-check-circle" style="vertical-align: middle;"></i> Berkas siap: {{ $upload->getClientOriginalName() }}
+                        <div style="margin-top: 14px; color: #10b981; font-size: 12.5px; font-weight: 700;" x-show="!isUploading">
+                            <i class="ph ph-check-circle" style="vertical-align: middle; font-size: 16px;"></i> Berkas siap: {{ $upload->getClientOriginalName() }}
                         </div>
                     @endif
                 </div>
 
-                @error('upload') <span class="flash flash-error" style="padding: 8px 12px; margin-bottom: 0; font-size: 12px; background: var(--paper);">{{ $message }}</span> @enderror
+                @error('upload')
+                    <span style="color: #ef4444; font-size: 12px; font-weight: 600;">{{ $message }}</span>
+                @enderror
 
                 <!-- Auto-Clip Checkbox Option -->
-                <div style="display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; background: rgba(0,0,0,0.02); padding: 12px; border-radius: 12px; border: 1px solid var(--line);">
-                    <input type="checkbox" wire:model="autoClip" id="auto-clip-upload" style="margin-top: 3px; cursor: pointer; transform: scale(1.15);">
-                    <label for="auto-clip-upload" style="font-size: 12.5px; color: var(--ink); line-height: 1.4; cursor: pointer; font-weight: 500; text-align: left;">
-                        <strong style="display: block; margin-bottom: 2px;">Render &amp; Ekspor Otomatis (Auto-Clip)</strong>
-                        Langsung potong 9:16 untuk 3 klip terbaik (Skor &ge; 75). Nonaktifkan jika hanya ingin melihat rekomendasi durasi untuk edit manual di CapCut.
+                <div style="display: flex; align-items: flex-start; gap: 12px; background: var(--bg-surface-subtle); padding: 14px; border-radius: 14px; border: 1px solid var(--border-color);">
+                    <input type="checkbox" wire:model="autoClip" id="auto-clip-upload" style="margin-top: 3px; cursor: pointer; accent-color: var(--purple-primary); transform: scale(1.2);">
+                    <label for="auto-clip-upload" style="font-size: 12.5px; color: var(--text-main); line-height: 1.4; cursor: pointer; text-align: left;">
+                        <strong style="display: block; margin-bottom: 2px; color: var(--text-title);">Render &amp; Ekspor Otomatis (Auto-Clip)</strong>
+                        Langsung memotong 9:16 untuk 3 klip terbaik (Skor &ge; 75). Nonaktifkan jika hanya ingin mereview klip terlebih dahulu.
                     </label>
                 </div>
 
-                <div class="row between" style="gap: 12px; margin-top: 12px;">
-                    <button type="submit" class="btn btn-primary" style="width: 100%; border-color: var(--ink); background: var(--ink); color: var(--paper);"
-                            wire:loading.attr="disabled" wire:target="save,upload">
-                        <span wire:loading.remove wire:target="save">Mulai Ingest &amp; Proses</span>
-                        <span wire:loading wire:target="save"><i class="ph ph-spinner-gap spin-rotate" style="font-size:14px;"></i>&nbsp;Mengunggah&hellip;</span>
-                    </button>
-                </div>
+                <button type="submit" class="btn" wire:loading.attr="disabled" wire:target="save,upload">
+                    <span wire:loading.remove wire:target="save">Mulai Ingest &amp; Process Video</span>
+                    <span wire:loading wire:target="save"><i class="ph ph-spinner-gap spin-rotate"></i>&nbsp;Mengunggah&hellip;</span>
+                </button>
             </form>
         </div>
 
-        <!-- URL Ingest Panel -->
-        <div class="panel grid" style="gap: 16px; background: var(--tile-1); border-color: rgba(0,0,0,0.05); color: var(--ink);">
-            <h3 style="margin: 0; font-family: var(--serif); font-style: italic; font-size: 24px; font-weight: 700; color: var(--ink);">
-                <i class="ph ph-link" style="vertical-align: middle; margin-right: 4px;"></i>Ambil Video dari URL
+        <!-- URL Import Panel -->
+        <div class="panel grid" style="gap: 20px;">
+            <h3 style="margin: 0; font-family: var(--font-title); font-size: 20px; font-weight: 800; color: var(--text-title); display: flex; align-items: center; gap: 8px;">
+                <i class="ph ph-link" style="color: var(--purple-primary); font-size: 24px;"></i>Import Video dari URL
             </h3>
             
-            <form wire:submit="ingestUrl" class="grid" style="gap: 20px; justify-content: space-between; height: 100%;">
+            <form wire:submit="ingestUrl" class="grid" style="gap: 18px;">
                 <div class="grid" style="gap: 12px;">
-                    <label style="font-weight: 700; font-size: 13px; color: var(--ink);">Tempel URL Video (YouTube, TikTok, dll)</label>
-                    <input type="url" wire:model="url" placeholder="https://www.youtube.com/watch?v=..."
-                           style="width: 100%; padding: 12px 16px; border-radius: 12px; background: var(--paper);
-                                  border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13.5px;">
+                    <label style="font-weight: 700; font-size: 13px; color: var(--text-title);">Tempel Tautan URL (YouTube, TikTok, dll)</label>
+                    <input type="url" wire:model="url" placeholder="https://www.youtube.com/watch?v=...">
+                    
                     @if($urlError)
-                        <span class="flash flash-error" style="padding: 8px 12px; margin-bottom: 0; font-size: 12px; background: var(--paper);">{{ $urlError }}</span>
+                        <span style="color: #ef4444; font-size: 12px; font-weight: 600;">{{ $urlError }}</span>
                     @endif
 
                     <div style="margin-top: 4px;">
-                        <label style="font-weight: 700; font-size: 13px; color: var(--ink); display: block; margin-bottom: 6px;">Batas Resolusi Unduhan</label>
+                        <label style="font-weight: 700; font-size: 13px; color: var(--text-title); display: block; margin-bottom: 6px;">Batas Resolusi Unduhan</label>
                         <select wire:model="resolution"
-                                style="width: 100%; padding: 12px 16px; border-radius: 12px; background: var(--paper);
-                                       border: 1.5px solid var(--line); color: var(--ink); font-family: inherit; font-size: 13.5px;
-                                       outline: none; transition: border-color 0.2s ease; cursor: pointer;">
+                                style="width: 100%; padding: 12px 16px; border-radius: 14px; background: var(--bg-surface-subtle);
+                                       border: 1.5px solid var(--border-color); color: var(--text-main); font-family: inherit; font-size: 13.5px; outline: none; cursor: pointer;">
                             <option value="best">Kualitas Terbaik (Best MP4)</option>
                             <option value="1080p">Maksimal 1080p</option>
                             <option value="720p">Maksimal 720p</option>
@@ -173,92 +209,82 @@
                             <option value="360p">Maksimal 360p (Sangat Cepat)</option>
                         </select>
                     </div>
-                    
-                    <div style="border: 1.5px dashed var(--line); border-radius: 12px; padding: 16px; background: rgba(0,0,0,0.03); display: flex; gap: 12px; align-items: flex-start; margin-top: 8px;">
-                        <i class="ph ph-info" style="font-size: 18px; flex-shrink: 0; color: var(--ink); margin-top: 1px;"></i>
-                        <p style="font-size: 12px; line-height: 1.5; margin: 0; color: var(--muted); font-weight: 500;">
-                            Unduhan diproses di latar belakang menggunakan `yt-dlp`. Video akan secara otomatis di-ingest, dikompresi, dan masuk ke pipeline transkripsi setelah selesai.
-                        </p>
-                    </div>
                 </div>
 
                 <!-- Auto-Clip Checkbox Option -->
-                <div style="display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; background: rgba(0,0,0,0.02); padding: 12px; border-radius: 12px; border: 1px solid var(--line);">
-                    <input type="checkbox" wire:model="autoClip" id="auto-clip-url" style="margin-top: 3px; cursor: pointer; transform: scale(1.15);">
-                    <label for="auto-clip-url" style="font-size: 12.5px; color: var(--ink); line-height: 1.4; cursor: pointer; font-weight: 500; text-align: left;">
-                        <strong style="display: block; margin-bottom: 2px;">Render &amp; Ekspor Otomatis (Auto-Clip)</strong>
-                        Langsung potong 9:16 untuk 3 klip terbaik (Skor &ge; 75). Nonaktifkan jika hanya ingin melihat rekomendasi durasi untuk edit manual di CapCut.
+                <div style="display: flex; align-items: flex-start; gap: 12px; background: var(--bg-surface-subtle); padding: 14px; border-radius: 14px; border: 1px solid var(--border-color);">
+                    <input type="checkbox" wire:model="autoClip" id="auto-clip-url" style="margin-top: 3px; cursor: pointer; accent-color: var(--purple-primary); transform: scale(1.2);">
+                    <label for="auto-clip-url" style="font-size: 12.5px; color: var(--text-main); line-height: 1.4; cursor: pointer; text-align: left;">
+                        <strong style="display: block; margin-bottom: 2px; color: var(--text-title);">Render &amp; Ekspor Otomatis (Auto-Clip)</strong>
+                        Langsung memotong 9:16 untuk 3 klip terbaik (Skor &ge; 75).
                     </label>
                 </div>
 
-                <div class="row" style="margin-top: 12px;">
-                    <button type="submit" class="btn btn-primary" style="width: 100%; border-color: var(--ink); background: var(--ink); color: var(--paper);"
-                            wire:loading.attr="disabled" wire:target="ingestUrl">
-                        <span wire:loading.remove wire:target="ingestUrl">Unduh &amp; Proses</span>
-                        <span wire:loading wire:target="ingestUrl"><i class="ph ph-spinner-gap spin-rotate" style="font-size:14px;"></i>&nbsp;Menghubungi Server&hellip;</span>
-                    </button>
-                </div>
+                <button type="submit" class="btn" wire:loading.attr="disabled" wire:target="ingestUrl">
+                    <span wire:loading.remove wire:target="ingestUrl">Unduh &amp; Process Video</span>
+                    <span wire:loading wire:target="ingestUrl"><i class="ph ph-spinner-gap spin-rotate"></i>&nbsp;Menghubungi Server&hellip;</span>
+                </button>
             </form>
         </div>
     </div>
 
-    <!-- Video list -->
+    <!-- Video Project List Table -->
     <div class="panel">
         <div class="row between" style="margin-bottom: 20px;">
-            <strong style="font-family: var(--serif); font-style: italic; font-size: 26px; font-weight: 700; color: var(--ink);">Daftar Video Projek ({{ $videos->count() }})</strong>
+            <h3 style="margin: 0; font-family: var(--font-title); font-size: 22px; font-weight: 800; color: var(--text-title);">
+                Daftar Video Project ({{ $videos->count() }})
+            </h3>
         </div>
 
         @if($videos->isEmpty())
-            <div class="empty">Belum ada video projek yang di-ingest. Silakan upload file atau tautkan URL di atas.</div>
+            <div style="text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 14px;">
+                <i class="ph ph-folder-open" style="font-size: 42px; color: var(--purple-primary); margin-bottom: 12px; display: block;"></i>
+                Belum ada video project yang di-ingest. Silakan unggah file atau masukkan URL video di atas.
+            </div>
         @else
             <div style="overflow-x: auto;">
                 <table>
                     <thead>
                         <tr>
-                            <th style="width:52px; text-align: center;">#</th>
+                            <th style="width: 50px; text-align: center;">#</th>
                             <th>Detail Sumber</th>
-                            <th style="width:100px;">Durasi</th>
-                            <th style="width:340px;">Status Tahapan Pipeline</th>
-                            <th style="width:110px; text-align: center;">Klip</th>
-                            <th style="width:130px; text-align: right;">Aksi</th>
+                            <th style="width: 100px;">Durasi</th>
+                            <th style="width: 320px;">Status Pipeline</th>
+                            <th style="width: 110px; text-align: center;">Kandidat</th>
+                            <th style="width: 140px; text-align: right;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($videos as $video)
                             <tr wire:key="video-{{ $video->id }}">
-                                <td style="text-align: center;" class="muted font-semibold">{{ $video->id }}</td>
+                                <td style="text-align: center; font-weight: 700; color: var(--text-muted);">{{ $video->id }}</td>
                                 <td>
-                                    <div style="max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight: 700; color: var(--ink);">
+                                    <div style="max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; color: var(--text-title);">
                                         {{ $video->source_ref ?? '—' }}
                                     </div>
-                                    <span class="muted" style="font-size:11px; display: inline-flex; align-items: center; gap: 4px; margin-top: 2px;">
-                                        @if($video->source_type === 'url')
-                                            <i class="ph ph-link" style="font-size: 11px;"></i>
-                                        @else
-                                            <i class="ph ph-file-video" style="font-size: 11px;"></i>
-                                        @endif
+                                    <span style="font-size: 11px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px; margin-top: 2px;">
+                                        <i class="ph {{ $video->source_type === 'url' ? 'ph-link' : 'ph-file-video' }}"></i>
                                         {{ strtoupper($video->source_type) }}
                                     </span>
                                 </td>
-                                <td class="muted font-semibold">
+                                <td style="font-weight: 600; color: var(--text-main);">
                                     @if($video->duration_seconds)
                                         {{ gmdate($video->duration_seconds >= 3600 ? 'H:i:s' : 'i:s', $video->duration_seconds) }}
                                     @else — @endif
                                 </td>
                                 <td>
-                                    <div class="row" style="gap:6px; flex-wrap: wrap; cursor: pointer;" wire:click="showStatusModal({{ $video->id }})" title="Klik untuk detail pipeline status">
+                                    <div class="row" style="gap: 6px; flex-wrap: wrap; cursor: pointer;" wire:click="showStatusModal({{ $video->id }})" title="Klik untuk detail pipeline status">
                                         @foreach($video->stageProgress() as $stage)
                                             @php
                                                 $cls = match($stage['state']) {
                                                     'done' => 'badge-green',
-                                                    'active' => 'badge-blue',
+                                                    'active' => 'badge-purple',
                                                     'failed' => 'badge-red',
-                                                    default => 'badge-gray',
+                                                    default => 'badge-amber',
                                                 };
                                             @endphp
-                                            <span class="badge {{ $cls }}" style="font-size:10px; padding:3px 10px;"
-                                                  title="{{ $stage['label'] }}: {{ $stage['state'] }}">
-                                                @if($stage['state']==='active')<i class="ph ph-spinner-gap spin-rotate" style="font-size:10px; margin-right:2px;"></i>@endif
+                                            <span class="badge {{ $cls }}" style="font-size: 10px; padding: 4px 10px;">
+                                                @if($stage['state']==='active')<i class="ph ph-spinner-gap spin-rotate" style="font-size: 10px;"></i>@endif
                                                 {{ $stage['label'] }}
                                             </span>
                                         @endforeach
@@ -266,46 +292,40 @@
                                 </td>
                                 <td style="text-align: center;">
                                     @if($video->clip_candidates_count > 0)
-                                        <span class="badge badge-blue" style="font-size: 11px; font-weight: 700; padding: 2px 8px;">{{ $video->clip_candidates_count }} Klip</span>
+                                        <span class="badge badge-purple">{{ $video->clip_candidates_count }} Klip</span>
                                     @else
-                                        <span class="muted">—</span>
+                                        <span style="color: var(--text-muted);">—</span>
                                     @endif
                                 </td>
                                 <td style="text-align: right;">
-                                    <div style="display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; width: 100%;">
+                                    <div style="display: flex; align-items: center; gap: 8px; justify-content: flex-end;">
                                         @if(in_array($video->status, ['reviewing','done']))
-                                            <a href="/videos/{{ $video->id }}/review" wire:navigate class="btn btn-sm btn-primary" style="padding: 5px 12px; border-color: var(--ink); background: var(--ink); color: var(--paper);">
-                                                <i class="ph ph-eye" style="font-size: 12px; vertical-align: middle;"></i> Review
+                                            <a href="/videos/{{ $video->id }}/review" wire:navigate class="btn btn-sm">
+                                                <i class="ph ph-eye"></i> Review
                                             </a>
                                         @elseif($video->status === 'failed')
                                             @php $reason = $video->failureReason(); @endphp
-                                            <span class="badge badge-red" @if($reason) title="{{ $reason }}" @endif style="cursor: help;">Gagal</span>
-                                            @if($reason)
-                                                <div class="muted" style="font-size:10px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ $reason }}">
-                                                    {{ $reason }}
-                                                </div>
-                                            @endif
-                                        @else
-                                            <span class="muted" style="font-size:12px; display: inline-flex; align-items: center; gap: 4px;" title="Status: {{ $video->status }}">
-                                                <i class="ph ph-spinner-gap spin-rotate" style="font-size: 12px;"></i>
-                                                @if(str_starts_with($video->status, 'downloading'))
-                                                    @if(preg_match('/downloading\s+\(([^)]+)\)/i', $video->status, $matches))
-                                                        Download {{ $matches[1] }}
-                                                    @else
-                                                        Downloading...
-                                                    @endif
-                                                @else
-                                                    Proses...
+                                            <div style="text-align: right;">
+                                                <span class="badge badge-red" @if($reason) title="{{ $reason }}" @endif>Gagal</span>
+                                                @if($reason)
+                                                    <div style="font-size: 10px; color: #ef4444; margin-top: 2px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ $reason }}">
+                                                        {{ $reason }}
+                                                    </div>
                                                 @endif
+                                            </div>
+
+                                        @else
+                                            <span style="font-size: 12px; color: var(--purple-primary); font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                                                <i class="ph ph-spinner-gap spin-rotate"></i> Memproses
                                             </span>
                                         @endif
 
                                         <button type="button" wire:click="deleteVideo({{ $video->id }})"
-                                                wire:confirm="Apakah Anda yakin ingin menghapus video ini beserta seluruh data kandidat & hasil ekspor terkait secara permanen?"
+                                                wire:confirm="Hapus video ini beserta kandidat & ekspor terkait secara permanen?"
                                                 class="btn btn-sm btn-outline"
-                                                style="padding: 5px 8px; border-color: #dc2626; color: #dc2626; border-radius: 8px;"
+                                                style="padding: 6px 10px; border-color: rgba(239, 68, 68, 0.3); color: #ef4444;"
                                                 title="Hapus Video">
-                                            <i class="ph ph-trash" style="font-size: 14px; vertical-align: middle;"></i>
+                                            <i class="ph ph-trash"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -317,113 +337,51 @@
         @endif
     </div>
 
-    <!-- Live pipeline activity timeline -->
+    <!-- Activity Timeline -->
     <div>
         <livewire:activity-feed />
     </div>
 
-    <!-- Pipeline Status Modal Overlay -->
+    <!-- Pipeline Status Modal -->
     @if($showStatusModal && $selectedVideo)
-        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;"
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;"
              wire:click.self="closeStatusModal">
             
-            <div class="panel grid" style="width: 100%; max-width: 640px; background: var(--stage-2); border: 1.5px solid var(--line); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); overflow: hidden; padding: 24px; gap: 20px; color: var(--ink); animation: modalFadeIn 0.2s ease;">
-                <style>
-                    @keyframes modalFadeIn {
-                        from { opacity: 0; transform: scale(0.96); }
-                        to { opacity: 1; transform: scale(1); }
-                    }
-                </style>
-                <!-- Header -->
-                <div class="row between" style="border-bottom: 1.5px solid var(--line); padding-bottom: 14px; align-items: center; gap: 12px;">
-                    <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
-                        <h3 style="margin: 0; font-family: var(--serif); font-style: italic; font-size: 24px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            <i class="ph ph-activity" style="vertical-align: middle; margin-right: 4px;"></i>Detail Pipeline #{{ $selectedVideo->id }}
+            <div class="panel grid" style="width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto;">
+                <div class="row between" style="border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+                    <div>
+                        <h3 style="margin: 0; font-family: var(--font-title); font-size: 22px; font-weight: 800; color: var(--text-title);">
+                            Detail Pipeline #{{ $selectedVideo->id }}
                         </h3>
-                        <span style="font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">
-                            Sumber: <strong style="font-family: var(--mono); font-size:11px;">{{ $selectedVideo->source_ref }}</strong>
+                        <span style="font-size: 12px; color: var(--text-muted);">
+                            Sumber: <strong style="font-family: var(--font-mono);">{{ $selectedVideo->source_ref }}</strong>
                         </span>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline" wire:click="closeStatusModal" style="padding: 6px 12px; border-radius: 8px; border-color: var(--line); color: var(--ink); flex-shrink: 0;">
-                        Tutup
-                    </button>
+                    <button type="button" class="btn btn-sm btn-outline" wire:click="closeStatusModal">Tutup</button>
                 </div>
 
-                <!-- Stages Timeline -->
-                <div class="grid" style="gap: 16px; max-height: 60vh; overflow-y: auto; padding-right: 4px;">
-                    @php
-                        $stageDetails = [
-                            'ingest' => [
-                                'title' => '1. Ingest (Unduh & Validasi)',
-                                'desc' => 'Mengunduh video dari URL (menggunakan yt-dlp dengan persentase real-time) atau memproses unggahan berkas video lokal, serta memverifikasi kesesuaian durasi dan bytes data.'
-                            ],
-                            'transcribe' => [
-                                'title' => '2. Transcribe (Deteksi Suara ke Teks)',
-                                'desc' => 'Mengekstrak audio dan menganalisis frekuensi suara menggunakan AI faster-whisper untuk menghasilkan teks transkripsi kata-demi-kata dengan stempel waktu.'
-                            ],
-                            'score' => [
-                                'title' => '3. Score (Rekomendasi Klip AI)',
-                                'desc' => 'Mengirim teks transkripsi ke model LLM lokal (Ollama) untuk mencari hook viral, menilai skor kelayakan (0-100%), dan menyusun ringkasan deskripsi klip.'
-                            ],
-                            'review' => [
-                                'title' => '4. Review & Konfigurasi',
-                                'desc' => 'Operator (Anda) melakukan validasi waktu potong, menulis teks Call-To-Action (CTA), memilih gaya tulisan subtitel, dan menyetujui klip untuk dirender.'
-                            ]
-                        ];
-                    @endphp
-
+                <div class="grid" style="gap: 16px;">
                     @foreach($selectedVideo->stageProgress() as $progress)
                         @php
-                            $detail = $stageDetails[$progress['key']] ?? ['title' => $progress['label'], 'desc' => ''];
-                            
-                            // Find the corresponding database record to display details
                             $dbJob = $selectedVideo->pipelineJobs->firstWhere('stage', $progress['key']);
-                            $state = $progress['state']; // done|active|failed|pending
-                            
+                            $state = $progress['state'];
                             $badgeCls = match($state) {
                                 'done' => 'badge-green',
-                                'active' => 'badge-blue',
+                                'active' => 'badge-purple',
                                 'failed' => 'badge-red',
-                                default => 'badge-gray',
-                            };
-                            
-                            $badgeLabel = match($state) {
-                                'done' => 'Selesai',
-                                'active' => 'Berjalan',
-                                'failed' => 'Gagal',
-                                default => 'Menunggu',
+                                default => 'badge-amber',
                             };
                         @endphp
 
-                        <div style="border: 1.5px solid var(--line); border-radius: 12px; padding: 14px; background: rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 8px;">
-                            <div class="row between" style="align-items: center; width: 100%; flex-direction: row !important; gap: 8px;">
-                                <strong style="font-size: 14px; font-weight: 700; color: var(--ink);">{{ $detail['title'] }}</strong>
-                                <span class="badge {{ $badgeCls }}" style="font-size: 10px; padding: 3px 10px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                                    @if($state === 'active')<i class="ph ph-spinner-gap spin-rotate" style="font-size: 10px;"></i>@endif
-                                    {{ $badgeLabel }}
-                                </span>
+                        <div style="border: 1px solid var(--border-color); border-radius: 14px; padding: 16px; background: var(--bg-surface-subtle);">
+                            <div class="row between" style="margin-bottom: 6px;">
+                                <strong style="font-size: 14px; color: var(--text-title);">{{ $progress['label'] }}</strong>
+                                <span class="badge {{ $badgeCls }}">{{ strtoupper($state) }}</span>
                             </div>
-                            
-                            <p style="margin: 0; font-size: 12px; line-height: 1.5; color: var(--muted); font-weight: 500;">
-                                {{ $detail['desc'] }}
-                            </p>
-                            
-                            @if($dbJob)
-                                <div class="row" style="gap: 12px; font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 4px; flex-direction: row !important;">
-                                    <span>Percobaan: {{ $dbJob->attempts }}</span>
-                                    <span>•</span>
-                                    <span>Mulai: {{ $dbJob->created_at->setTimezone('Asia/Jakarta')->format('H:i:s') }}</span>
-                                    @if($dbJob->status !== 'running' && $dbJob->status !== 'queued')
-                                        <span>•</span>
-                                        <span>Selesai: {{ $dbJob->updated_at->setTimezone('Asia/Jakarta')->format('H:i:s') }}</span>
-                                    @endif
+                            @if($dbJob && $dbJob->last_error)
+                                <div style="margin-top: 8px; background: rgba(239,68,68,0.1); padding: 10px; border-radius: 8px; font-family: var(--font-mono); font-size: 11px; color: #ef4444;">
+                                    {{ $dbJob->last_error }}
                                 </div>
-                                
-                                @if($dbJob->last_error)
-                                    <div style="margin-top: 8px; background: rgba(239, 68, 68, 0.05); border: 1.5px solid rgba(239, 68, 68, 0.2); border-radius: 8px; padding: 10px 14px; font-family: var(--mono); font-size: 11px; color: #f87171; overflow-x: auto; line-height: 1.5;">
-                                        <strong>Log Error:</strong> {{ $dbJob->last_error }}
-                                    </div>
-                                @endif
                             @endif
                         </div>
                     @endforeach

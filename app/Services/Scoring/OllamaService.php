@@ -48,7 +48,7 @@ class OllamaService
 
         if ($driver === 'openai' || $driver === 'agentrouter') {
             // OpenAI-compatible /chat/completions endpoint
-            $response = $this->client()->retry(3, 4000)->post('/chat/completions', [
+            $response = $this->client()->retry(3, 4000)->post('chat/completions', [
                 'model' => $this->model,
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt]
@@ -66,7 +66,8 @@ class OllamaService
             $text = $envelope['choices'][0]['message']['content'] ?? null;
         } else {
             // Self-hosted local Ollama generate endpoint
-            $response = $this->client()->post('/api/generate', [
+            $response = $this->client()->post('api/generate', [
+
                 'model' => $this->model,
                 'prompt' => $prompt,
                 'format' => 'json',   // constrain the model to emit valid JSON
@@ -156,14 +157,16 @@ class OllamaService
     private function client(): PendingRequest
     {
         $apiKey = config('autoclip.llm.api_key');
+        $endpoint = rtrim($this->endpoint, '/').'/';
         
         $client = $this->http
-            ->baseUrl($this->endpoint)
+            ->baseUrl($endpoint)
             ->timeout($this->timeout)
             ->acceptJson()
             ->withHeaders([
                 'User-Agent' => 'claude-cli/0.2.20 (external, cli)',
             ]);
+
 
         // Disable SSL verification in local environment to prevent cURL error 60 (common on Windows)
         if (config('app.env') === 'local') {

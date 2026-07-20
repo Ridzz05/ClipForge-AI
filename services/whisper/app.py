@@ -23,19 +23,33 @@ app = Flask(__name__)
 _MODEL_NAME = os.environ.get("WHISPER_MODEL", "small")
 _DEVICE = os.environ.get("WHISPER_DEVICE", "cpu")
 _COMPUTE_TYPE = os.environ.get("WHISPER_COMPUTE_TYPE", "int8")
+_CPU_THREADS = int(os.environ.get("WHISPER_CPU_THREADS", str(os.cpu_count() or 4)))
+_BEAM_SIZE = int(os.environ.get("WHISPER_BEAM_SIZE", "5"))
 
 _model_cache: dict[str, WhisperModel] = {}
 
 
 def get_model(name: str) -> WhisperModel:
     if name not in _model_cache:
-        _model_cache[name] = WhisperModel(name, device=_DEVICE, compute_type=_COMPUTE_TYPE)
+        _model_cache[name] = WhisperModel(
+            name,
+            device=_DEVICE,
+            compute_type=_COMPUTE_TYPE,
+            cpu_threads=_CPU_THREADS,
+            num_workers=2,
+        )
     return _model_cache[name]
 
 
 @app.get("/health")
 def health():
-    return jsonify(status="ok", default_model=_MODEL_NAME, device=_DEVICE)
+    return jsonify(
+        status="ok",
+        default_model=_MODEL_NAME,
+        device=_DEVICE,
+        cpu_threads=_CPU_THREADS,
+        beam_size=_BEAM_SIZE,
+    )
 
 
 @app.post("/transcribe")
@@ -45,6 +59,7 @@ def transcribe():
 
     model_name = request.form.get("model", _MODEL_NAME)
     want_words = request.form.get("word_timestamps", "true").lower() == "true"
+    beam_size = int(request.form.get("beam_size", _BEAM_SIZE))
 
     upload = request.files["file"]
     suffix = os.path.splitext(upload.filename or "")[1] or ".bin"
@@ -59,8 +74,11 @@ def transcribe():
         segments_iter, info = model.transcribe(
             tmp_path,
             word_timestamps=want_words,
-            vad_filter=True,  # skip long silences -> cleaner segment boundaries
+            beam_size=beam_size,
+            vad_filter=True,  # skip long silences -> cleaner segment boundaries & faster processing
+            vad_parameters=dict(min_silence_duration_ms=500),
         )
+
 
         segments = []
         full_text_parts = []

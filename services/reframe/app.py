@@ -21,7 +21,10 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-mp_face = mp.solutions.face_detection
+try:
+    mp_face = mp.solutions.face_detection
+except AttributeError:
+    mp_face = None
 
 # Sample at most this many points per clip — enough for a smooth pan without
 # processing every frame.
@@ -30,7 +33,8 @@ SAMPLE_HZ = float(os.environ.get("FACE_SAMPLE_HZ", "4"))
 
 @app.get("/health")
 def health():
-    return jsonify(status="ok", sample_hz=SAMPLE_HZ)
+    return jsonify(status="ok", sample_hz=SAMPLE_HZ, has_mediapipe_solutions=(mp_face is not None))
+
 
 
 @app.post("/track")
@@ -58,7 +62,11 @@ def track():
 
 
 def _sample_centers(path: str, start_ms: int, end_ms: int) -> list[dict]:
+    if not mp_face:
+        return []
+
     cap = cv2.VideoCapture(path)
+
     if not cap.isOpened():
         return []
 
@@ -84,8 +92,18 @@ def _sample_centers(path: str, start_ms: int, end_ms: int) -> list[dict]:
 
             # Process frame if we have reached or passed the target timestamp
             if current_ms >= next_target_ms:
-                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                # Downscale large frames to 640px width to speed up face detection by up to 5-10x
+                # while preserving accurate normalized cx (0..1) bounding box coordinates.
+                h, w = frame.shape[:2]
+                if w > 640:
+                    target_h = max(1, int(h * (640.0 / w)))
+                    proc_frame = cv2.resize(frame, (640, target_h), interpolation=cv2.INTER_NEAREST)
+                else:
+                    proc_frame = frame
+
+                rgb = cv2.cvtColor(proc_frame, cv2.COLOR_BGR2RGB)
                 result = fd.process(rgb)
+
 
                 if result.detections:
                     best = max(
