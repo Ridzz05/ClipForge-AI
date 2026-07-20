@@ -10,7 +10,8 @@ It functions similarly to services like OpusClip or Vizard, but runs entirely on
 
 Below is the live screencast demonstration of the **Purple Admin Edition** dashboard and automated clip generation pipeline:
 
-![ClipForge AI Screencast Demo](docs/demo.mp4)
+![ClipForge AI Screencast Demo](docs/demo.webp)
+
 
 
 ---
