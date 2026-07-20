@@ -57,6 +57,72 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- STYLE & CAPTIONS MOOD PANEL (Ref: clip_caption.png) -->
+                <div class="panel" style="padding: 20px; background: var(--bg-surface); border-radius: 18px; border: 1px solid var(--border-color);">
+                    <div class="row between" style="margin-bottom: 16px;">
+                        <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); letter-spacing: 0.1em; color: var(--text-muted);">STYLE & CAPTIONS</span>
+                        <span class="badge badge-purple" style="font-size: 10px; text-transform: uppercase;">CAPTION MOOD</span>
+                    </div>
+
+                    <!-- BURN SUBTITLES INTO CLIP -->
+                    <div style="margin-bottom: 18px;">
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 8px;">BURN SUBTITLES INTO CLIP</label>
+                        <div style="display: flex; background: var(--bg-surface-subtle); border-radius: 99px; padding: 4px; border: 1px solid var(--border-color);">
+                            <button type="button" wire:click="$set('burnSubtitles', 'on')" style="flex: 1; padding: 7px; border-radius: 99px; border: none; font-weight: 700; font-size: 11px; cursor: pointer; transition: all 0.2s;" class="{{ $burnSubtitles === 'on' ? 'btn' : 'btn-outline' }}">ON</button>
+                            <button type="button" wire:click="$set('burnSubtitles', 'off')" style="flex: 1; padding: 7px; border-radius: 99px; border: none; font-weight: 700; font-size: 11px; cursor: pointer; transition: all 0.2s;" class="{{ $burnSubtitles === 'off' ? 'btn' : 'btn-outline' }}">OFF</button>
+                        </div>
+                    </div>
+
+                    <!-- SUBTITLE STYLE COLOR -->
+                    <div style="margin-bottom: 18px;">
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 8px;">SUBTITLE COLOR PRESET</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button type="button" wire:click="$set('subtitleColor', 'yellow')" style="width: 26px; height: 26px; border-radius: 50%; background: #ffff00; border: 2.5px solid {{ $subtitleColor === 'yellow' ? 'var(--purple-primary)' : 'transparent' }}; cursor: pointer;" title="Yellow Neon"></button>
+                            <button type="button" wire:click="$set('subtitleColor', 'pink')" style="width: 26px; height: 26px; border-radius: 50%; background: #ff4d6d; border: 2.5px solid {{ $subtitleColor === 'pink' ? 'var(--purple-primary)' : 'transparent' }}; cursor: pointer;" title="Hot Pink"></button>
+                            <button type="button" wire:click="$set('subtitleColor', 'orange')" style="width: 26px; height: 26px; border-radius: 50%; background: #ff8c32; border: 2.5px solid {{ $subtitleColor === 'orange' ? 'var(--purple-primary)' : 'transparent' }}; cursor: pointer;" title="Vibrant Orange"></button>
+                            <button type="button" wire:click="$set('subtitleColor', 'white')" style="width: 26px; height: 26px; border-radius: 50%; background: #ffffff; border: 2.5px solid {{ $subtitleColor === 'white' ? 'var(--purple-primary)' : 'transparent' }}; cursor: pointer;" title="Pure White"></button>
+                        </div>
+                    </div>
+
+                    <!-- ANIMATION WORD-BY-WORD -->
+                    <div style="margin-bottom: 18px;">
+                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 8px;">ANIMATION · WORD-BY-WORD "TYPE"</label>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+                            @foreach(['POP', 'FADE', 'RISE', 'DROP', 'ZOOM', 'BLUR', 'TYPE', 'OFF'] as $anim)
+                                <button type="button" wire:click="$set('captionAnimation', '{{ strtolower($anim) }}')" 
+                                        style="padding: 6px 2px; font-size: 10px; font-weight: 800; border-radius: 8px; cursor: pointer; transition: all 0.2s;" 
+                                        class="{{ $captionAnimation === strtolower($anim) ? 'btn' : 'btn-outline' }}">
+                                    {{ $anim }}
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- SLIDERS: FONT SIZE & Y POSITION -->
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+                        <div>
+                            <div class="row between" style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">
+                                <span>FONT SIZE</span>
+                                <span>{{ $captionFontSize }}</span>
+                            </div>
+                            <input type="range" min="40" max="120" wire:model.live="captionFontSize" style="width:100%; accent-color: var(--purple-primary);">
+                        </div>
+                        <div>
+                            <div class="row between" style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">
+                                <span>CAPTION Y POSITION</span>
+                                <span>{{ $captionPosY }}</span>
+                            </div>
+                            <input type="range" min="200" max="1800" wire:model.live="captionPosY" style="width:100%; accent-color: var(--purple-primary);">
+                        </div>
+                    </div>
+
+                    <!-- BATCH RENDER BUTTON -->
+                    <button type="button" wire:click="batchRenderAll" class="btn" style="width: 100%; padding: 12px; font-size: 13px; font-weight: 800; background: #ffff00; color: #000000; box-shadow: 0 4px 16px rgba(255, 255, 0, 0.4); border-radius: 99px;">
+                        ⚡ Render All Clips (new files)
+                    </button>
+                </div>
+
             @else
                 <!-- Edit Mode: Sticky Clip Editor Workspace -->
                 <div class="panel grid" style="gap: 16px; padding: 20px; background: var(--tile-3); border-color: rgba(0,0,0,0.05); color: var(--ink);">
@@ -225,8 +291,31 @@
                 </div>
             </div>
 
+            <!-- FORMAT & ORIENTATION SELECTOR (Ref: orient.webp) -->
+            <div class="panel" style="padding: 16px 20px; background: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+                <div class="row between" style="margin-bottom: 12px;">
+                    <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); letter-spacing: 0.1em; color: var(--text-muted);">RENDER FORMAT & ORIENTATION</span>
+                    <span class="badge badge-purple" style="font-size: 10px;">HOOK DETECTION MODE</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px;">
+                    <button type="button" wire:click="$set('renderFormat', 'face_916')" class="{{ $renderFormat === 'face_916' ? 'btn' : 'btn-outline' }}" style="padding: 9px 12px; font-size: 11.5px; border-radius: 8px; font-weight: 700;">
+                        <i class="ph ph-user-focus" style="font-size: 14px; vertical-align: middle;"></i> Face 9:16
+                    </button>
+                    <button type="button" wire:click="$set('renderFormat', 'blur_916')" class="{{ $renderFormat === 'blur_916' ? 'btn' : 'btn-outline' }}" style="padding: 9px 12px; font-size: 11.5px; border-radius: 8px; font-weight: 700;">
+                        <i class="ph ph-selection-background" style="font-size: 14px; vertical-align: middle;"></i> Blur BG 9:16
+                    </button>
+                    <button type="button" wire:click="$set('renderFormat', 'square_11')" class="{{ $renderFormat === 'square_11' ? 'btn' : 'btn-outline' }}" style="padding: 9px 12px; font-size: 11.5px; border-radius: 8px; font-weight: 700;">
+                        <i class="ph ph-square" style="font-size: 14px; vertical-align: middle;"></i> Square 1:1
+                    </button>
+                    <button type="button" wire:click="$set('renderFormat', 'landscape_169')" class="{{ $renderFormat === 'landscape_169' ? 'btn' : 'btn-outline' }}" style="padding: 9px 12px; font-size: 11.5px; border-radius: 8px; font-weight: 700;">
+                        <i class="ph ph-rectangle" style="font-size: 14px; vertical-align: middle;"></i> Landscape 16:9
+                    </button>
+                </div>
+            </div>
+
             <!-- Candidate Clip Cards -->
             <div class="grid" style="gap: 14px;">
+
                 @forelse($candidates as $c)
                     @php
                         $dur = ($c->end_ms - $c->start_ms) / 1000;

@@ -33,6 +33,19 @@ class ReviewVideo extends Component
 
     public string $layout = 'single';
 
+    // --- Caption Mood & Customizer State (Ref: clip_caption.png) ---
+    public string $burnSubtitles = 'on'; // 'on' | 'off'
+    public string $subtitleColor = 'yellow'; // yellow, pink, orange, white, split_yellow, split_orange, glow
+    public bool $glowEffect = false;
+    public string $captionAnimation = 'rise'; // pop, fade, rise, drop, zoom, blur, type, off
+    public int $captionFontSize = 76;
+    public int $captionPosY = 960;
+    public int $captionPosX = 540;
+
+    // --- Format & Orientation Selector State (Ref: orient.webp) ---
+    public string $renderFormat = 'face_916'; // face_916, blur_916, original_916, square_11, landscape_169
+
+
     /** Preset CTA options from the campaign brief; operator can also type one. */
     public function ctaPresets(): array
     {
@@ -173,8 +186,37 @@ class ReviewVideo extends Component
         $this->dispatch('toast', message: "Klip #{$candidate->id} ditolak.", type: 'warning');
     }
 
+    public function batchRenderAll(ClipReviewService $review): void
+    {
+        $candidates = $this->video->clipCandidates()
+            ->whereIn('status', [ClipCandidate::STATUS_PENDING, ClipCandidate::STATUS_REJECTED])
+            ->get();
+
+        if ($candidates->isEmpty()) {
+            $this->dispatch('toast', message: "Tidak ada klip pending untuk di-render.", type: 'info');
+            return;
+        }
+
+        $count = 0;
+        foreach ($candidates as $c) {
+            try {
+                $review->approve(
+                    $c,
+                    $this->ctaText,
+                    $this->captionStyle,
+                    $this->captionMarginV,
+                    $this->layout
+                );
+                $count++;
+            } catch (\Throwable $e) {}
+        }
+
+        $this->dispatch('toast', message: "{$count} klip berhasil dimasukkan ke antrean render batch!", type: 'success');
+    }
+
     /** Guard: only candidates belonging to THIS video can be acted on. */
     private function candidate(int $id): ?ClipCandidate
+
     {
         return $this->video->clipCandidates()->whereKey($id)->first();
     }
