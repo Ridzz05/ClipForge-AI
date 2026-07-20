@@ -66,9 +66,13 @@
                     </h4>
                     
                     <div style="border-radius: 14px; overflow: hidden; background: #000; border: 1.5px solid var(--ink); position: relative;">
-                        <video id="editor-video" controls preload="metadata" style="width:100%; display: block; aspect-ratio: 16/9;" src="/videos/{{ $video->id }}/source">
+                        <video id="editor-video" controls preload="metadata" 
+                               onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
+                               style="width:100%; display: block; aspect-ratio: 16/9;" 
+                               src="/videos/{{ $video->id }}/source">
                         </video>
                     </div>
+
 
                     <!-- Quick In/Out Buttons -->
                     <div class="row" style="gap: 8px; justify-content: center;">
@@ -308,13 +312,51 @@
 
     <!-- Video Editor Script Binding -->
     <script>
-        // Listen for candidate loading events from Livewire (register exactly once)
+        function extractStartMs(detail) {
+            if (!detail) return 0;
+            if (typeof detail.startMs !== 'undefined') return detail.startMs;
+            if (Array.isArray(detail) && detail[0] && typeof detail[0].startMs !== 'undefined') return detail[0].startMs;
+            return 0;
+        }
+
+        function seekEditorVideoTo(ms) {
+            if (typeof ms === 'undefined' || ms === null || ms < 0) return;
+            const targetSeconds = ms / 1000;
+            
+            const trySeek = () => {
+                const video = document.getElementById('editor-video');
+                if (!video) return false;
+
+                const performSeek = () => {
+                    try {
+                        video.currentTime = targetSeconds;
+                    } catch (err) {}
+                };
+
+                if (video.readyState >= 1) { // HAVE_METADATA or higher
+                    performSeek();
+                } else {
+                    video.addEventListener('loadedmetadata', performSeek, { once: true });
+                    video.addEventListener('canplay', performSeek, { once: true });
+                    setTimeout(performSeek, 150);
+                    setTimeout(performSeek, 400);
+                }
+                return true;
+            };
+
+            if (!trySeek()) {
+                setTimeout(trySeek, 100);
+                setTimeout(trySeek, 300);
+                setTimeout(trySeek, 600);
+            }
+        }
+
+        // Listen for candidate loading events from Livewire
         if (!window.candidateListenerRegistered) {
             window.addEventListener('candidate-selected', (event) => {
-                const startMs = event.detail.startMs;
-                const video = document.getElementById('editor-video');
-                if (video) {
-                    video.currentTime = startMs / 1000;
+                const startMs = extractStartMs(event.detail);
+                if (startMs >= 0) {
+                    seekEditorVideoTo(startMs);
                 }
             });
             window.candidateListenerRegistered = true;
@@ -340,19 +382,13 @@
         };
 
         window.jumpToStart = () => {
-            const video = document.getElementById('editor-video');
-            if (video) {
-                const startMs = @this.get('editStartMs');
-                video.currentTime = startMs / 1000;
-            }
+            const startMs = @this.get('editStartMs');
+            seekEditorVideoTo(startMs);
         };
 
         window.jumpToEnd = () => {
-            const video = document.getElementById('editor-video');
-            if (video) {
-                const endMs = @this.get('editEndMs');
-                video.currentTime = endMs / 1000;
-            }
+            const endMs = @this.get('editEndMs');
+            seekEditorVideoTo(endMs);
         };
 
         window.playPreview = () => {
@@ -375,4 +411,5 @@
             }
         };
     </script>
+
 </div>
