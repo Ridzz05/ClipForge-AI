@@ -6,6 +6,7 @@ namespace App\Livewire;
 
 use App\Models\ClipCandidate;
 use App\Services\ClipReviewService;
+use App\Services\TranslationService;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
