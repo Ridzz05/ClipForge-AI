@@ -362,11 +362,12 @@
                             <!-- Actions -->
                             <div class="row" style="gap: 8px;">
                                 @if(in_array($c->status, ['pending','rejected']))
-                                    <!-- Edit Trigger Button -->
-                                    <button class="btn btn-sm btn-outline" wire:click="selectCandidate({{ $c->id }})" title="Edit stempel waktu klip ini secara manual">
-                                        <i class="ph ph-pencil-simple" style="font-size:12px; vertical-align: middle;"></i> Edit
-                                    </button>
+                                    <!-- Dedicated Live Studio Editor Link -->
+                                    <a href="/candidates/{{ $c->id }}/edit" wire:navigate class="btn btn-sm btn-outline" title="Buka Live Studio Editor untuk klip ini">
+                                        <i class="ph ph-sliders" style="font-size:12px; vertical-align: middle;"></i> Live Edit
+                                    </a>
                                     <button class="btn btn-sm btn-primary" style="border-color: #16a34a; background: #16a34a; color: #ffffff;"
+
                                             wire:click="approve({{ $c->id }})"
                                             wire:loading.attr="disabled" wire:target="approve({{ $c->id }})">
                                         <i class="ph ph-sparkle" style="font-size:12px; vertical-align: middle;"></i> Approve
