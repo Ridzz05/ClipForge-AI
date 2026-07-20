@@ -62,17 +62,15 @@
                             </span>
                         </div>
                     @endif
-                </div>
-
-                <!-- Player Action Buttons -->
+                </di                <!-- Player Action Buttons -->
                 <div class="row" style="gap: 10px; margin-top: 20px; justify-content: center; width: 100%;">
-                    <button type="button" class="btn btn-sm btn-primary" onclick="playPreview()" style="flex: 2; padding: 10px;">
+                    <button type="button" class="btn btn-sm btn-primary" onclick="playPreview(Livewire.find('{{ $this->getId() }}').get('editStartMs'), Livewire.find('{{ $this->getId() }}').get('editEndMs'))" style="flex: 2; padding: 10px;">
                         <i class="ph ph-play-circle" style="font-size: 16px;"></i> Play Loop Preview
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="jumpToStart()" style="flex: 1;">
+                    <button type="button" class="btn btn-sm btn-outline" onclick="jumpToStart(Livewire.find('{{ $this->getId() }}').get('editStartMs'))" style="flex: 1;">
                         <i class="ph ph-caret-double-left"></i> Awal
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="jumpToEnd()" style="flex: 1;">
+                    <button type="button" class="btn btn-sm btn-outline" onclick="jumpToEnd(Livewire.find('{{ $this->getId() }}').get('editEndMs'))" style="flex: 1;">
                         <i class="ph ph-caret-double-right"></i> Akhir
                     </button>
                 </div>
@@ -89,14 +87,13 @@
                     <div>
                         <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">END (MS)</label>
                         <input type="number" wire:model.live.debounce.300ms="editEndMs">
-
                     </div>
                 </div>
                 <div class="row" style="gap: 10px;">
-                    <button type="button" class="btn btn-sm btn-outline" onclick="setStartToCurrent()" style="flex: 1;">
+                    <button type="button" class="btn btn-sm btn-outline" onclick="setStartToCurrent(Livewire.find('{{ $this->getId() }}'))" style="flex: 1;">
                         <i class="ph ph-map-pin-line"></i> Set Start to Current
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="setEndToCurrent()" style="flex: 1;">
+                    <button type="button" class="btn btn-sm btn-outline" onclick="setEndToCurrent(Livewire.find('{{ $this->getId() }}'))" style="flex: 1;">
                         <i class="ph ph-flag-banner"></i> Set End to Current
                     </button>
                 </div>
@@ -183,7 +180,6 @@
                             <span>{{ $captionPosY }}</span>
                         </div>
                         <input type="range" min="200" max="1800" wire:model.live.debounce.300ms="captionPosY" style="width:100%; accent-color: var(--purple-primary);">
-
                     </div>
                 </div>
 
@@ -203,61 +199,60 @@
 
     <!-- JS Studio Player Controls -->
     <script>
-        function seekEditorVideoTo(ms) {
+        if (typeof window.previewInterval === 'undefined') {
+            window.previewInterval = null;
+        }
+
+        window.seekEditorVideoTo = window.seekEditorVideoTo || function(ms) {
             if (typeof ms === 'undefined' || ms === null || ms < 0) return;
             const targetSeconds = ms / 1000;
             const video = document.getElementById('editor-video');
             if (video) {
                 try { video.currentTime = targetSeconds; } catch (e) {}
             }
-        }
+        };
 
-        let previewInterval = null;
-
-        window.setStartToCurrent = () => {
+        window.setStartToCurrent = window.setStartToCurrent || function(comp) {
             const video = document.getElementById('editor-video');
-            if (video) {
+            if (video && comp) {
                 const currentMs = Math.round(video.currentTime * 1000);
-                @this.set('editStartMs', currentMs);
+                comp.set('editStartMs', currentMs);
             }
         };
 
-        window.setEndToCurrent = () => {
+        window.setEndToCurrent = window.setEndToCurrent || function(comp) {
             const video = document.getElementById('editor-video');
-            if (video) {
+            if (video && comp) {
                 const currentMs = Math.round(video.currentTime * 1000);
-                @this.set('editEndMs', currentMs);
+                comp.set('editEndMs', currentMs);
             }
         };
 
-        window.jumpToStart = () => {
-            const startMs = @this.get('editStartMs');
+        window.jumpToStart = window.jumpToStart || function(startMs) {
             seekEditorVideoTo(startMs);
         };
 
-        window.jumpToEnd = () => {
-            const endMs = @this.get('editEndMs');
+        window.jumpToEnd = window.jumpToEnd || function(endMs) {
             seekEditorVideoTo(endMs);
         };
 
-        window.playPreview = () => {
+        window.playPreview = window.playPreview || function(startMs, endMs) {
             const video = document.getElementById('editor-video');
             if (video) {
-                const startMs = @this.get('editStartMs');
-                const endMs = @this.get('editEndMs');
-                video.currentTime = startMs / 1000;
+                video.currentTime = (startMs || 0) / 1000;
                 video.play();
 
-                if (previewInterval) clearInterval(previewInterval);
+                if (window.previewInterval) clearInterval(window.previewInterval);
 
-                previewInterval = setInterval(() => {
+                window.previewInterval = setInterval(() => {
                     const currentMs = video.currentTime * 1000;
                     if (currentMs >= endMs) {
                         video.pause();
-                        clearInterval(previewInterval);
+                        clearInterval(window.previewInterval);
                     }
                 }, 50);
             }
         };
     </script>
 </div>
+

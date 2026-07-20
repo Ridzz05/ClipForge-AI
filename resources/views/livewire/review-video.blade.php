@@ -450,56 +450,51 @@
                 }
             });
             window.candidateListenerRegistered = true;
+              if (typeof window.previewInterval === 'undefined') {
+            window.previewInterval = null;
         }
 
-        let previewInterval = null;
-
-        window.setStartToCurrent = () => {
+        window.setStartToCurrent = window.setStartToCurrent || function(comp) {
             const video = document.getElementById('editor-video');
-            if (video) {
+            if (video && comp) {
                 const currentMs = Math.round(video.currentTime * 1000);
-                Livewire.dispatch('set-start-ms', { ms: currentMs });
-                @this.set('editStartMs', currentMs);
+                comp.set('editStartMs', currentMs);
             }
         };
 
-        window.setEndToCurrent = () => {
+        window.setEndToCurrent = window.setEndToCurrent || function(comp) {
             const video = document.getElementById('editor-video');
-            if (video) {
+            if (video && comp) {
                 const currentMs = Math.round(video.currentTime * 1000);
-                @this.set('editEndMs', currentMs);
+                comp.set('editEndMs', currentMs);
             }
         };
 
-        window.jumpToStart = () => {
-            const startMs = @this.get('editStartMs');
+        window.jumpToStart = window.jumpToStart || function(startMs) {
             seekEditorVideoTo(startMs);
         };
 
-        window.jumpToEnd = () => {
-            const endMs = @this.get('editEndMs');
+        window.jumpToEnd = window.jumpToEnd || function(endMs) {
             seekEditorVideoTo(endMs);
         };
 
-        window.playPreview = () => {
+        window.playPreview = window.playPreview || function(startMs, endMs) {
             const video = document.getElementById('editor-video');
             if (video) {
-                const startMs = @this.get('editStartMs');
-                const endMs = @this.get('editEndMs');
-                video.currentTime = startMs / 1000;
+                video.currentTime = (startMs || 0) / 1000;
                 video.play();
 
-                if (previewInterval) clearInterval(previewInterval);
+                if (window.previewInterval) clearInterval(window.previewInterval);
 
-                previewInterval = setInterval(() => {
+                window.previewInterval = setInterval(() => {
                     const currentMs = video.currentTime * 1000;
                     if (currentMs >= endMs) {
                         video.pause();
-                        clearInterval(previewInterval);
+                        clearInterval(window.previewInterval);
                     }
                 }, 50);
             }
         };
     </script>
-
 </div>
+
