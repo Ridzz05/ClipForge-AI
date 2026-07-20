@@ -36,19 +36,33 @@
             <div class="panel" style="padding: 24px; background: var(--bg-surface); text-align: center;">
 
                 <div class="row between" style="width: 100%; margin-bottom: 16px; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase;">FRAMING MODE:</span>
+                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase;">FRAMING:</span>
                         <button type="button" 
                                 wire:click="$set('cropMode', 'auto')"
-                                style="padding: 5px 12px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
+                                style="padding: 5px 10px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
                                 class="btn {{ $cropMode === 'auto' ? 'btn-primary' : 'btn-outline' }}">
-                            <i class="ph ph-sparkle"></i> Auto AI Framing
+                            <i class="ph ph-sparkle"></i> Auto AI
+                        </button>
+                        <button type="button" 
+                                wire:click="setPodcastLeftSpeaker"
+                                title="Fokus Pangkas ke Narasumber / Speaker Kiri"
+                                style="padding: 5px 10px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
+                                class="btn {{ $cropMode === 'manual' && abs($manualCropX - 0.32) < 0.05 ? 'btn-primary' : 'btn-outline' }}">
+                            <i class="ph ph-user"></i> Speaker Kiri
+                        </button>
+                        <button type="button" 
+                                wire:click="setPodcastRightSpeaker"
+                                title="Fokus Pangkas ke Narasumber / Speaker Kanan"
+                                style="padding: 5px 10px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
+                                class="btn {{ $cropMode === 'manual' && abs($manualCropX - 0.68) < 0.05 ? 'btn-primary' : 'btn-outline' }}">
+                            <i class="ph ph-user"></i> Speaker Kanan
                         </button>
                         <button type="button" 
                                 wire:click="$set('cropMode', 'manual')"
-                                style="padding: 5px 12px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
-                                class="btn {{ $cropMode === 'manual' ? 'btn-primary' : 'btn-outline' }}">
-                            <i class="ph ph-crop"></i> ✂ Pangkas Manual
+                                style="padding: 5px 10px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
+                                class="btn {{ $cropMode === 'manual' && abs($manualCropX - 0.32) >= 0.05 && abs($manualCropX - 0.68) >= 0.05 ? 'btn-primary' : 'btn-outline' }}">
+                            <i class="ph ph-crop"></i> ✂ Manual Drag
                         </button>
                     </div>
                     <span class="badge badge-purple" style="padding: 4px 10px;">{{ strtoupper($renderFormat) }}</span>

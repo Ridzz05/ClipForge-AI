@@ -38,6 +38,18 @@ class ClipEditor extends Component
     public string $cropMode = 'auto'; // 'auto' | 'manual'
     public float $manualCropX = 0.5; // 0.0 (left) to 1.0 (right)
 
+    public function setPodcastLeftSpeaker(): void
+    {
+        $this->cropMode = 'manual';
+        $this->manualCropX = 0.32;
+    }
+
+    public function setPodcastRightSpeaker(): void
+    {
+        $this->cropMode = 'manual';
+        $this->manualCropX = 0.68;
+    }
+
     // --- Live Translation State ---
     public string $targetLanguage = 'original';
     public array $clipWords = [];

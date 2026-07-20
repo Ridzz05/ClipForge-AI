@@ -25,21 +25,21 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-# Face detector initialization: MediaPipe or OpenCV Cascade fallback
 mp_face = None
-cascade_detector = None
+frontal_detector = None
+profile_detector = None
 
-try:
-    if mp and hasattr(mp, "solutions") and hasattr(mp.solutions, "face_detection"):
-        mp_face = mp.solutions.face_detection
-except Exception:
-    mp_face = None
+frontal_xml = os.path.join(os.path.dirname(__file__), "haarcascade_frontalface_default.xml")
+if os.path.exists(frontal_xml):
+    d = cv2.CascadeClassifier(frontal_xml)
+    if not d.empty():
+        frontal_detector = d
 
-cascade_xml = os.path.join(os.path.dirname(__file__), "haarcascade_frontalface_default.xml")
-if os.path.exists(cascade_xml):
-    detector = cv2.CascadeClassifier(cascade_xml)
-    if not detector.empty():
-        cascade_detector = detector
+profile_xml = os.path.join(os.path.dirname(__file__), "haarcascade_profileface.xml")
+if os.path.exists(profile_xml):
+    p = cv2.CascadeClassifier(profile_xml)
+    if not p.empty():
+        profile_detector = p
 
 # Sample at most this many points per clip — enough for a smooth pan without
 # processing every frame.
@@ -48,7 +48,7 @@ SAMPLE_HZ = float(os.environ.get("FACE_SAMPLE_HZ", "4"))
 
 @app.get("/health")
 def health():
-    active_detector = "mediapipe" if mp_face else ("opencv_cascade" if cascade_detector else "none")
+    active_detector = "mediapipe" if mp_face else ("opencv_frontal_profile" if (frontal_detector or profile_detector) else "none")
     return jsonify(status="ok", sample_hz=SAMPLE_HZ, detector=active_detector, has_detector=(active_detector != "none"))
 
 
@@ -76,8 +76,32 @@ def track():
             pass
 
 
+def _detect_faces(frame_gray):
+    faces = []
+    if frontal_detector:
+        f = frontal_detector.detectMultiScale(frame_gray, scaleFactor=1.1, minNeighbors=4, minSize=(30, 30))
+        for rect in f:
+            faces.append(rect)
+
+    if profile_detector:
+        # Left-facing profiles
+        p = profile_detector.detectMultiScale(frame_gray, scaleFactor=1.1, minNeighbors=4, minSize=(30, 30))
+        for rect in p:
+            faces.append(rect)
+
+        # Right-facing profiles (via horizontal flip)
+        flipped = cv2.flip(frame_gray, 1)
+        p_flip = profile_detector.detectMultiScale(flipped, scaleFactor=1.1, minNeighbors=4, minSize=(30, 30))
+        img_w = frame_gray.shape[1]
+        for (x, y, w, h) in p_flip:
+            unflipped_x = img_w - (x + w)
+            faces.append((unflipped_x, y, w, h))
+
+    return faces
+
+
 def _sample_centers(path: str, start_ms: int, end_ms: int) -> list[dict]:
-    if not mp_face and not cascade_detector:
+    if not mp_face and not frontal_detector and not profile_detector:
         return []
 
     cap = cv2.VideoCapture(path)
@@ -88,11 +112,11 @@ def _sample_centers(path: str, start_ms: int, end_ms: int) -> list[dict]:
     frame_delay = 1000.0 / fps
     step_ms = max(1, int(1000 / SAMPLE_HZ))
 
-    # Initial seek to start time
     cap.set(cv2.CAP_PROP_POS_MSEC, start_ms)
 
     centers: list[dict] = []
     next_target_ms = start_ms
+    last_cx = None
 
     if mp_face:
         with mp_face.FaceDetection(model_selection=1, min_detection_confidence=0.5) as fd:
@@ -130,7 +154,7 @@ def _sample_centers(path: str, start_ms: int, end_ms: int) -> list[dict]:
                         if not cap.grab():
                             break
                         current_ms = cap.get(cv2.CAP_PROP_POS_MSEC)
-    elif cascade_detector:
+    else:
         while True:
             ok, frame = cap.read()
             if not ok:
@@ -149,14 +173,18 @@ def _sample_centers(path: str, start_ms: int, end_ms: int) -> list[dict]:
                     proc_frame = frame
 
                 gray = cv2.cvtColor(proc_frame, cv2.COLOR_BGR2GRAY)
-                faces = cascade_detector.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4, minSize=(30, 30))
+                detected = _detect_faces(gray)
 
-                if len(faces) > 0:
-                    # Find largest face (primary speaker)
-                    largest = max(faces, key=lambda f: f[2] * f[3])
-                    fx, fy, fw, fh = largest
-                    # Compute normalized center X relative to proc_frame width
+                if len(detected) > 0:
+                    # If previously tracked a face, prefer face closest to last_cx; else pick largest face
+                    if last_cx is not None:
+                        chosen = min(detected, key=lambda f: abs(((f[0] + f[2]/2.0)/proc_frame.shape[1]) - last_cx))
+                    else:
+                        chosen = max(detected, key=lambda f: f[2] * f[3])
+
+                    fx, fy, fw, fh = chosen
                     cx = (fx + fw / 2.0) / proc_frame.shape[1]
+                    last_cx = cx
                     centers.append({"t_ms": int(current_ms), "cx": max(0.0, min(1.0, float(cx)))})
 
                 next_target_ms += step_ms
