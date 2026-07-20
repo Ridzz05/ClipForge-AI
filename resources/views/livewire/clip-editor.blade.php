@@ -86,6 +86,18 @@
                         <i class="ph ph-caret-double-right"></i> Akhir
                     </button>
                 </div>
+
+                <!-- Jiggle Effect Toggle -->
+                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px;">
+                    <span style="font-size: 10px; font-weight: 700; color: var(--text-muted); font-family: var(--font-mono); letter-spacing: 0.1em;">JIGGLE EFFECT</span>
+                    <button id="jiggle-toggle-btn"
+                            type="button"
+                            onclick="toggleJiggleEffect(this)"
+                            style="padding: 4px 14px; font-size: 10px; font-weight: 800; border-radius: 99px; cursor: pointer; transition: all 0.15s ease;"
+                            class="btn">
+                        ✦ ON
+                    </button>
+                </div>
             </div>
 
 
@@ -292,6 +304,17 @@
         if (typeof window.previewInterval === 'undefined') window.previewInterval = null;
         if (typeof window.lastCaptionActiveIdx === 'undefined') window.lastCaptionActiveIdx = -1;
         if (typeof window.cfTimeupdateHandler === 'undefined') window.cfTimeupdateHandler = null;
+        if (typeof window.cfJiggleEnabled === 'undefined') window.cfJiggleEnabled = true;
+
+        // Toggle jiggle-drop effect ON/OFF
+        window.toggleJiggleEffect = function(btn) {
+            window.cfJiggleEnabled = !window.cfJiggleEnabled;
+            btn.textContent = window.cfJiggleEnabled ? '✦ ON' : '✦ OFF';
+            btn.className   = window.cfJiggleEnabled
+                ? 'btn'
+                : 'btn-outline';
+            btn.style.cssText = 'padding:4px 14px; font-size:10px; font-weight:800; border-radius:99px; cursor:pointer; transition:all 0.15s ease;';
+        };
 
         window.clipWordsData = @json($clipWords);
 
@@ -436,7 +459,7 @@
 
                 // Jiggle-drop effect on 9:16 canvas frame
                 const frame = document.getElementById('live-canvas-frame');
-                if (frame) {
+                if (frame && window.cfJiggleEnabled) {
                     frame.classList.remove('canvas-jiggle');
                     void frame.offsetWidth; // force reflow so animation always restarts
                     frame.classList.add('canvas-jiggle');
