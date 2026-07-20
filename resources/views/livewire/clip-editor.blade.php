@@ -35,47 +35,135 @@
             <!-- 9:16 Vertical Live Preview Box (Ref: orient.webp & clip_caption.png) -->
             <div class="panel" style="padding: 24px; background: var(--bg-surface); text-align: center;">
 
-                <div class="row between" style="width: 100%; margin-bottom: 16px;">
-                    <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase;">LIVE 9:16 CANVAS PREVIEW</span>
+                <div class="row between" style="width: 100%; margin-bottom: 16px; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase;">FRAMING MODE:</span>
+                        <button type="button" 
+                                wire:click="$set('cropMode', 'auto')"
+                                style="padding: 5px 12px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
+                                class="btn {{ $cropMode === 'auto' ? 'btn-primary' : 'btn-outline' }}">
+                            <i class="ph ph-sparkle"></i> Auto AI Framing
+                        </button>
+                        <button type="button" 
+                                wire:click="$set('cropMode', 'manual')"
+                                style="padding: 5px 12px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
+                                class="btn {{ $cropMode === 'manual' ? 'btn-primary' : 'btn-outline' }}">
+                            <i class="ph ph-crop"></i> ✂ Pangkas Manual
+                        </button>
+                    </div>
                     <span class="badge badge-purple" style="padding: 4px 10px;">{{ strtoupper($renderFormat) }}</span>
                 </div>
 
-                <!-- 9:16 Simulated Mobile Player Screen -->
-                <div style="display: flex; justify-content: center; width: 100%; margin-bottom: 20px;">
-                    <div id="live-canvas-frame" style="width: 250px; height: 444px; background: #000; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 12px 36px rgba(0,0,0,0.3); border: 2px solid var(--border-color);">
-                        <video id="editor-video" controls preload="metadata" 
-                               onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
-                               style="width: 100%; height: 100%; object-fit: cover; display: block;" 
-                               src="/videos/{{ $candidate->video_id }}/source">
-                        </video>
+                @if($cropMode === 'auto')
+                    <!-- 9:16 Simulated Mobile Player Screen (Auto AI Framing) -->
+                    <div style="display: flex; justify-content: center; width: 100%; margin-bottom: 20px;">
+                        <div id="live-canvas-frame" style="width: 250px; height: 444px; background: #000; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 12px 36px rgba(0,0,0,0.3); border: 2px solid var(--border-color);">
+                            <video id="editor-video" controls preload="metadata" 
+                                   onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
+                                   style="width: 100%; height: 100%; object-fit: cover; display: block;" 
+                                   src="/videos/{{ $candidate->video_id }}/source">
+                            </video>
 
-                        <!-- Real-Time Subtitle Overlay Preview (Opus Clip Style) -->
-                        @if($burnSubtitles === 'on')
-                            <div id="subtitle-overlay" style="position: absolute; bottom: {{ ($captionPosY / 1920) * 100 }}%; left: 4%; right: 4%; text-align: center; pointer-events: none; z-index: 10;">
-                                <div id="caption-word-group"
-                                    data-animation="{{ $captionAnimation }}"
-                                    data-color="{{ $subtitleColor }}"
-                                    data-fontsize="{{ ($captionFontSize / 1920) * 450 }}"
-                                    style="
-                                        font-family: 'Outfit', sans-serif;
-                                        font-size: {{ ($captionFontSize / 1920) * 450 }}px;
-                                        font-weight: 900;
-                                        text-transform: uppercase;
-                                        letter-spacing: 0.03em;
-                                        line-height: 1.3;
-                                        display: flex;
-                                        flex-wrap: wrap;
-                                        justify-content: center;
-                                        gap: 0 5px;
-                                        min-height: 1.5em;
-                                    ">
-                                    <!-- JS renders word spans here -->
+                            <!-- Real-Time Subtitle Overlay Preview (Opus Clip Style) -->
+                            @if($burnSubtitles === 'on')
+                                <div id="subtitle-overlay" style="position: absolute; bottom: {{ ($captionPosY / 1920) * 100 }}%; left: 4%; right: 4%; text-align: center; pointer-events: none; z-index: 10;">
+                                    <div id="caption-word-group"
+                                        data-animation="{{ $captionAnimation }}"
+                                        data-color="{{ $subtitleColor }}"
+                                        data-fontsize="{{ ($captionFontSize / 1920) * 450 }}"
+                                        style="
+                                            font-family: 'Outfit', sans-serif;
+                                            font-size: {{ ($captionFontSize / 1920) * 450 }}px;
+                                            font-weight: 900;
+                                            text-transform: uppercase;
+                                            letter-spacing: 0.03em;
+                                            line-height: 1.3;
+                                            display: flex;
+                                            flex-wrap: wrap;
+                                            justify-content: center;
+                                            gap: 0 5px;
+                                            min-height: 1.5em;
+                                        ">
+                                        <!-- JS renders word spans here -->
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @else
+                    <!-- 16:9 Full Source Container + Draggable 9:16 Manual Crop Box -->
+                    <div style="display: flex; flex-direction: column; align-items: center; width: 100%; margin-bottom: 20px;">
+                        <div id="manual-crop-container" 
+                             style="width: 100%; max-width: 560px; height: 315px; background: #080c14; border-radius: 16px; position: relative; overflow: hidden; border: 2px solid var(--purple-primary, #6366f1); box-shadow: 0 12px 36px rgba(0,0,0,0.4); user-select: none;">
+                            
+                            <!-- Source 16:9 Video -->
+                            <video id="editor-video-manual" controls preload="metadata" 
+                                   onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
+                                   style="width: 100%; height: 100%; object-fit: contain; display: block;" 
+                                   src="/videos/{{ $candidate->video_id }}/source">
+                            </video>
+
+                            <!-- 9:16 Draggable Overlay Window -->
+                            <div id="manual-crop-window" 
+                                 style="
+                                     position: absolute; 
+                                     top: 0; 
+                                     bottom: 0; 
+                                     width: 177px; 
+                                     left: calc({{ $manualCropX * 100 }}% - 88.5px);
+                                     border: 2.5px solid #00f0ff; 
+                                     background: rgba(0, 240, 255, 0.12); 
+                                     box-shadow: 0 0 20px rgba(0, 240, 255, 0.5), inset 0 0 15px rgba(0, 240, 255, 0.2); 
+                                     cursor: grab; 
+                                     z-index: 10;
+                                     display: flex;
+                                     flex-direction: column;
+                                     justify-content: space-between;
+                                     touch-action: none;
+                                 ">
+                                <!-- Header Label / Handle -->
+                                <div style="background: rgba(0, 240, 255, 0.9); color: #000; font-size: 9px; font-weight: 900; text-transform: uppercase; padding: 4px; text-align: center; letter-spacing: 0.05em; font-family: var(--font-mono); pointer-events: none;">
+                                    ⟷ 9:16 FRAME CROP
+                                </div>
+
+                                <!-- Real-Time Subtitle Overlay inside 9:16 window -->
+                                @if($burnSubtitles === 'on')
+                                    <div id="subtitle-overlay-manual" style="position: absolute; bottom: {{ ($captionPosY / 1920) * 100 }}%; left: 4%; right: 4%; text-align: center; pointer-events: none; z-index: 12;">
+                                        <div id="caption-word-group-manual"
+                                             data-animation="{{ $captionAnimation }}"
+                                             data-color="{{ $subtitleColor }}"
+                                             data-fontsize="{{ ($captionFontSize / 1920) * 315 }}"
+                                             style="
+                                                 font-family: 'Outfit', sans-serif;
+                                                 font-size: {{ ($captionFontSize / 1920) * 315 }}px;
+                                                 font-weight: 900;
+                                                 text-transform: uppercase;
+                                                 letter-spacing: 0.03em;
+                                                 line-height: 1.3;
+                                                 display: flex;
+                                                 flex-wrap: wrap;
+                                                 justify-content: center;
+                                                 gap: 0 4px;
+                                                 min-height: 1.5em;
+                                             ">
+                                            <!-- JS syncs word spans here -->
+                                        </div>
+                                    </div>
+                                @endif
+
+                                <!-- Bottom Position Badge -->
+                                <div style="background: rgba(0, 0, 0, 0.75); color: #00f0ff; font-size: 9px; font-weight: 800; padding: 3px; text-align: center; font-family: var(--font-mono); pointer-events: none; border-top: 1px solid rgba(0, 240, 255, 0.4);">
+                                    POS X: <span id="manual-crop-x-label">{{ round($manualCropX * 100, 1) }}%</span>
                                 </div>
                             </div>
-                        @endif
+                        </div>
+                        
+                        <!-- Instruction Banner -->
+                        <div style="margin-top: 8px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: center;">
+                            💡 <span style="color: #00f0ff;">Tarik bingkai cyan ke kiri / kanan</span> untuk menentukan area 9:16 yang akan dipangkas.
+                        </div>
                     </div>
-
-                </div>
+                @endif
 
                 <!-- Player Action Buttons -->
                 <div style="display: flex; gap: 8px; justify-content: center; width: 100%;">
@@ -371,51 +459,54 @@
 
         window.cfColorMap = { yellow:'#ffff00', pink:'#ff4d6d', orange:'#ff8c32', white:'#ffffff' };
 
+        window.getActiveVideo = function() {
+            return document.getElementById('editor-video-manual') || document.getElementById('editor-video');
+        };
+
         // ✅ FIX: Smart DOM diff — only rebuild innerHTML when word GROUP changes;
         //         within same group, only swap active class + force reflow to re-trigger animation.
         window.renderCaptionGroup = function(groupWords, activeInGroup, animation, activeColor) {
-            const container = document.getElementById('caption-word-group');
-            if (!container) return;
+            ['caption-word-group', 'caption-word-group-manual'].forEach(id => {
+                const container = document.getElementById(id);
+                if (!container) return;
 
-            container.className = 'anim-' + animation;
-            container.style.setProperty('--block-color', activeColor);
+                container.className = 'anim-' + animation;
+                container.style.setProperty('--block-color', activeColor);
 
-            const groupKey = groupWords.map(w => w.word).join('|');
+                const groupKey = groupWords.map(w => w.word).join('|');
 
-            if (container.dataset.groupKey === groupKey) {
-                // Same group: only toggle .active — no innerHTML rebuild → no animation restart for other words
-                container.querySelectorAll('.cw').forEach((s, i) => {
-                    const shouldBeActive = (i === activeInGroup);
-                    if (shouldBeActive) {
-                        s.style.color = activeColor;
-                        if (!s.classList.contains('active')) {
+                if (container.dataset.groupKey === groupKey) {
+                    container.querySelectorAll('.cw').forEach((s, i) => {
+                        const shouldBeActive = (i === activeInGroup);
+                        if (shouldBeActive) {
+                            s.style.color = activeColor;
+                            if (!s.classList.contains('active')) {
+                                s.classList.remove('active');
+                                void s.offsetWidth; // force reflow to re-trigger CSS @keyframes
+                                s.classList.add('active');
+                            }
+                        } else {
                             s.classList.remove('active');
-                            void s.offsetWidth; // force reflow to re-trigger CSS @keyframes
-                            s.classList.add('active');
+                            s.style.color = '';
                         }
-                    } else {
-                        s.classList.remove('active');
-                        s.style.color = '';
-                    }
-                });
-                return;
-            }
+                    });
+                    return;
+                }
 
-            // New group: full innerHTML rebuild
-            container.dataset.groupKey = groupKey;
-            container.innerHTML = groupWords.map((w, i) => {
-                const active = (i === activeInGroup);
-                return `<span class="cw${active?' active':''}" style="${active?'color:'+activeColor:''}">${w.word}</span>`;
-            }).join(' ');
+                container.dataset.groupKey = groupKey;
+                container.innerHTML = groupWords.map((w, i) => {
+                    const active = (i === activeInGroup);
+                    return `<span class="cw${active?' active':''}" style="${active?'color:'+activeColor:''}">${w.word}</span>`;
+                }).join(' ');
+            });
         };
 
-        // ✅ FIX: Singleton event listener — removeEventListener before add to prevent accumulation.
+        // ✅ Singleton event listener for Live Subtitle Sync
         window.initLiveSubtitleSync = function() {
-            const video = document.getElementById('editor-video');
+            const video = window.getActiveVideo();
             if (!video) return;
 
-            // Remove old handler first (prevents duplicate listeners on Livewire re-renders)
-            if (window.cfTimeupdateHandler) {
+            if (window.cfTimeupdateHandler && window.cfTimeupdateVideoRef === video) {
                 video.removeEventListener('timeupdate', window.cfTimeupdateHandler);
             }
 
@@ -445,7 +536,7 @@
                 const group = words.slice(start, end + 1);
                 const activeInGroup = activeIdx - start;
 
-                const container = document.getElementById('caption-word-group');
+                const container = document.getElementById('caption-word-group') || document.getElementById('caption-word-group-manual');
                 const animation  = (container?.dataset.animation) || 'karaoke';
                 const colorKey   = (container?.dataset.color) || 'yellow';
                 const activeColor = window.cfColorMap[colorKey] || '#ffff00';
@@ -453,6 +544,7 @@
                 window.renderCaptionGroup(group, activeInGroup, animation, activeColor);
             };
 
+            window.cfTimeupdateVideoRef = video;
             video.addEventListener('timeupdate', window.cfTimeupdateHandler);
         };
 
@@ -465,14 +557,14 @@
         window.seekEditorVideoTo = window.seekEditorVideoTo || function(ms) {
             if (typeof ms === 'undefined' || ms === null || ms < 0) return;
             const targetSeconds = ms / 1000;
-            const video = document.getElementById('editor-video');
+            const video = window.getActiveVideo();
             if (video) {
                 try { video.currentTime = targetSeconds; } catch (e) {}
             }
         };
 
         window.setStartToCurrent = window.setStartToCurrent || function(comp) {
-            const video = document.getElementById('editor-video');
+            const video = window.getActiveVideo();
             if (video && comp) {
                 const currentMs = Math.round(video.currentTime * 1000);
                 window.cfStartMs = currentMs;
@@ -482,7 +574,7 @@
         };
 
         window.setEndToCurrent = window.setEndToCurrent || function(comp) {
-            const video = document.getElementById('editor-video');
+            const video = window.getActiveVideo();
             if (video && comp) {
                 const currentMs = Math.round(video.currentTime * 1000);
                 window.cfEndMs = currentMs;
@@ -493,7 +585,7 @@
 
         // ✅ Visual Timeline Scrubber Engine
         window.initTimelineScrubber = function() {
-            const video = document.getElementById('editor-video');
+            const video = window.getActiveVideo();
             const track = document.getElementById('timeline-track');
             if (!video || !track) return;
 
@@ -609,7 +701,7 @@
         };
 
         window.playPreview = window.playPreview || function(startMs, endMs) {
-            const video = document.getElementById('editor-video');
+            const video = window.getActiveVideo();
             if (video) {
                 video.currentTime = (startMs || 0) / 1000;
                 video.play();
@@ -633,6 +725,88 @@
                 }, 50);
             }
         };
+
+        // ✅ Interactive 9:16 Manual Crop Drag Engine
+        window.initManualCropDrag = function() {
+            const container = document.getElementById('manual-crop-container');
+            const cropBox = document.getElementById('manual-crop-window');
+            const label = document.getElementById('manual-crop-x-label');
+            if (!container || !cropBox) return;
+
+            let isDragging = false;
+            let startX = 0;
+            let startLeft = 0;
+
+            function getEventX(e) {
+                return e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+            }
+
+            function onPointerDown(e) {
+                isDragging = true;
+                cropBox.style.cursor = 'grabbing';
+                startX = getEventX(e);
+                const rect = container.getBoundingClientRect();
+                const boxRect = cropBox.getBoundingClientRect();
+                startLeft = boxRect.left - rect.left;
+                e.preventDefault();
+            }
+
+            function onPointerMove(e) {
+                if (!isDragging) return;
+                const currentX = getEventX(e);
+                const deltaX = currentX - startX;
+                const rect = container.getBoundingClientRect();
+                const boxWidth = cropBox.offsetWidth;
+                const maxLeft = rect.width - boxWidth;
+
+                let newLeft = startLeft + deltaX;
+                newLeft = Math.max(0, Math.min(maxLeft, newLeft));
+
+                cropBox.style.left = newLeft + 'px';
+
+                const centerX = newLeft + (boxWidth / 2);
+                const normPct = Math.max(0, Math.min(1, centerX / rect.width));
+
+                if (label) {
+                    label.textContent = (normPct * 100).toFixed(1) + '%';
+                }
+
+                if (window.manualCropTimer) clearTimeout(window.manualCropTimer);
+                window.manualCropTimer = setTimeout(function() {
+                    if (window.Livewire) {
+                        const rootElem = container.closest('[wire\\:id]');
+                        if (rootElem) {
+                            const compId = rootElem.getAttribute('wire:id');
+                            if (compId && Livewire.find(compId)) {
+                                Livewire.find(compId).set('manualCropX', parseFloat(normPct.toFixed(4)));
+                            }
+                        }
+                    }
+                }, 150);
+            }
+
+            function onPointerUp() {
+                if (isDragging) {
+                    isDragging = false;
+                    cropBox.style.cursor = 'grab';
+                }
+            }
+
+            cropBox.addEventListener('mousedown', onPointerDown);
+            cropBox.addEventListener('touchstart', onPointerDown, { passive: false });
+
+            window.addEventListener('mousemove', onPointerMove);
+            window.addEventListener('touchmove', onPointerMove, { passive: false });
+
+            window.addEventListener('mouseup', onPointerUp);
+            window.addEventListener('touchend', onPointerUp);
+        };
+
+        setTimeout(function() {
+            window.initManualCropDrag();
+            window.initLiveSubtitleSync();
+            window.initTimelineScrubber();
+        }, 100);
     </script>
 </div>
 

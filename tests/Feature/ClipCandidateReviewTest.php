@@ -78,4 +78,14 @@ class ClipCandidateReviewTest extends TestCase
     {
         $this->postJson('/api/candidates/999999/approve')->assertNotFound();
     }
+
+    public function test_approving_with_manual_crop_x_stores_crop_position(): void
+    {
+        $candidate = $this->makeCandidate();
+        $service = new \App\Services\ClipReviewService();
+
+        $export = $service->approve($candidate, 'CTA', 'default', 960, 'single', 0.35);
+
+        $this->assertEquals(0.35, $export->manual_crop_x);
+    }
 }

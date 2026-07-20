@@ -73,10 +73,18 @@ class ReframeJob implements ShouldQueue
         $dims = $ffprobe->dimensions($inputPath);
         $crop = $planner->cropSize($dims['width'], $dims['height']);
 
-        // 2. Face centres → smoothed pan; static median X keeps the crop stable.
-        $centers = $faces->sampleCenters($inputPath, $candidate->start_ms, $candidate->end_ms);
-        $panPath = $planner->panPath($dims['width'], $dims['height'], $centers);
-        $panX = $this->medianX($panPath);
+        // 2. Face centres → smoothed pan or manual crop position.
+        if ($export->manual_crop_x !== null) {
+            $cropW = $crop['width'];
+            $maxX = max(0, $dims['width'] - $cropW);
+            $desiredX = ($export->manual_crop_x * $dims['width']) - ($cropW / 2);
+            $panX = (int) round(max(0.0, min((float) $maxX, $desiredX)));
+            Log::info('Reframe: using manual crop X', ['manual_crop_x' => $export->manual_crop_x, 'computed_pan_x' => $panX]);
+        } else {
+            $centers = $faces->sampleCenters($inputPath, $candidate->start_ms, $candidate->end_ms);
+            $panPath = $planner->panPath($dims['width'], $dims['height'], $centers);
+            $panX = $this->medianX($panPath);
+        }
 
         // 3. Captions for this clip, timestamps rebased to clip start, plus a
         //    fixed on-screen CTA (campaign requirement) spanning the whole clip.

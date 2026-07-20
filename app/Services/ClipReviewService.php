@@ -27,7 +27,8 @@ class ClipReviewService
         ?string $ctaText = null,
         ?string $captionStyle = null,
         ?int $captionMarginV = null,
-        ?string $layout = 'single'
+        ?string $layout = 'single',
+        ?float $manualCropX = null
     ): Export {
         if ($candidate->status === ClipCandidate::STATUS_EXPORTED) {
             throw new RuntimeException('Candidate already exported.');
@@ -56,6 +57,7 @@ class ClipReviewService
             'aspect_ratio' => '9:16',
             'caption_style' => $style,
             'layout' => $layout ?? 'single',
+            'manual_crop_x' => $manualCropX,
             'cta_text' => $cta,
             'status' => Export::STATUS_QUEUED,
             'caption_margin_v' => $marginV,

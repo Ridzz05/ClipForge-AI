@@ -34,6 +34,10 @@ class ClipEditor extends Component
     // --- Format & Orientation Selector ---
     public string $renderFormat = 'face_916';
 
+    // --- Framing Mode & Manual Crop State ---
+    public string $cropMode = 'auto'; // 'auto' | 'manual'
+    public float $manualCropX = 0.5; // 0.0 (left) to 1.0 (right)
+
     // --- Live Translation State ---
     public string $targetLanguage = 'original';
     public array $clipWords = [];
@@ -147,7 +151,8 @@ class ClipEditor extends Component
                 $this->ctaText,
                 $styleKey,
                 $this->captionPosY,
-                $this->renderFormat === 'face_916' ? 'single' : 'split_gaming'
+                $this->renderFormat === 'face_916' ? 'single' : 'split_gaming',
+                $this->cropMode === 'manual' ? $this->manualCropX : null
             );
 
             $this->dispatch('toast', message: "Klip #{$this->candidate->id} disetujui & sedang diekspor!", type: 'success');

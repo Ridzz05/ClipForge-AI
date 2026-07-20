@@ -22,6 +22,7 @@ class Export extends Model
         'watermark_applied',
         'caption_style',
         'layout',
+        'manual_crop_x',
         'cta_text',
         'status',
         'last_error',
@@ -33,6 +34,7 @@ class Export extends Model
         'watermark_applied' => 'boolean',
         'rendered_at' => 'datetime',
         'caption_margin_v' => 'integer',
+        'manual_crop_x' => 'float',
     ];
 
     public function clipCandidate(): BelongsTo
