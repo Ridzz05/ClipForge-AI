@@ -25,7 +25,7 @@
     </div>
 
     <!-- Main Live Editor Grid (2 Columns: Studio Live Canvas vs Control Inspector) -->
-    <div class="grid" style="grid-template-columns: 1fr 380px; gap: 28px; align-items: start;">
+    <div class="grid" style="grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start;">
         
         <!-- Left Column: Live 9:16 & 16:9 Preview Canvas -->
         <div class="grid" style="gap: 20px;">
@@ -37,12 +37,13 @@
                 </div>
 
                 <!-- 9:16 Simulated Mobile Player Screen -->
-                <div id="live-canvas-frame" style="width: 280px; height: 500px; background: #000; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 15px 40px rgba(0,0,0,0.3); border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
+                <div id="live-canvas-frame" style="width: 260px; height: 460px; background: #000; border-radius: 18px; overflow: hidden; position: relative; box-shadow: 0 15px 40px rgba(0,0,0,0.3); border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; margin: 0 auto;">
                     <video id="editor-video" controls preload="metadata" 
                            onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
                            style="width: 100%; height: 100%; object-fit: cover; display: block;" 
                            src="/videos/{{ $candidate->video_id }}/source">
                     </video>
+
 
                     <!-- Real-Time Subtitle Overlay Preview -->
                     @if($burnSubtitles === 'on')
@@ -62,7 +63,10 @@
                             </span>
                         </div>
                     @endif
-                </di                <!-- Player Action Buttons -->
+                </div>
+
+                <!-- Player Action Buttons -->
+
                 <div class="row" style="gap: 10px; margin-top: 20px; justify-content: center; width: 100%;">
                     <button type="button" class="btn btn-sm btn-primary" onclick="playPreview(Livewire.find('{{ $this->getId() }}').get('editStartMs'), Livewire.find('{{ $this->getId() }}').get('editEndMs'))" style="flex: 2; padding: 10px;">
                         <i class="ph ph-play-circle" style="font-size: 16px;"></i> Play Loop Preview
