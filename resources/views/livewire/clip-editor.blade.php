@@ -91,25 +91,25 @@
                             @if($renderFormat === 'split_podcast')
                                 <!-- STACKED DUAL FRAME PREVIEW FOR PODCAST (Top = Speaker Left 25%, Bottom = Speaker Right 75%) -->
                                 <div style="position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 1;">
-                                    <!-- Top Frame (Speaker Left 25%) -->
+                                    <!-- Top Frame (Speaker Left) -->
                                     <div style="height: 50%; width: 100%; position: relative; overflow: hidden; border-bottom: 2px solid #00f0ff;">
                                         <video id="editor-video-top" preload="metadata" muted
-                                               style="width: 100%; height: 100%; object-fit: cover; object-position: 25% center; pointer-events: none;"
+                                               style="width: 100%; height: 100%; object-fit: cover; object-position: {{ $splitTopCropX * 100 }}% center; pointer-events: none;"
                                                src="/videos/{{ $candidate->video_id }}/source">
                                         </video>
                                         <div style="position: absolute; top: 4px; left: 6px; background: rgba(0,240,255,0.85); color: #000; font-size: 8px; font-weight: 900; padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono);">
-                                            👤 TOP: SPEAKER KIRI
+                                            👤 TOP VIEW ({{ round($splitTopCropX * 100) }}%)
                                         </div>
                                     </div>
 
-                                    <!-- Bottom Frame (Speaker Right 75%) -->
+                                    <!-- Bottom Frame (Speaker Right) -->
                                     <div style="height: 50%; width: 100%; position: relative; overflow: hidden;">
                                         <video id="editor-video-bottom" preload="metadata" muted
-                                               style="width: 100%; height: 100%; object-fit: cover; object-position: 75% center; pointer-events: none;"
+                                               style="width: 100%; height: 100%; object-fit: cover; object-position: {{ $splitBottomCropX * 100 }}% center; pointer-events: none;"
                                                src="/videos/{{ $candidate->video_id }}/source">
                                         </video>
                                         <div style="position: absolute; top: 4px; left: 6px; background: rgba(154,85,255,0.85); color: #fff; font-size: 8px; font-weight: 900; padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono);">
-                                            👤 BOT: SPEAKER KANAN
+                                            👤 BOT VIEW ({{ round($splitBottomCropX * 100) }}%)
                                         </div>
                                     </div>
                                 </div>
@@ -369,6 +369,44 @@
                     </button>
                 </div>
             </div>
+
+            @if($renderFormat === 'split_podcast')
+                <!-- PODCAST DUAL CAMERA POSITION CONTROL PANEL -->
+                <div class="panel" style="padding: 20px; background: var(--bg-surface); border: 1.5px solid #00f0ff; box-shadow: 0 0 15px rgba(0,240,255,0.15);">
+                    <div class="row between" style="margin-bottom: 14px;">
+                        <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: #00f0ff;">🎙️ PODCAST DUAL CAMERA POSITIONS</span>
+                        <span class="badge badge-purple" style="font-size: 10px;">TOP &amp; BOT CONTROL</span>
+                    </div>
+
+                    <!-- TOP CAMERA POSITION (Speaker 1) -->
+                    <div style="margin-bottom: 16px; background: rgba(0,240,255,0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(0,240,255,0.2);">
+                        <div class="row between" style="margin-bottom: 6px;">
+                            <label style="font-size: 11px; font-weight: 800; color: #00f0ff;">👤 BINGKAI ATAS (TOP VIEW)</label>
+                            <span style="font-size: 11px; font-weight: 900; font-family: var(--font-mono); color: #00f0ff;">{{ round($splitTopCropX * 100) }}%</span>
+                        </div>
+                        <input type="range" min="0.0" max="1.0" step="0.005" wire:model.live="splitTopCropX" style="width: 100%; cursor: pointer; accent-color: #00f0ff; margin-bottom: 8px;">
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" wire:click="$set('splitTopCropX', 0.25)" class="btn btn-outline btn-sm" style="flex: 1; font-size: 10px; padding: 4px;">Kiri (25%)</button>
+                            <button type="button" wire:click="$set('splitTopCropX', 0.50)" class="btn btn-outline btn-sm" style="flex: 1; font-size: 10px; padding: 4px;">Tengah (50%)</button>
+                            <button type="button" wire:click="$set('splitTopCropX', 0.75)" class="btn btn-outline btn-sm" style="flex: 1; font-size: 10px; padding: 4px;">Kanan (75%)</button>
+                        </div>
+                    </div>
+
+                    <!-- BOTTOM CAMERA POSITION (Speaker 2) -->
+                    <div style="background: rgba(154,85,255,0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(154,85,255,0.2);">
+                        <div class="row between" style="margin-bottom: 6px;">
+                            <label style="font-size: 11px; font-weight: 800; color: var(--purple-primary);">👤 BINGKAI BAWAH (BOT VIEW)</label>
+                            <span style="font-size: 11px; font-weight: 900; font-family: var(--font-mono); color: var(--purple-primary);">{{ round($splitBottomCropX * 100) }}%</span>
+                        </div>
+                        <input type="range" min="0.0" max="1.0" step="0.005" wire:model.live="splitBottomCropX" style="width: 100%; cursor: pointer; accent-color: var(--purple-primary); margin-bottom: 8px;">
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" wire:click="$set('splitBottomCropX', 0.25)" class="btn btn-outline btn-sm" style="flex: 1; font-size: 10px; padding: 4px;">Kiri (25%)</button>
+                            <button type="button" wire:click="$set('splitBottomCropX', 0.50)" class="btn btn-outline btn-sm" style="flex: 1; font-size: 10px; padding: 4px;">Tengah (50%)</button>
+                            <button type="button" wire:click="$set('splitBottomCropX', 0.75)" class="btn btn-outline btn-sm" style="flex: 1; font-size: 10px; padding: 4px;">Kanan (75%)</button>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
             <!-- STYLE & CAPTIONS MOOD PANEL (Ref: clip_caption.png) -->
             <div class="panel" style="padding: 20px; background: var(--bg-surface);">

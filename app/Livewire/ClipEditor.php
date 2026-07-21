@@ -39,6 +39,10 @@ class ClipEditor extends Component
     public string $cropMode = 'auto'; // 'auto' | 'manual'
     public float $manualCropX = 0.5; // 0.0 (left) to 1.0 (right)
 
+    // --- Split Podcast Dual Framing State ---
+    public float $splitTopCropX = 0.25; // 0.0 to 1.0 (Top Frame)
+    public float $splitBottomCropX = 0.75; // 0.0 to 1.0 (Bottom Frame)
+
     // --- Dynamic AI Auto Framing ---
     public bool $isAnalyzingFaces = false;
     public array $autoPanPath = [];
@@ -222,7 +226,9 @@ class ClipEditor extends Component
                 $this->captionPosY,
                 $layout,
                 $this->cropMode === 'manual' ? $this->manualCropX : null,
-                $this->captionFont
+                $this->captionFont,
+                $this->splitTopCropX,
+                $this->splitBottomCropX
             );
 
             $this->dispatch('toast', message: "Klip #{$this->candidate->id} disetujui & sedang diekspor!", type: 'success');

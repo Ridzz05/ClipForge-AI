@@ -125,6 +125,8 @@ class ReframeJob implements ShouldQueue
             renderW: $renderW,
             renderH: $renderH,
             layout: $export->layout ?? 'single',
+            splitTopCropX: $export->split_top_crop_x,
+            splitBottomCropX: $export->split_bottom_crop_x,
         );
         $ffmpeg->run($args);
 

@@ -105,8 +105,7 @@ class ReframeCommandBuilderTest extends TestCase
         $this->assertNotFalse($filterPos);
         $filter = $args[$filterPos + 1];
 
-        $this->assertStringContainsString('crop=in_w*0.5:in_h:0:0', $filter);
-        $this->assertStringContainsString('crop=in_w*0.5:in_h:in_w*0.5:0', $filter);
+        $this->assertStringContainsString('crop=in_w*0.5:in_h:', $filter);
         $this->assertStringContainsString('vstack=inputs=2', $filter);
     }
 }

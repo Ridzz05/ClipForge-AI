@@ -26,6 +26,8 @@ class ReframeCommandBuilder
         int $renderW,
         int $renderH,
         string $layout = 'single',
+        ?float $splitTopCropX = 0.25,
+        ?float $splitBottomCropX = 0.75,
     ): array {
         $startSec = $this->msToSec($clip['start_ms']);
         $durSec = $this->msToSec($clip['end_ms'] - $clip['start_ms']);
@@ -35,18 +37,19 @@ class ReframeCommandBuilder
         if ($layout === 'split_podcast') {
             $halfH = (int) round($renderH / 2);
 
-            // Split podcast dual-frame layout (Top = Speaker Left 50%, Bottom = Speaker Right 50%):
-            // 1. Top frame: Crop left half of 16:9 frame (width 50%, height 100%, offset X=0), scale to renderW x halfH
-            // 2. Bottom frame: Crop right half of 16:9 frame (width 50%, height 100%, offset X=in_w*0.5), scale to renderW x halfH
-            // 3. Stack them vertically: Top [top_spk], Bottom [bot_spk]
-            // 4. Burn subtitles
+            // Compute crop offsets: topRatio and botRatio (0.0 to 0.5)
+            $topRatio = max(0.0, min(0.5, ($splitTopCropX ?? 0.25) - 0.25));
+            $botRatio = max(0.0, min(0.5, ($splitBottomCropX ?? 0.75) - 0.25));
+
             $filter = sprintf(
-                '[0:v]crop=in_w*0.5:in_h:0:0,scale=%d:%d,setsar=1[top_spk]; ' .
-                '[0:v]crop=in_w*0.5:in_h:in_w*0.5:0,scale=%d:%d,setsar=1[bot_spk]; ' .
+                '[0:v]crop=in_w*0.5:in_h:in_w*%.4f:0,scale=%d:%d,setsar=1[top_spk]; ' .
+                '[0:v]crop=in_w*0.5:in_h:in_w*%.4f:0,scale=%d:%d,setsar=1[bot_spk]; ' .
                 '[top_spk][bot_spk]vstack=inputs=2[stacked]; ' .
                 '[stacked]subtitles=%s[out]',
+                $topRatio,
                 $renderW,
                 $halfH,
+                $botRatio,
                 $renderW,
                 $halfH,
                 $assFilterPath

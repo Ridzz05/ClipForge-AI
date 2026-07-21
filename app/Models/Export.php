@@ -24,6 +24,8 @@ class Export extends Model
         'caption_font',
         'layout',
         'manual_crop_x',
+        'split_top_crop_x',
+        'split_bottom_crop_x',
         'cta_text',
         'status',
         'last_error',
@@ -36,6 +38,8 @@ class Export extends Model
         'rendered_at' => 'datetime',
         'caption_margin_v' => 'integer',
         'manual_crop_x' => 'float',
+        'split_top_crop_x' => 'float',
+        'split_bottom_crop_x' => 'float',
     ];
 
     public function clipCandidate(): BelongsTo
