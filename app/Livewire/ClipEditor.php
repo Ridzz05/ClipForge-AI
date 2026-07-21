@@ -124,6 +124,44 @@ class ClipEditor extends Component
     }
 
 
+    // --- Multi-Segment Split & Jump-Cut State ---
+    public array $segments = [];
+
+    public function splitSegmentAtCurrentTime(int $currentMs): void
+    {
+        if ($currentMs <= 0) return;
+
+        foreach ($this->segments as $i => $seg) {
+            if ($currentMs > $seg['start_ms'] + 500 && $currentMs < $seg['end_ms'] - 500) {
+                $seg1 = ['start_ms' => $seg['start_ms'], 'end_ms' => $currentMs];
+                $seg2 = ['start_ms' => $currentMs, 'end_ms' => $seg['end_ms']];
+                array_splice($this->segments, $i, 1, [$seg1, $seg2]);
+                $this->dispatch('toast', message: '✂️ Segment berhasil dipotong pada timestamp ini!', type: 'success');
+                return;
+            }
+        }
+        $this->dispatch('toast', message: 'Posisikan playhead di dalam area segmen untuk memotong.', type: 'info');
+    }
+
+    public function deleteSegment(int $index): void
+    {
+        if (count($this->segments) <= 1) {
+            $this->dispatch('toast', message: 'Minimal harus ada 1 segmen klip.', type: 'error');
+            return;
+        }
+        unset($this->segments[$index]);
+        $this->segments = array_values($this->segments);
+        $this->dispatch('toast', message: 'Segmen berhasil dihapus!', type: 'info');
+    }
+
+    public function updateSegmentTime(int $index, int $startMs, int $endMs): void
+    {
+        if (isset($this->segments[$index])) {
+            $this->segments[$index]['start_ms'] = max(0, $startMs);
+            $this->segments[$index]['end_ms'] = max($startMs + 500, $endMs);
+        }
+    }
+
     public function mount(ClipCandidate $candidate): void
     {
         $this->candidate = $candidate->load(['video', 'video.transcript', 'video.transcript.segments']);
@@ -132,6 +170,9 @@ class ClipEditor extends Component
         $this->editHookScore = $candidate->hook_score;
         $this->editRationale = $candidate->score_rationale ?? '';
         $this->ctaText = (string) config('autoclip.render.cta_text', '');
+        $this->segments = [
+            ['start_ms' => $candidate->start_ms, 'end_ms' => $candidate->end_ms]
+        ];
         $this->loadClipWords();
     }
 
@@ -228,7 +269,8 @@ class ClipEditor extends Component
                 $this->cropMode === 'manual' ? $this->manualCropX : null,
                 $this->captionFont,
                 $this->splitTopCropX,
-                $this->splitBottomCropX
+                $this->splitBottomCropX,
+                count($this->segments) > 1 ? $this->segments : null
             );
 
             $this->dispatch('toast', message: "Klip #{$this->candidate->id} disetujui & sedang diekspor!", type: 'success');

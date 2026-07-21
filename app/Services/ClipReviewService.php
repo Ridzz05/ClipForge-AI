@@ -31,7 +31,8 @@ class ClipReviewService
         ?float $manualCropX = null,
         ?string $captionFont = null,
         ?float $splitTopCropX = null,
-        ?float $splitBottomCropX = null
+        ?float $splitBottomCropX = null,
+        ?array $segments = null
     ): Export {
         if ($candidate->status === ClipCandidate::STATUS_EXPORTED) {
             throw new RuntimeException('Candidate already exported.');
@@ -68,6 +69,7 @@ class ClipReviewService
             'manual_crop_x' => $manualCropX,
             'split_top_crop_x' => $splitTopCropX ?? 0.25,
             'split_bottom_crop_x' => $splitBottomCropX ?? 0.75,
+            'segments' => $segments,
             'cta_text' => $cta,
             'status' => Export::STATUS_QUEUED,
             'caption_margin_v' => $marginV,

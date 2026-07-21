@@ -91,44 +91,100 @@ class ReframeJob implements ShouldQueue
             }
         }
 
-        // 3. Captions for this clip, timestamps rebased to clip start, plus a
-        //    fixed on-screen CTA (campaign requirement) spanning the whole clip.
-        $assRelative = "exports/{$export->id}/captions.ass";
         $exportDisk = Storage::disk((string) config('autoclip.render.disk'));
-        $clipDurationMs = $candidate->end_ms - $candidate->start_ms;
         $ctaText = $export->cta_text ?? (string) config('autoclip.render.cta_text', '');
-        $exportDisk->put($assRelative, $captions->renderAss(
-            $this->wordsForClip($video->id, $candidate->start_ms, $candidate->end_ms),
-            $export->caption_style,
-            $renderW,
-            $renderH,
-            $ctaText,
-            $clipDurationMs,
-            $export->caption_margin_v,
-            $export->caption_font
-        ));
-        $assPath = $exportDisk->path($assRelative);
-
-        // 4. Output path — server-generated, never user data.
-        $outputRelative = "exports/{$export->id}/".Str::uuid().'.mp4';
         $exportDisk->makeDirectory("exports/{$export->id}");
+        $outputRelative = "exports/{$export->id}/".Str::uuid().'.mp4';
         $outputPath = $exportDisk->path($outputRelative);
 
-        // 5. Build + run the ffmpeg command (argument array).
-        $args = $builder->build(
-            inputPath: $inputPath,
-            assPath: $assPath,
-            outputPath: $outputPath,
-            clip: ['start_ms' => $candidate->start_ms, 'end_ms' => $candidate->end_ms],
-            crop: $crop,
-            panX: $panX,
-            renderW: $renderW,
-            renderH: $renderH,
-            layout: $export->layout ?? 'single',
-            splitTopCropX: $export->split_top_crop_x,
-            splitBottomCropX: $export->split_bottom_crop_x,
-        );
-        $ffmpeg->run($args);
+        $segments = $export->segments;
+        if (is_array($segments) && count($segments) > 1) {
+            Log::info('Reframe: processing multi-segment jump-cut rendering', ['export_id' => $export->id, 'segments_count' => count($segments)]);
+            $concatLines = [];
+
+            foreach ($segments as $sIdx => $seg) {
+                $segStartMs = (int) $seg['start_ms'];
+                $segEndMs = (int) $seg['end_ms'];
+                $segDurMs = max(500, $segEndMs - $segStartMs);
+
+                $segAssRelative = "exports/{$export->id}/captions_seg_{$sIdx}.ass";
+                $exportDisk->put($segAssRelative, $captions->renderAss(
+                    $this->wordsForClip($video->id, $segStartMs, $segEndMs),
+                    $export->caption_style,
+                    $renderW,
+                    $renderH,
+                    $ctaText,
+                    $segDurMs,
+                    $export->caption_margin_v,
+                    $export->caption_font
+                ));
+                $segAssPath = $exportDisk->path($segAssRelative);
+
+                $segOutputRelative = "exports/{$export->id}/seg_{$sIdx}.mp4";
+                $segOutputPath = $exportDisk->path($segOutputRelative);
+
+                $segArgs = $builder->build(
+                    inputPath: $inputPath,
+                    assPath: $segAssPath,
+                    outputPath: $segOutputPath,
+                    clip: ['start_ms' => $segStartMs, 'end_ms' => $segEndMs],
+                    crop: $crop,
+                    panX: $panX,
+                    renderW: $renderW,
+                    renderH: $renderH,
+                    layout: $export->layout ?? 'single',
+                    splitTopCropX: $export->split_top_crop_x,
+                    splitBottomCropX: $export->split_bottom_crop_x,
+                );
+                $ffmpeg->run($segArgs);
+
+                $concatLines[] = "file '".$segOutputPath."'";
+            }
+
+            $concatRelative = "exports/{$export->id}/concat.txt";
+            $exportDisk->put($concatRelative, implode("\n", $concatLines));
+            $concatPath = $exportDisk->path($concatRelative);
+
+            $concatArgs = [
+                '-y',
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', $concatPath,
+                '-c', 'copy',
+                $outputPath,
+            ];
+            $ffmpeg->run($concatArgs);
+        } else {
+            // Single segment normal build
+            $assRelative = "exports/{$export->id}/captions.ass";
+            $clipDurationMs = $candidate->end_ms - $candidate->start_ms;
+            $exportDisk->put($assRelative, $captions->renderAss(
+                $this->wordsForClip($video->id, $candidate->start_ms, $candidate->end_ms),
+                $export->caption_style,
+                $renderW,
+                $renderH,
+                $ctaText,
+                $clipDurationMs,
+                $export->caption_margin_v,
+                $export->caption_font
+            ));
+            $assPath = $exportDisk->path($assRelative);
+
+            $args = $builder->build(
+                inputPath: $inputPath,
+                assPath: $assPath,
+                outputPath: $outputPath,
+                clip: ['start_ms' => $candidate->start_ms, 'end_ms' => $candidate->end_ms],
+                crop: $crop,
+                panX: $panX,
+                renderW: $renderW,
+                renderH: $renderH,
+                layout: $export->layout ?? 'single',
+                splitTopCropX: $export->split_top_crop_x,
+                splitBottomCropX: $export->split_bottom_crop_x,
+            );
+            $ffmpeg->run($args);
+        }
 
         $export->update([
             'output_path' => $outputRelative,

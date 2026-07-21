@@ -341,6 +341,52 @@
                     </button>
                 </div>
             </div>
+
+            <!-- MULTI-SEGMENT SPLIT & JUMP-CUT TIMELINE PANEL -->
+            <div class="panel" style="padding: 20px; background: var(--bg-surface); border: 1px dashed var(--purple-primary);">
+                <div class="row between" style="margin-bottom: 12px;">
+                    <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--purple-primary);">✂️ MULTI-SEGMENT SPLIT &amp; JUMP-CUT</span>
+                    <span class="badge badge-purple" style="font-size: 10px;">{{ count($segments) }} SEGMEN</span>
+                </div>
+
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
+                    Potong &amp; buang bagian filler yang tidak penting di dalam klip. Sistem akan menyatukan segmen yang dipilih (*jump-cut*) secara otomatis saat diekspor!
+                </div>
+
+                <!-- SPLIT AT PLAYHEAD BUTTON -->
+                <button type="button" 
+                        onclick="splitAtCurrentPlayhead()" 
+                        style="width: 100%; padding: 8px; font-size: 11px; font-weight: 800; border-radius: 8px; margin-bottom: 14px; background: rgba(0, 240, 255, 0.1); border: 1px solid #00f0ff; color: #00f0ff; cursor: pointer;">
+                    <i class="ph ph-scissors"></i> ✂️ Potong / Split di Timestamp Saat Ini
+                </button>
+
+                <!-- SEGMENT LIST -->
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    @foreach($segments as $idx => $seg)
+                        @php
+                            $segDurSec = round(($seg['end_ms'] - $seg['start_ms']) / 1000);
+                            $segStartSec = $seg['start_ms'] / 1000;
+                            $segEndSec = $seg['end_ms'] / 1000;
+                        @endphp
+                        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface-subtle); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 11px; font-weight: 900; background: var(--purple-primary); color: #fff; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">{{ $idx + 1 }}</span>
+                                <div>
+                                    <div style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--text-main);">
+                                        {{ sprintf('%02d:%02d', floor($segStartSec / 60), $segStartSec % 60) }} ➔ {{ sprintf('%02d:%02d', floor($segEndSec / 60), $segEndSec % 60) }}
+                                    </div>
+                                    <div style="font-size: 9.5px; color: var(--text-muted); font-weight: 700;">Durasi: {{ $segDurSec }}s</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 6px;">
+                                <button type="button" wire:click="deleteSegment({{ $idx }})" class="btn btn-sm btn-outline" style="color: #f87171; border-color: rgba(248,113,113,0.3); font-size: 10px; padding: 3px 8px;" title="Hapus Segmen Ini">
+                                    <i class="ph ph-trash"></i> Hapus
+                                </button>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
         </div>
 
         <!-- Right Column: Inspector Controls (Caption Mood & Render Format) -->
@@ -1014,6 +1060,19 @@
             const videoElem = document.getElementById('editor-video');
             if (videoElem) {
                 videoElem.style.objectPosition = (targetX * 100).toFixed(1) + '% center';
+            }
+        };
+
+        window.splitAtCurrentPlayhead = function() {
+            const video = window.getActiveVideo();
+            if (!video) return;
+            const currentMs = Math.round(video.currentTime * 1000);
+            const rootElem = video.closest('[wire\\:id]') || document.querySelector('[wire\\:id]');
+            if (rootElem && window.Livewire) {
+                const comp = Livewire.find(rootElem.getAttribute('wire:id'));
+                if (comp) {
+                    comp.call('splitSegmentAtCurrentTime', currentMs);
+                }
             }
         };
 

@@ -26,6 +26,7 @@ class Export extends Model
         'manual_crop_x',
         'split_top_crop_x',
         'split_bottom_crop_x',
+        'segments',
         'cta_text',
         'status',
         'last_error',
@@ -40,6 +41,7 @@ class Export extends Model
         'manual_crop_x' => 'float',
         'split_top_crop_x' => 'float',
         'split_bottom_crop_x' => 'float',
+        'segments' => 'array',
     ];
 
     public function clipCandidate(): BelongsTo
