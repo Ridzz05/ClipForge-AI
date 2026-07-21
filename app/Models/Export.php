@@ -21,6 +21,7 @@ class Export extends Model
         'output_path',
         'watermark_applied',
         'caption_style',
+        'caption_font',
         'layout',
         'manual_crop_x',
         'cta_text',

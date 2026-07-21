@@ -25,6 +25,7 @@ class ClipEditor extends Component
     // --- Caption Customizer State ---
     public string $burnSubtitles = 'on';
     public string $subtitleColor = 'yellow';
+    public string $captionFont = 'Outfit';
     public bool $glowEffect = false;
     public string $captionAnimation = 'karaoke';
     public int $captionFontSize = 76;
@@ -164,7 +165,8 @@ class ClipEditor extends Component
                 $styleKey,
                 $this->captionPosY,
                 $this->renderFormat === 'face_916' ? 'single' : 'split_gaming',
-                $this->cropMode === 'manual' ? $this->manualCropX : null
+                $this->cropMode === 'manual' ? $this->manualCropX : null,
+                $this->captionFont
             );
 
             $this->dispatch('toast', message: "Klip #{$this->candidate->id} disetujui & sedang diekspor!", type: 'success');

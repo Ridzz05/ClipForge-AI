@@ -86,7 +86,7 @@
                                         data-color="{{ $subtitleColor }}"
                                         data-fontsize="{{ ($captionFontSize / 1920) * 450 }}"
                                         style="
-                                            font-family: 'Outfit', sans-serif;
+                                            font-family: '{{ $captionFont }}', sans-serif;
                                             font-size: {{ ($captionFontSize / 1920) * 450 }}px;
                                             font-weight: 900;
                                             text-transform: uppercase;
@@ -152,7 +152,7 @@
                                              data-color="{{ $subtitleColor }}"
                                              data-fontsize="{{ ($captionFontSize / 1920) * 315 }}"
                                              style="
-                                                 font-family: 'Outfit', sans-serif;
+                                                 font-family: '{{ $captionFont }}', sans-serif;
                                                  font-size: {{ ($captionFontSize / 1920) * 315 }}px;
                                                  font-weight: 900;
                                                  text-transform: uppercase;
@@ -343,6 +343,19 @@
                         <button type="button" wire:click="$set('burnSubtitles', 'on')" style="flex: 1; padding: 7px; border-radius: 99px; border: none; font-weight: 700; font-size: 11px; cursor: pointer;" class="{{ $burnSubtitles === 'on' ? 'btn' : 'btn-outline' }}">ON</button>
                         <button type="button" wire:click="$set('burnSubtitles', 'off')" style="flex: 1; padding: 7px; border-radius: 99px; border: none; font-weight: 700; font-size: 11px; cursor: pointer;" class="{{ $burnSubtitles === 'off' ? 'btn' : 'btn-outline' }}">OFF</button>
                     </div>
+                </div>
+
+                <!-- SUBTITLE FONT FAMILY SELECTOR -->
+                <div style="margin-bottom: 18px;">
+                    <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 8px;">SUBTITLE FONT FAMILY</label>
+                    <select wire:model.live="captionFont" style="width: 100%; padding: 8px 12px; border-radius: 8px; font-size: 11px; background: var(--bg-surface-subtle); border: 1px solid var(--border-color); color: var(--text-main); font-weight: 800; cursor: pointer;">
+                        <option value="Outfit">Outfit (Opus Clip / CapCut Style)</option>
+                        <option value="Plus Jakarta Sans">Plus Jakarta Sans (Modern Clean)</option>
+                        <option value="Poppins">Poppins (Geometric Bold)</option>
+                        <option value="Montserrat">Montserrat (Heavy Impact)</option>
+                        <option value="Inter">Inter (Sleek Tech)</option>
+                        <option value="Fira Sans">Fira Sans (Clean Sans)</option>
+                    </select>
                 </div>
 
 

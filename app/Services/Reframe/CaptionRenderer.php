@@ -144,10 +144,15 @@ class CaptionRenderer
         string $ctaText = '',
         int $clipDurationMs = 0,
         ?int $customMarginV = null,
+        ?string $customFontName = null
     ): string {
         $tpl = $this->templates[$style] ?? $this->templates['default'];
         if ($customMarginV !== null) {
             $tpl['MarginV'] = $customMarginV;
+        }
+
+        if ($customFontName !== null && trim($customFontName) !== '') {
+            $tpl['Fontname'] = trim($customFontName);
         }
 
         $header = $this->header($tpl, $playResX, $playResY);
