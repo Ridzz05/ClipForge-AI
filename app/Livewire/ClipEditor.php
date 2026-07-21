@@ -37,6 +37,8 @@ class ClipEditor extends Component
 
     // --- Framing Mode & Manual Crop State ---
     public string $cropMode = 'auto'; // 'auto' | 'manual'
+    public float $manualCropX = 0.5; // 0.0 (left) to 1.0 (right)
+
     // --- Dynamic AI Auto Framing ---
     public bool $isAnalyzingFaces = false;
     public array $autoPanPath = [];
