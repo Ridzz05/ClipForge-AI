@@ -86,4 +86,27 @@ class ReframeCommandBuilderTest extends TestCase
         // Output path is the final element.
         $this->assertSame($evilOutput, $args[array_key_last($args)]);
     }
+
+    public function test_split_podcast_layout_builds_dual_frame_filter_complex(): void
+    {
+        $args = $this->builder->build(
+            inputPath: '/store/videos/a/source.mp4',
+            assPath: '/store/exports/1/captions.ass',
+            outputPath: '/store/exports/1/out.mp4',
+            clip: ['start_ms' => 0, 'end_ms' => 10000],
+            crop: ['width' => 608, 'height' => 1080],
+            panX: 0,
+            renderW: 1080,
+            renderH: 1920,
+            layout: 'split_podcast'
+        );
+
+        $filterPos = array_search('-filter_complex', $args, true);
+        $this->assertNotFalse($filterPos);
+        $filter = $args[$filterPos + 1];
+
+        $this->assertStringContainsString('crop=in_w*0.5:in_h:0:0', $filter);
+        $this->assertStringContainsString('crop=in_w*0.5:in_h:in_w*0.5:0', $filter);
+        $this->assertStringContainsString('vstack=inputs=2', $filter);
+    }
 }

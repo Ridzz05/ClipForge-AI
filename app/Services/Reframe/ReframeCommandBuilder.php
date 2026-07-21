@@ -32,6 +32,42 @@ class ReframeCommandBuilder
 
         $assFilterPath = $this->escapeForFilter($assPath);
 
+        if ($layout === 'split_podcast') {
+            $halfH = (int) round($renderH / 2);
+
+            // Split podcast dual-frame layout (Top = Speaker Left 50%, Bottom = Speaker Right 50%):
+            // 1. Top frame: Crop left half of 16:9 frame (width 50%, height 100%, offset X=0), scale to renderW x halfH
+            // 2. Bottom frame: Crop right half of 16:9 frame (width 50%, height 100%, offset X=in_w*0.5), scale to renderW x halfH
+            // 3. Stack them vertically: Top [top_spk], Bottom [bot_spk]
+            // 4. Burn subtitles
+            $filter = sprintf(
+                '[0:v]crop=in_w*0.5:in_h:0:0,scale=%d:%d,setsar=1[top_spk]; ' .
+                '[0:v]crop=in_w*0.5:in_h:in_w*0.5:0,scale=%d:%d,setsar=1[bot_spk]; ' .
+                '[top_spk][bot_spk]vstack=inputs=2[stacked]; ' .
+                '[stacked]subtitles=%s[out]',
+                $renderW,
+                $halfH,
+                $renderW,
+                $halfH,
+                $assFilterPath
+            );
+
+            return [
+                '-y',
+                '-ss', $startSec,
+                '-i', $inputPath,
+                '-t', $durSec,
+                '-filter_complex', $filter,
+                '-map', '[out]',
+                '-map', '0:a',
+                '-c:a', 'aac',
+                '-c:v', 'libx264',
+                '-preset', 'veryfast',
+                '-movflags', '+faststart',
+                $outputPath,
+            ];
+        }
+
         if ($layout === 'split_gaming') {
             $gameH = (int) round($renderH * 0.6);
             $faceH = $renderH - $gameH;

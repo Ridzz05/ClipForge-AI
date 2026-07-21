@@ -165,12 +165,20 @@ class ClipEditor extends Component
                 ? 'none'
                 : ($this->subtitleColor === 'yellow' ? 'karaoke_yellow' : ($this->subtitleColor === 'pink' ? 'tiktok_green' : 'default'));
 
+            $layout = match ($this->renderFormat) {
+                'split_podcast' => 'split_podcast',
+                'blur_916' => 'blur_916',
+                'square_11' => 'square_11',
+                'landscape_169' => 'landscape_169',
+                default => 'single',
+            };
+
             $export = $review->approve(
                 $this->candidate,
                 $this->ctaText,
                 $styleKey,
                 $this->captionPosY,
-                $this->renderFormat === 'face_916' ? 'single' : 'split_gaming',
+                $layout,
                 $this->cropMode === 'manual' ? $this->manualCropX : null,
                 $this->captionFont
             );

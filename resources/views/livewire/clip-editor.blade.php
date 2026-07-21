@@ -76,14 +76,52 @@
                 </div>
 
                 @if($cropMode === 'auto')
-                    <!-- 9:16 Simulated Mobile Player Screen (Auto AI Framing) -->
+                    <!-- 9:16 Simulated Mobile Player Screen (Auto AI Framing / Split Podcast Dual) -->
                     <div style="display: flex; justify-content: center; width: 100%; margin-bottom: 20px;">
-                        <div id="live-canvas-frame" style="width: 250px; height: 444px; background: #000; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 12px 36px rgba(0,0,0,0.3); border: 2px solid var(--border-color);">
-                            <video id="editor-video" controls preload="metadata" 
-                                   onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
-                                   style="width: 100%; height: 100%; object-fit: cover; display: block;" 
-                                   src="/videos/{{ $candidate->video_id }}/source">
-                            </video>
+                        <div id="live-canvas-frame" style="width: 250px; height: 444px; background: #000; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 12px 36px rgba(0,0,0,0.3); border: 2px solid {{ $renderFormat === 'split_podcast' ? '#00f0ff' : 'var(--border-color)' }};">
+                            
+                            @if($renderFormat === 'split_podcast')
+                                <!-- STACKED DUAL FRAME PREVIEW FOR PODCAST (Top = Speaker Left 25%, Bottom = Speaker Right 75%) -->
+                                <div style="position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 1;">
+                                    <!-- Top Frame (Speaker Left 25%) -->
+                                    <div style="height: 50%; width: 100%; position: relative; overflow: hidden; border-bottom: 2px solid #00f0ff;">
+                                        <video id="editor-video-top" preload="metadata" muted
+                                               style="width: 100%; height: 100%; object-fit: cover; object-position: 25% center; pointer-events: none;"
+                                               src="/videos/{{ $candidate->video_id }}/source">
+                                        </video>
+                                        <div style="position: absolute; top: 4px; left: 6px; background: rgba(0,240,255,0.85); color: #000; font-size: 8px; font-weight: 900; padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono);">
+                                            👤 TOP: SPEAKER KIRI
+                                        </div>
+                                    </div>
+
+                                    <!-- Bottom Frame (Speaker Right 75%) -->
+                                    <div style="height: 50%; width: 100%; position: relative; overflow: hidden;">
+                                        <video id="editor-video-bottom" preload="metadata" muted
+                                               style="width: 100%; height: 100%; object-fit: cover; object-position: 75% center; pointer-events: none;"
+                                               src="/videos/{{ $candidate->video_id }}/source">
+                                        </video>
+                                        <div style="position: absolute; top: 4px; left: 6px; background: rgba(154,85,255,0.85); color: #fff; font-size: 8px; font-weight: 900; padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono);">
+                                            👤 BOT: SPEAKER KANAN
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Hidden primary video driver for audio & timeline sync -->
+                                <video id="editor-video" controls preload="metadata" 
+                                       onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
+                                       onplay="document.getElementById('editor-video-top').play(); document.getElementById('editor-video-bottom').play();"
+                                       onpause="document.getElementById('editor-video-top').pause(); document.getElementById('editor-video-bottom').pause();"
+                                       onseeking="document.getElementById('editor-video-top').currentTime = this.currentTime; document.getElementById('editor-video-bottom').currentTime = this.currentTime;"
+                                       style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.01; z-index: 5;" 
+                                       src="/videos/{{ $candidate->video_id }}/source">
+                                </video>
+                            @else
+                                <video id="editor-video" controls preload="metadata" 
+                                       onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
+                                       style="width: 100%; height: 100%; object-fit: cover; display: block;" 
+                                       src="/videos/{{ $candidate->video_id }}/source">
+                                </video>
+                            @endif
 
                             <!-- Real-Time Subtitle Overlay Preview (Opus Clip Style) -->
                             @if($burnSubtitles === 'on')
@@ -307,7 +345,10 @@
                 </div>
                 <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 8px;">
                     <button type="button" wire:click="$set('renderFormat', 'face_916')" class="{{ $renderFormat === 'face_916' ? 'btn' : 'btn-outline' }}" style="padding: 10px 8px; font-size: 11px;">
-                        <i class="ph ph-user-focus"></i> Face 9:16
+                        <i class="ph ph-user-focus"></i> Single Face 9:16
+                    </button>
+                    <button type="button" wire:click="$set('renderFormat', 'split_podcast')" class="{{ $renderFormat === 'split_podcast' ? 'btn' : 'btn-outline' }}" style="padding: 10px 8px; font-size: 11px; grid-column: span 2; background: {{ $renderFormat === 'split_podcast' ? 'var(--purple-gradient)' : 'rgba(0, 240, 255, 0.08)' }}; border-color: #00f0ff; color: {{ $renderFormat === 'split_podcast' ? '#fff' : '#00f0ff' }};">
+                        <i class="ph ph-users-three"></i> 🎙️ Split Podcast Dual 9:16 (Atas/Bawah)
                     </button>
                     <button type="button" wire:click="$set('renderFormat', 'blur_916')" class="{{ $renderFormat === 'blur_916' ? 'btn' : 'btn-outline' }}" style="padding: 10px 8px; font-size: 11px;">
                         <i class="ph ph-selection-background"></i> Blur BG 9:16
