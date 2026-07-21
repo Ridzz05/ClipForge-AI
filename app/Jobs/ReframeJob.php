@@ -83,7 +83,12 @@ class ReframeJob implements ShouldQueue
         } else {
             $centers = $faces->sampleCenters($inputPath, $candidate->start_ms, $candidate->end_ms);
             $panPath = $planner->panPath($dims['width'], $dims['height'], $centers);
-            $panX = $this->medianX($panPath);
+            if (count($panPath) > 1) {
+                $panX = $planner->buildCropXExpression($panPath, $candidate->start_ms);
+                Log::info('Reframe: using dynamic camera pan path', ['keyframes' => count($panPath)]);
+            } else {
+                $panX = $this->medianX($panPath);
+            }
         }
 
         // 3. Captions for this clip, timestamps rebased to clip start, plus a

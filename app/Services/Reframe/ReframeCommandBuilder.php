@@ -22,7 +22,7 @@ class ReframeCommandBuilder
         string $outputPath,
         array $clip,
         array $crop,
-        int $panX,
+        int|string $panX,
         int $renderW,
         int $renderH,
         string $layout = 'single',
@@ -106,11 +106,12 @@ class ReframeCommandBuilder
         }
 
         // Single speaker vertical crop (default)
+        $panExpr = is_numeric($panX) ? (string) $panX : "'".str_replace("'", "", (string) $panX)."'";
         $filter = sprintf(
-            'crop=%d:%d:%d:0,scale=%d:%d,subtitles=%s',
+            'crop=%d:%d:%s:0,scale=%d:%d,subtitles=%s',
             $crop['width'],
             $crop['height'],
-            $panX,
+            $panExpr,
             $renderW,
             $renderH,
             $assFilterPath,

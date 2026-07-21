@@ -39,10 +39,18 @@
                     <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                         <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase;">FRAMING:</span>
                         <button type="button" 
-                                wire:click="$set('cropMode', 'auto')"
-                                style="padding: 5px 10px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
-                                class="btn {{ $cropMode === 'auto' ? 'btn-primary' : 'btn-outline' }}">
-                            <i class="ph ph-sparkle"></i> Auto AI
+                                wire:click="runAutoFramingAI"
+                                wire:loading.attr="disabled"
+                                wire:target="runAutoFramingAI"
+                                title="Jalankan Deteksi Wajah AI & Smooth Auto-Pan Pembicara"
+                                style="padding: 5px 12px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease; background: var(--purple-gradient); color: #fff; box-shadow: 0 4px 12px rgba(154, 85, 255, 0.4);"
+                                class="btn">
+                            <span wire:loading.remove wire:target="runAutoFramingAI">
+                                <i class="ph ph-sparkle"></i> ⚡ Mulai Auto Framing by AI
+                            </span>
+                            <span wire:loading wire:target="runAutoFramingAI">
+                                <i class="ph ph-spinner-gap spin-rotate"></i> Analyzing...
+                            </span>
                         </button>
                         <button type="button" 
                                 wire:click="setPodcastLeftSpeaker"
@@ -809,6 +817,19 @@
 
                 if (window.previewInterval) clearInterval(window.previewInterval);
 
+                window.cfTimeupdateHandler = function() {
+                const currentMs = Math.round(video.currentTime * 1000);
+
+                if (window.updateLiveAutoPan) {
+                    window.updateLiveAutoPan(video);
+                }
+
+                if (currentMs < window.cfStartMs || currentMs > window.cfEndMs) {
+                    video.style.opacity = '0.35';
+                } else {
+                    video.style.opacity = '1';
+                }    };
+
                 window.previewInterval = setInterval(() => {
                     const currentMs = video.currentTime * 1000;
                     if (currentMs >= endMs) {
@@ -916,6 +937,46 @@
             const normPct = Math.max(0, Math.min(1, clickX / rect.width));
 
             window.updateCropBoxUI(normPct);
+        };
+
+        window.activeAutoPanPath = @json($autoPanPath);
+
+        document.addEventListener('auto-pan-updated', (event) => {
+            if (event.detail && event.detail.path) {
+                window.activeAutoPanPath = event.detail.path;
+            }
+        });
+
+        window.updateLiveAutoPan = function(video) {
+            if (!video || !window.activeAutoPanPath || window.activeAutoPanPath.length === 0) return;
+            const path = window.activeAutoPanPath;
+
+            const rootElem = video.closest('[wire\\:id]');
+            let startMs = 0;
+            if (rootElem && window.Livewire) {
+                const comp = Livewire.find(rootElem.getAttribute('wire:id'));
+                if (comp) startMs = comp.get('editStartMs') || 0;
+            }
+
+            const currentSec = Math.max(0, video.currentTime - (startMs / 1000.0));
+            let targetX = path[0].x;
+
+            for (let i = 0; i < path.length - 1; i++) {
+                const p1 = path[i];
+                const p2 = path[i + 1];
+                if (currentSec >= p1.t && currentSec <= p2.t) {
+                    const ratio = (p2.t > p1.t) ? (currentSec - p1.t) / (p2.t - p1.t) : 0;
+                    targetX = p1.x + (p2.x - p1.x) * ratio;
+                    break;
+                } else if (currentSec > p2.t) {
+                    targetX = p2.x;
+                }
+            }
+
+            const videoElem = document.getElementById('editor-video');
+            if (videoElem) {
+                videoElem.style.objectPosition = (targetX * 100).toFixed(1) + '% center';
+            }
         };
 
         const bootEditorEngines = function() {

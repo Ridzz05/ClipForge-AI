@@ -37,7 +37,47 @@ class ClipEditor extends Component
 
     // --- Framing Mode & Manual Crop State ---
     public string $cropMode = 'auto'; // 'auto' | 'manual'
-    public float $manualCropX = 0.5; // 0.0 (left) to 1.0 (right)
+    // --- Dynamic AI Auto Framing ---
+    public bool $isAnalyzingFaces = false;
+    public array $autoPanPath = [];
+
+    public function runAutoFramingAI(
+        \App\Services\Reframe\FaceTrackingService $faces,
+        \App\Services\Reframe\ReframePlanner $planner,
+        \App\Services\FfprobeService $ffprobe
+    ): void {
+        $this->isAnalyzingFaces = true;
+        try {
+            $inputDisk = \Illuminate\Support\Facades\Storage::disk((string) config('autoclip.ingest.disk'));
+            $inputPath = $inputDisk->path($this->candidate->video->storage_path);
+            $dims = $ffprobe->dimensions($inputPath);
+
+            $centers = $faces->sampleCenters($inputPath, $this->editStartMs, $this->editEndMs);
+            $rawPath = $planner->panPath($dims['width'], $dims['height'], $centers);
+
+            $cropW = $planner->cropSize($dims['width'], $dims['height'])['width'];
+            $srcW = max(1, $dims['width']);
+
+            // Convert panPath to normalized crop center X (0.0 to 1.0) and time (seconds)
+            $jsPath = [];
+            foreach ($rawPath as $point) {
+                $leftX = $point['x'];
+                $centerX = $leftX + ($cropW / 2.0);
+                $normX = max(0.0, min(1.0, $centerX / $srcW));
+                $tSec = max(0.0, ($point['t_ms'] - $this->editStartMs) / 1000.0);
+                $jsPath[] = ['t' => round($tSec, 2), 'x' => round($normX, 4)];
+            }
+
+            $this->autoPanPath = $jsPath;
+            $this->cropMode = 'auto';
+            $this->dispatch('auto-pan-updated', path: $jsPath);
+            $this->dispatch('toast', message: '⚡ AI Auto Framing aktif! Kamera akan slide mengikuti pembicara.', type: 'success');
+        } catch (\Throwable $e) {
+            $this->dispatch('toast', message: 'Gagal menganalisis wajah: ' . $e->getMessage(), type: 'error');
+        } finally {
+            $this->isAnalyzingFaces = false;
+        }
+    }
 
     public function setPodcastLeftSpeaker(): void
     {

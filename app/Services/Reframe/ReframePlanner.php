@@ -85,6 +85,54 @@ class ReframePlanner
     }
 
     /**
+     * Convert timestamped pan keyframes into an FFmpeg time-dependent expression
+     * string for dynamic camera panning (e.g. crop=w:h:x='expr':y).
+     *
+     * @param  array<int, array{t_ms:int, x:int}>  $panPath
+     */
+    public function buildCropXExpression(array $panPath, int $clipStartMs = 0): string
+    {
+        if ($panPath === []) {
+            return '0';
+        }
+
+        if (count($panPath) === 1) {
+            return (string) $panPath[0]['x'];
+        }
+
+        $last = end($panPath);
+        $expr = (string) $last['x'];
+
+        for ($i = count($panPath) - 2; $i >= 0; $i--) {
+            $curr = $panPath[$i];
+            $next = $panPath[$i + 1];
+
+            $t1 = max(0.0, ($curr['t_ms'] - $clipStartMs) / 1000.0);
+            $t2 = max(0.0, ($next['t_ms'] - $clipStartMs) / 1000.0);
+            $x1 = $curr['x'];
+            $x2 = $next['x'];
+
+            if ($t2 <= $t1) {
+                continue;
+            }
+
+            $formattedT1 = number_format($t1, 3, '.', '');
+            $dx = $x2 - $x1;
+            $dt = number_format($t2 - $t1, 3, '.', '');
+
+            if ($dx === 0) {
+                $piece = (string) $x1;
+            } else {
+                $piece = sprintf('%d+(%d)*(t-%s)/%s', $x1, $dx, $formattedT1, $dt);
+            }
+
+            $expr = sprintf('if(lte(t,%s),%s,%s)', $formattedT1, $piece, $expr);
+        }
+
+        return $expr;
+    }
+
+    /**
      * Whether the source is already tall enough that no horizontal pan is
      * meaningful (crop spans full width).
      */
