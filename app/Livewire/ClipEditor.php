@@ -42,13 +42,19 @@ class ClipEditor extends Component
     public function setPodcastLeftSpeaker(): void
     {
         $this->cropMode = 'manual';
-        $this->manualCropX = 0.32;
+        $this->manualCropX = 0.25;
+    }
+
+    public function setPodcastCenter(): void
+    {
+        $this->cropMode = 'manual';
+        $this->manualCropX = 0.50;
     }
 
     public function setPodcastRightSpeaker(): void
     {
         $this->cropMode = 'manual';
-        $this->manualCropX = 0.68;
+        $this->manualCropX = 0.75;
     }
 
     // --- Live Translation State ---

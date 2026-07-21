@@ -46,22 +46,29 @@
                         </button>
                         <button type="button" 
                                 wire:click="setPodcastLeftSpeaker"
-                                title="Fokus Pangkas ke Narasumber / Speaker Kiri"
+                                title="Fokus Pangkas ke Speaker Kiri (25%)"
                                 style="padding: 5px 10px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
-                                class="btn {{ $cropMode === 'manual' && abs($manualCropX - 0.32) < 0.05 ? 'btn-primary' : 'btn-outline' }}">
-                            <i class="ph ph-user"></i> Speaker Kiri
+                                class="btn {{ $cropMode === 'manual' && abs($manualCropX - 0.25) < 0.05 ? 'btn-primary' : 'btn-outline' }}">
+                            <i class="ph ph-user"></i> Speaker Kiri (25%)
+                        </button>
+                        <button type="button" 
+                                wire:click="setPodcastCenter"
+                                title="Fokus Pangkas ke Tengah (50%)"
+                                style="padding: 5px 10px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
+                                class="btn {{ $cropMode === 'manual' && abs($manualCropX - 0.50) < 0.05 ? 'btn-primary' : 'btn-outline' }}">
+                            <i class="ph ph-users"></i> Tengah (50%)
                         </button>
                         <button type="button" 
                                 wire:click="setPodcastRightSpeaker"
-                                title="Fokus Pangkas ke Narasumber / Speaker Kanan"
+                                title="Fokus Pangkas ke Speaker Kanan (75%)"
                                 style="padding: 5px 10px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
-                                class="btn {{ $cropMode === 'manual' && abs($manualCropX - 0.68) < 0.05 ? 'btn-primary' : 'btn-outline' }}">
-                            <i class="ph ph-user"></i> Speaker Kanan
+                                class="btn {{ $cropMode === 'manual' && abs($manualCropX - 0.75) < 0.05 ? 'btn-primary' : 'btn-outline' }}">
+                            <i class="ph ph-user"></i> Speaker Kanan (75%)
                         </button>
                         <button type="button" 
                                 wire:click="$set('cropMode', 'manual')"
                                 style="padding: 5px 10px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
-                                class="btn {{ $cropMode === 'manual' && abs($manualCropX - 0.32) >= 0.05 && abs($manualCropX - 0.68) >= 0.05 ? 'btn-primary' : 'btn-outline' }}">
+                                class="btn {{ $cropMode === 'manual' && abs($manualCropX - 0.25) >= 0.05 && abs($manualCropX - 0.50) >= 0.05 && abs($manualCropX - 0.75) >= 0.05 ? 'btn-primary' : 'btn-outline' }}">
                             <i class="ph ph-crop"></i> ✂ Manual Drag
                         </button>
                     </div>
