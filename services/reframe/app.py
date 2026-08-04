@@ -25,7 +25,11 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-mp_face = None
+mp_face = (
+    getattr(getattr(mp, "solutions", None), "face_detection", None)
+    if mp is not None
+    else None
+)
 frontal_detector = None
 profile_detector = None
 

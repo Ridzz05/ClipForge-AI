@@ -21,9 +21,20 @@ class VideoStreamController extends Controller
             return response()->json(['message' => 'Source file missing.'], 404);
         }
 
-        // Return a BinaryFileResponse to fully support HTTP range requests (seeking/206 Partial Content)
+        $extension = strtolower(pathinfo($video->storage_path, PATHINFO_EXTENSION));
+        $mimeType = match ($extension) {
+            'mp4', 'm4v' => 'video/mp4',
+            'mov' => 'video/quicktime',
+            'webm' => 'video/webm',
+            'mkv' => 'video/x-matroska',
+            'avi' => 'video/x-msvideo',
+            default => 'application/octet-stream',
+        };
+
+        // Return a BinaryFileResponse to fully support HTTP range requests (seeking/206 Partial Content).
         return response()->file($disk->path($video->storage_path), [
-            'Content-Type' => 'video/mp4',
+            'Content-Type' => $mimeType,
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 }
