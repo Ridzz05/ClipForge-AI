@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Jobs\ReframeJob;
 use App\Models\ClipCandidate;
 use App\Models\Export;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
@@ -20,7 +22,7 @@ class ClipReviewService
      *                                 falls back to the configured default when null
      * @return Export the export queued for rendering
      *
-     * @throws RuntimeException if the candidate was already exported
+     * @throws RuntimeException if the candidate was already approved/exported
      */
     public function approve(
         ClipCandidate $candidate,
@@ -34,16 +36,6 @@ class ClipReviewService
         ?float $splitBottomCropX = null,
         ?array $segments = null
     ): Export {
-        if ($candidate->status === ClipCandidate::STATUS_EXPORTED) {
-            throw new RuntimeException('Candidate already exported.');
-        }
-
-        if ($candidate->status === ClipCandidate::STATUS_APPROVED) {
-            throw new RuntimeException('Candidate already approved.');
-        }
-
-        $candidate->update(['status' => ClipCandidate::STATUS_APPROVED]);
-
         $cta = $ctaText !== null && trim($ctaText) !== ''
             ? trim($ctaText)
             : (string) config('autoclip.render.cta_text', '');
@@ -60,20 +52,58 @@ class ClipReviewService
             ? trim($captionFont)
             : 'Outfit';
 
-        $export = Export::create([
-            'clip_candidate_id' => $candidate->id,
-            'aspect_ratio' => '9:16',
-            'caption_style' => $style,
-            'caption_font' => $font,
-            'layout' => $layout ?? 'single',
-            'manual_crop_x' => $manualCropX,
-            'split_top_crop_x' => $splitTopCropX ?? 0.25,
-            'split_bottom_crop_x' => $splitBottomCropX ?? 0.75,
-            'segments' => $segments,
-            'cta_text' => $cta,
-            'status' => Export::STATUS_QUEUED,
-            'caption_margin_v' => $marginV,
-        ]);
+        try {
+            $export = DB::transaction(function () use (
+                $candidate,
+                $cta,
+                $style,
+                $marginV,
+                $layout,
+                $manualCropX,
+                $font,
+                $splitTopCropX,
+                $splitBottomCropX,
+                $segments
+            ): Export {
+                /** @var ClipCandidate $lockedCandidate */
+                $lockedCandidate = ClipCandidate::query()
+                    ->lockForUpdate()
+                    ->findOrFail($candidate->getKey());
+
+                if ($lockedCandidate->status === ClipCandidate::STATUS_EXPORTED) {
+                    throw new RuntimeException('Candidate already exported.');
+                }
+
+                if ($lockedCandidate->status === ClipCandidate::STATUS_APPROVED) {
+                    throw new RuntimeException('Candidate already approved.');
+                }
+
+                $lockedCandidate->update(['status' => ClipCandidate::STATUS_APPROVED]);
+
+                $export = Export::create([
+                    'clip_candidate_id' => $lockedCandidate->id,
+                    'aspect_ratio' => '9:16',
+                    'caption_style' => $style,
+                    'caption_font' => $font,
+                    'layout' => $layout ?? 'single',
+                    'manual_crop_x' => $manualCropX,
+                    'split_top_crop_x' => $splitTopCropX ?? 0.25,
+                    'split_bottom_crop_x' => $splitBottomCropX ?? 0.75,
+                    'segments' => $segments,
+                    'cta_text' => $cta,
+                    'status' => Export::STATUS_QUEUED,
+                    'caption_margin_v' => $marginV,
+                ]);
+
+                return $export;
+            }, 3);
+        } catch (QueryException $exception) {
+            if ($this->isUniqueConstraintViolation($exception)) {
+                throw new RuntimeException('Candidate already approved.', 0, $exception);
+            }
+
+            throw $exception;
+        }
 
         ReframeJob::dispatch($export->id);
 
@@ -83,5 +113,19 @@ class ClipReviewService
     public function reject(ClipCandidate $candidate): void
     {
         $candidate->update(['status' => ClipCandidate::STATUS_REJECTED]);
+    }
+
+    private function isUniqueConstraintViolation(QueryException $exception): bool
+    {
+        $sqlState = (string) ($exception->errorInfo[0] ?? '');
+        $driverCode = (int) ($exception->errorInfo[1] ?? 0);
+
+        $message = strtolower($exception->getMessage());
+        $isIntegrityViolation = in_array($sqlState, ['23000', '23505'], true)
+            || $driverCode === 19;
+
+        return $isIntegrityViolation
+            && (str_contains($message, 'exports.clip_candidate_id')
+                || str_contains($message, 'exports_clip_candidate_id_unique'));
     }
 }
