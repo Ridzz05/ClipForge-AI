@@ -76,11 +76,15 @@ return [
         'driver' => env('AUTOCLIP_WHISPER_DRIVER', 'local'),
         'endpoint' => env('AUTOCLIP_WHISPER_ENDPOINT', 'http://127.0.0.1:9000'),
         'model' => env('AUTOCLIP_WHISPER_MODEL', 'small'),
-    ],    'llm' => [
+    ],
+
+    'llm' => [
         'driver' => env('AUTOCLIP_LLM_DRIVER', 'ollama'),
         'endpoint' => env('AUTOCLIP_LLM_ENDPOINT', env('AUTOCLIP_OLLAMA_ENDPOINT', 'http://127.0.0.1:11434')),
         'api_key' => env('AUTOCLIP_LLM_API_KEY'),
         'model' => env('AUTOCLIP_LLM_MODEL', env('AUTOCLIP_OLLAMA_MODEL', 'qwen2.5:7b')),
+        // Disable TLS verification for the LLM endpoint. Only for broken local CA stores.
+        'insecure_tls' => (bool) env('AUTOCLIP_LLM_INSECURE_TLS', false),
     ],
     'face' => [
         'endpoint' => env('AUTOCLIP_FACE_ENDPOINT', 'http://127.0.0.1:9100'),
@@ -115,4 +119,17 @@ return [
         'reframe' => (int) env('AUTOCLIP_TIMEOUT_REFRAME', 1800),
         'export' => (int) env('AUTOCLIP_TIMEOUT_EXPORT', 1800),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Optional HTTP Basic gate for the single operator (empty = disabled).
+    |--------------------------------------------------------------------------
+    */
+    'access' => [
+        'user' => env('AUTOCLIP_BASIC_USER'),
+        'password' => env('AUTOCLIP_BASIC_PASS'),
+    ],
+
+    // Used by `php artisan autoclip:prune` (manual only).
+    'retention_days' => (int) env('AUTOCLIP_RETENTION_DAYS', 30),
 ];

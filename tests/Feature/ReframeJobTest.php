@@ -24,6 +24,9 @@ class ReframeJobTest extends TestCase
 
     private array $capturedFfmpegArgs = [];
 
+    /** @var array<string, string> ASS files as they existed while ffmpeg ran. */
+    private array $capturedAss = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,6 +50,11 @@ class ReframeJobTest extends TestCase
         $ffmpeg = Mockery::mock(FfmpegService::class);
         $ffmpeg->shouldReceive('run')->andReturnUsing(function (array $args) {
             $this->capturedFfmpegArgs = $args;
+            foreach (Storage::disk('local')->allFiles() as $f) {
+                if (str_ends_with($f, '.ass')) {
+                    $this->capturedAss[$f] = Storage::disk('local')->get($f);
+                }
+            }
             // Simulate ffmpeg producing the output file (last arg).
             $out = $args[array_key_last($args)];
             @mkdir(dirname($out), 0777, true);
@@ -114,13 +122,12 @@ class ReframeJobTest extends TestCase
         $this->assertNotNull($export->rendered_at);
         Storage::disk('local')->assertExists($export->output_path);
 
-        // An ASS caption file was generated for the clip.
-        Storage::disk('local')->assertExists("exports/{$export->id}/captions.ass");
-
-        // The campaign CTA was burned into that ASS file.
-        $ass = Storage::disk('local')->get("exports/{$export->id}/captions.ass");
-        $this->assertStringContainsString('Style: CTA,', $ass);
-        $this->assertStringContainsString("IT'S OUT. IT'S ACTUALLY OUT.", $ass);
+        // The ASS caption file existed while ffmpeg ran, carried the CTA, and was cleaned up after.
+        $assPath = "exports/{$export->id}/captions.ass";
+        $this->assertArrayHasKey($assPath, $this->capturedAss);
+        $this->assertStringContainsString('Style: CTA,', $this->capturedAss[$assPath]);
+        $this->assertStringContainsString("IT'S OUT. IT'S ACTUALLY OUT.", $this->capturedAss[$assPath]);
+        Storage::disk('local')->assertMissing($assPath);
 
         $this->assertDatabaseHas('pipeline_jobs', [
             'stage' => 'reframe', 'status' => 'done',

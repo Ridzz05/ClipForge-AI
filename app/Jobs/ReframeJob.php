@@ -97,6 +97,7 @@ class ReframeJob implements ShouldQueue
         $outputRelative = "exports/{$export->id}/".Str::uuid().'.mp4';
         $outputPath = $exportDisk->path($outputRelative);
 
+        $temp = [];
         $segments = $export->segments;
         if (is_array($segments) && count($segments) > 1) {
             Log::info('Reframe: processing multi-segment jump-cut rendering', ['export_id' => $export->id, 'segments_count' => count($segments)]);
@@ -118,9 +119,11 @@ class ReframeJob implements ShouldQueue
                     $export->caption_margin_v,
                     $export->caption_font
                 ));
+                $temp[] = $segAssRelative;
                 $segAssPath = $exportDisk->path($segAssRelative);
 
                 $segOutputRelative = "exports/{$export->id}/seg_{$sIdx}.mp4";
+                $temp[] = $segOutputRelative;
                 $segOutputPath = $exportDisk->path($segOutputRelative);
 
                 $segArgs = $builder->build(
@@ -143,6 +146,7 @@ class ReframeJob implements ShouldQueue
 
             $concatRelative = "exports/{$export->id}/concat.txt";
             $exportDisk->put($concatRelative, implode("\n", $concatLines));
+            $temp[] = $concatRelative;
             $concatPath = $exportDisk->path($concatRelative);
 
             $concatArgs = [
@@ -168,6 +172,7 @@ class ReframeJob implements ShouldQueue
                 $export->caption_margin_v,
                 $export->caption_font
             ));
+            $temp[] = $assRelative;
             $assPath = $exportDisk->path($assRelative);
 
             $args = $builder->build(
@@ -194,12 +199,14 @@ class ReframeJob implements ShouldQueue
         ]);
         $pipelineJob->update(['status' => 'done', 'last_error' => null]);
 
+        if ($temp !== []) {
+            $exportDisk->delete($temp);
+        }
+
         Log::info('Reframe: done', ['export_id' => $export->id, 'output' => $outputRelative]);
 
-        // Hand off to Stage 5 (watermark + deliver) if present.
-        if (class_exists(\App\Jobs\ExportDeliverJob::class)) {
-            \App\Jobs\ExportDeliverJob::dispatch($export->id);
-        }
+        // Hand off to Stage 5 (watermark + deliver).
+        ExportDeliverJob::dispatch($export->id);
     }
 
     /**

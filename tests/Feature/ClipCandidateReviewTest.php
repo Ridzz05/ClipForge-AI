@@ -74,6 +74,17 @@ class ClipCandidateReviewTest extends TestCase
         Queue::assertNotPushed(ReframeJob::class);
     }
 
+    public function test_second_approve_of_same_candidate_is_a_conflict(): void
+    {
+        $candidate = $this->makeCandidate();
+
+        $this->postJson("/api/candidates/{$candidate->id}/approve")->assertStatus(202);
+        $this->postJson("/api/candidates/{$candidate->id}/approve")->assertStatus(409);
+
+        $this->assertSame(1, Export::where('clip_candidate_id', $candidate->id)->count());
+        Queue::assertPushed(ReframeJob::class, 1);
+    }
+
     public function test_unknown_candidate_returns_404(): void
     {
         $this->postJson('/api/candidates/999999/approve')->assertNotFound();

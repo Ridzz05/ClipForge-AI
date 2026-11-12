@@ -22,7 +22,9 @@ class SystemHealthService
             return [
                 'whisper' => $this->checkWhisper(),
                 'face' => $this->checkFaceTracker(),
-                'llm' => $this->checkLlm(),
+                // Gateway /models can take several seconds; cache longer than the cheap probes.
+                'llm' => Cache::remember('service_status_llm', 60, fn (): bool => $this->checkLlm()),
+                'llm_driver' => (string) config('autoclip.llm.driver', 'ollama'),
                 'queue' => $this->checkQueueWorker(),
             ];
         });
@@ -31,6 +33,7 @@ class SystemHealthService
     public function clearStatusCache(): void
     {
         Cache::forget('service_statuses');
+        Cache::forget('service_status_llm');
     }
 
     public function restartQueue(): void
@@ -87,13 +90,21 @@ class SystemHealthService
     private function checkLlm(): bool
     {
         $llmDriver = (string) config('autoclip.llm.driver', 'ollama');
-        $llmEndpoint = (string) config('autoclip.llm.endpoint', 'http://127.0.0.1:11434');
+        $llmEndpoint = rtrim((string) config('autoclip.llm.endpoint', 'http://127.0.0.1:11434'), '/');
 
         try {
             if ($llmDriver === 'ollama') {
-                return Http::timeout(1)->withoutVerifying()->get($llmEndpoint)->successful();
+                return Http::timeout(1)->get($llmEndpoint)->successful();
             }
-            return Http::timeout(2)->withoutVerifying()->get($llmEndpoint)->status() !== 0;
+
+            // OpenAI-compatible gateway (e.g. 9router): authenticated model list.
+            // A 401 (bad key) reports Offline on purpose; scoring would fail too.
+            $request = Http::timeout(8)->acceptJson();
+            if ($apiKey = config('autoclip.llm.api_key')) {
+                $request = $request->withToken((string) $apiKey);
+            }
+
+            return $request->get($llmEndpoint.'/models')->successful();
         } catch (Throwable) {
             return false;
         }
@@ -103,18 +114,21 @@ class SystemHealthService
     {
         try {
             if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
-                @exec("wmic process where \"CommandLine like '%queue:work%' and name='php.exe'\" get ProcessId 2>&1", $winOutput);
-                foreach ($winOutput as $line) {
-                    if (is_numeric(trim($line))) {
-                        return true;
-                    }
-                }
-            } else {
-                @exec("pgrep -f 'queue:work' 2>&1", $pgrepOutput);
-                return !empty($pgrepOutput);
-            }
-        } catch (Throwable) {}
+                // wmic is removed on Windows 11; query CIM through PowerShell.
+                $cmd = 'powershell -NoProfile -NonInteractive -Command '
+                    .'"(Get-CimInstance Win32_Process -Filter \"Name=\'php.exe\'\" '
+                    .'| Where-Object { $_.CommandLine -like \'*queue:work*\' } '
+                    .'| Measure-Object).Count" 2>&1';
+                @exec($cmd, $winOutput);
 
-        return false;
+                return (int) trim((string) end($winOutput)) > 0;
+            }
+
+            @exec("pgrep -f 'queue:work' 2>&1", $pgrepOutput);
+
+            return ! empty($pgrepOutput);
+        } catch (Throwable) {
+            return false;
+        }
     }
 }

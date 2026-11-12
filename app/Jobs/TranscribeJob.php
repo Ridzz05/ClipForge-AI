@@ -97,11 +97,8 @@ class TranscribeJob implements ShouldQueue
             'language' => $result['language'],
         ]);
 
-        // Hand off to Stage 3 (Score highlights). Guarded so this stage stays
-        // green even before ScoreJob exists.
-        if (class_exists(\App\Jobs\ScoreHighlightsJob::class)) {
-            \App\Jobs\ScoreHighlightsJob::dispatch($video->id);
-        }
+        // Hand off to Stage 3 (Score highlights).
+        ScoreHighlightsJob::dispatch($video->id);
     }
 
     private function markRunning(Video $video): PipelineJob

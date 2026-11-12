@@ -22,8 +22,10 @@ class VideoStreamController extends Controller
         }
 
         // Return a BinaryFileResponse to fully support HTTP range requests (seeking/206 Partial Content)
+        $mime = $disk->mimeType($video->storage_path) ?: 'application/octet-stream';
+
         return response()->file($disk->path($video->storage_path), [
-            'Content-Type' => 'video/mp4',
+            'Content-Type' => $mime,
         ]);
     }
 }

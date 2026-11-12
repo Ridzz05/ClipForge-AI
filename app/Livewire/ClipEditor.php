@@ -254,9 +254,6 @@ class ClipEditor extends Component
 
             $layout = match ($this->renderFormat) {
                 'split_podcast' => 'split_podcast',
-                'blur_916' => 'blur_916',
-                'square_11' => 'square_11',
-                'landscape_169' => 'landscape_169',
                 default => 'single',
             };
 

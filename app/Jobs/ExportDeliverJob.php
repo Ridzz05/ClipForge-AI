@@ -82,11 +82,6 @@ class ExportDeliverJob implements ShouldQueue
         ]);
     }
 
-    private function relativeOf(string $absolute, string $diskRoot): string
-    {
-        return ltrim(str_replace('\\', '/', substr($absolute, strlen($diskRoot))), '/');
-    }
-
     private function markRunning(Export $export): PipelineJob
     {
         $job = PipelineJob::firstOrNew([

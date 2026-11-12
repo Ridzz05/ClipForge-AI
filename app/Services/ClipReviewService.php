@@ -34,15 +34,21 @@ class ClipReviewService
         ?float $splitBottomCropX = null,
         ?array $segments = null
     ): Export {
-        if ($candidate->status === ClipCandidate::STATUS_EXPORTED) {
-            throw new RuntimeException('Candidate already exported.');
+        $claimed = ClipCandidate::whereKey($candidate->getKey())
+            ->whereIn('status', [ClipCandidate::STATUS_PENDING, ClipCandidate::STATUS_REJECTED])
+            ->update(['status' => ClipCandidate::STATUS_APPROVED]);
+
+        if ($claimed === 0) {
+            $fresh = $candidate->fresh();
+
+            throw new RuntimeException(match ($fresh?->status) {
+                ClipCandidate::STATUS_EXPORTED => 'Candidate already exported.',
+                ClipCandidate::STATUS_APPROVED => 'Candidate already approved.',
+                default => 'Candidate cannot be approved.',
+            });
         }
 
-        if ($candidate->status === ClipCandidate::STATUS_APPROVED) {
-            throw new RuntimeException('Candidate already approved.');
-        }
-
-        $candidate->update(['status' => ClipCandidate::STATUS_APPROVED]);
+        $candidate->refresh();
 
         $cta = $ctaText !== null && trim($ctaText) !== ''
             ? trim($ctaText)

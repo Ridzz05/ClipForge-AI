@@ -42,10 +42,6 @@ class ReviewVideo extends Component
     public int $captionPosY = 960;
     public int $captionPosX = 540;
 
-    // --- Format & Orientation Selector State (Ref: orient.webp) ---
-    public string $renderFormat = 'face_916'; // face_916, blur_916, original_916, square_11, landscape_169
-
-
     /** Preset CTA options from the campaign brief; operator can also type one. */
     public function ctaPresets(): array
     {

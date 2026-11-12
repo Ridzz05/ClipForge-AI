@@ -291,28 +291,6 @@
                 </div>
             </div>
 
-            <!-- FORMAT & ORIENTATION SELECTOR (Ref: orient.webp) -->
-            <div class="panel" style="padding: 16px 20px; background: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); margin-bottom: 16px;">
-                <div class="row between" style="margin-bottom: 12px;">
-                    <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); letter-spacing: 0.1em; color: var(--text-muted);">RENDER FORMAT & ORIENTATION</span>
-                    <span class="badge badge-purple" style="font-size: 10px;">HOOK DETECTION MODE</span>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px;">
-                    <button type="button" wire:click="$set('renderFormat', 'face_916')" class="{{ $renderFormat === 'face_916' ? 'btn' : 'btn-outline' }}" style="padding: 9px 12px; font-size: 11.5px; border-radius: 8px; font-weight: 700;">
-                        <i class="ph ph-user-focus" style="font-size: 14px; vertical-align: middle;"></i> Face 9:16
-                    </button>
-                    <button type="button" wire:click="$set('renderFormat', 'blur_916')" class="{{ $renderFormat === 'blur_916' ? 'btn' : 'btn-outline' }}" style="padding: 9px 12px; font-size: 11.5px; border-radius: 8px; font-weight: 700;">
-                        <i class="ph ph-selection-background" style="font-size: 14px; vertical-align: middle;"></i> Blur BG 9:16
-                    </button>
-                    <button type="button" wire:click="$set('renderFormat', 'square_11')" class="{{ $renderFormat === 'square_11' ? 'btn' : 'btn-outline' }}" style="padding: 9px 12px; font-size: 11.5px; border-radius: 8px; font-weight: 700;">
-                        <i class="ph ph-square" style="font-size: 14px; vertical-align: middle;"></i> Square 1:1
-                    </button>
-                    <button type="button" wire:click="$set('renderFormat', 'landscape_169')" class="{{ $renderFormat === 'landscape_169' ? 'btn' : 'btn-outline' }}" style="padding: 9px 12px; font-size: 11.5px; border-radius: 8px; font-weight: 700;">
-                        <i class="ph ph-rectangle" style="font-size: 14px; vertical-align: middle;"></i> Landscape 16:9
-                    </button>
-                </div>
-            </div>
-
             <!-- Candidate Clip Cards -->
             <div class="grid" style="gap: 14px;">
 

@@ -13,7 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Prepend so the gate runs before route-model binding (no 404 leak for unauthenticated callers).
+        $middleware->web(prepend: [\App\Http\Middleware\BasicOperatorAuth::class]);
+        $middleware->api(prepend: [\App\Http\Middleware\BasicOperatorAuth::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

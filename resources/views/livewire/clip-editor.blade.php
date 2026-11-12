@@ -404,15 +404,6 @@
                     <button type="button" wire:click="$set('renderFormat', 'split_podcast')" class="{{ $renderFormat === 'split_podcast' ? 'btn' : 'btn-outline' }}" style="padding: 10px 8px; font-size: 11px; grid-column: span 2; background: {{ $renderFormat === 'split_podcast' ? 'var(--purple-gradient)' : 'rgba(0, 240, 255, 0.08)' }}; border-color: #00f0ff; color: {{ $renderFormat === 'split_podcast' ? '#fff' : '#00f0ff' }};">
                         <i class="ph ph-users-three"></i> 🎙️ Split Podcast Dual 9:16 (Atas/Bawah)
                     </button>
-                    <button type="button" wire:click="$set('renderFormat', 'blur_916')" class="{{ $renderFormat === 'blur_916' ? 'btn' : 'btn-outline' }}" style="padding: 10px 8px; font-size: 11px;">
-                        <i class="ph ph-selection-background"></i> Blur BG 9:16
-                    </button>
-                    <button type="button" wire:click="$set('renderFormat', 'square_11')" class="{{ $renderFormat === 'square_11' ? 'btn' : 'btn-outline' }}" style="padding: 10px 8px; font-size: 11px;">
-                        <i class="ph ph-square"></i> Square 1:1
-                    </button>
-                    <button type="button" wire:click="$set('renderFormat', 'landscape_169')" class="{{ $renderFormat === 'landscape_169' ? 'btn' : 'btn-outline' }}" style="padding: 10px 8px; font-size: 11px;">
-                        <i class="ph ph-rectangle"></i> Landscape 16:9
-                    </button>
                 </div>
             </div>
 

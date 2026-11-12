@@ -11,15 +11,20 @@ class OpenReelController
 {
     public function serve(Request $request, ?string $path = null)
     {
-        $basePath = resource_path('openreel');
+        $root = realpath(resource_path('openreel'));
+        abort_if($root === false, 404);
 
-        // Target file path inside public/openreel
-        $filePath = $path ? $basePath . '/' . ltrim($path, '/') : $basePath . '/index.html';
+        $index = realpath($root.'/index.html');
+        $wanted = ($path === null || $path === '')
+            ? $index
+            : realpath($root.'/'.ltrim($path, '/'));
 
-        if (!File::exists($filePath) || File::isDirectory($filePath)) {
-            // Fallback to SPA index.html for client-side routing
-            $filePath = $basePath . '/index.html';
-        }
+        // Containment check: anything resolving outside the root falls back to the SPA index.
+        $filePath = ($wanted !== false && str_starts_with($wanted, $root.DIRECTORY_SEPARATOR))
+            ? $wanted
+            : $index;
+
+        abort_if($filePath === false || ! is_file($filePath), 404);
 
         $extension = pathinfo($filePath, PATHINFO_EXTENSION);
         $mimeTypes = [
