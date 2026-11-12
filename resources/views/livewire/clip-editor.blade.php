@@ -1,220 +1,179 @@
-<div class="grid" style="gap: 24px;">
-    <!-- Breadcrumb -->
-    <nav class="breadcrumb" style="font: 11px/1 var(--font-mono); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-        <a href="/" wire:navigate style="color: var(--text-muted);"><i class="ph ph-house"></i> Dashboard</a>
-        <span style="color: var(--border-color);">/</span>
-        <a href="/videos/{{ $candidate->video_id }}/review" wire:navigate style="color: var(--text-muted);">Review Video #{{ $candidate->video_id }}</a>
-        <span style="color: var(--border-color);">/</span>
-        <span style="color: var(--purple-primary); font-weight: 700;">Live Studio Editor Klip #{{ $candidate->id }}</span>
+@php
+    $segCount = count($segments);
+@endphp
+
+<div class="edit-page">
+    <nav class="edit-crumbs" aria-label="Breadcrumb">
+        <a href="/" wire:navigate>Dashboard</a>
+        <span aria-hidden="true">/</span>
+        <a href="/videos/{{ $candidate->video_id }}/review" wire:navigate>Review Video #{{ $candidate->video_id }}</a>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">Editor Klip #{{ $candidate->id }}</span>
     </nav>
 
-    <!-- Header -->
-    <div class="row between" style="align-items: center;">
-        <div>
-            <h1 class="page-title">Live Studio Editor — Klip #{{ $candidate->id }}</h1>
-            <p class="page-sub" style="margin: 0;">Pratinjau langsung 9:16 vertikal, animasi caption per-kata, dan kustomisasi framing sebelum diekspor.</p>
+    <header class="page-head">
+        <div class="row between row-wrap">
+            <div>
+                <h1>Editor Klip #{{ $candidate->id }}</h1>
+                <p>Atur trim, framing, dan caption. Semua perubahan baru dipakai saat klip dirender.</p>
+            </div>
+            <div class="row row-wrap">
+                <a href="/videos/{{ $candidate->video_id }}/review" wire:navigate class="btn btn-secondary btn-sm">Kembali</a>
+                <a href="/openreel/?video_url={{ urlencode('/videos/' . $candidate->video_id . '/source') }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Edit di OpenReel</a>
+            </div>
         </div>
-        <div class="row" style="gap: 10px;">
-            <a href="/videos/{{ $candidate->video_id }}/review" wire:navigate class="btn btn-outline">
-                <i class="ph ph-arrow-left"></i> Kembali ke Daftar
-            </a>
-            <a href="/openreel/?video_url={{ urlencode('/videos/' . $candidate->video_id . '/source') }}" target="_blank" class="btn btn-outline" style="border-color: #3b82f6; color: #3b82f6; font-weight: 700;">
-                <i class="ph ph-video" style="font-size: 16px;"></i> Edit di OpenReel
-            </a>
-            <button type="button" wire:click="saveAndApprove" class="btn" style="background: var(--purple-gradient); box-shadow: 0 4px 16px rgba(154, 85, 255, 0.4);">
-                ⚡ Export &amp; Render Klip Ini
-            </button>
-        </div>
-    </div>
 
-    <!-- Main Live Editor Grid (2 Columns: Studio Live Canvas vs Control Inspector) -->
-    <div class="grid" style="grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start;">
-        
-        <!-- Left Column: Live 9:16 & 16:9 Preview Canvas -->
-        <div class="grid" style="gap: 20px;">
-            <!-- 9:16 Vertical Live Preview Box (Ref: orient.webp & clip_caption.png) -->
-            <div class="panel" style="padding: 24px; background: var(--bg-surface); text-align: center;">
+        @if($error)
+            <div class="callout" role="alert">
+                <strong class="callout-title">Gagal menyimpan</strong>
+                <p class="edit-hint">{{ $error }}</p>
+            </div>
+        @endif
+    </header>
 
-                <div class="row between" style="width: 100%; margin-bottom: 16px; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                        <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase;">FRAMING:</span>
-                        <button type="button" 
-                                wire:click="runAutoFramingAI"
-                                wire:loading.attr="disabled"
-                                wire:target="runAutoFramingAI"
-                                title="Jalankan Deteksi Wajah AI & Smooth Auto-Pan Pembicara"
-                                style="padding: 5px 12px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease; background: var(--purple-gradient); color: #fff; box-shadow: 0 4px 12px rgba(154, 85, 255, 0.4);"
-                                class="btn">
-                            <span wire:loading.remove wire:target="runAutoFramingAI">
-                                <i class="ph ph-sparkle"></i> ⚡ Mulai Auto Framing by AI
-                            </span>
-                            <span wire:loading wire:target="runAutoFramingAI">
-                                <i class="ph ph-spinner-gap spin-rotate"></i> Analyzing...
-                            </span>
-                        </button>
-                        <button type="button" 
-                                wire:click="setPodcastLeftSpeaker"
-                                title="Fokus Pangkas ke Speaker Kiri (25%)"
-                                style="padding: 5px 10px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
-                                class="btn {{ $cropMode === 'manual' && abs($manualCropX - 0.25) < 0.05 ? 'btn-primary' : 'btn-outline' }}">
-                            <i class="ph ph-user"></i> Speaker Kiri (25%)
-                        </button>
-                        <button type="button" 
-                                wire:click="setPodcastCenter"
-                                title="Fokus Pangkas ke Tengah (50%)"
-                                style="padding: 5px 10px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
-                                class="btn {{ $cropMode === 'manual' && abs($manualCropX - 0.50) < 0.05 ? 'btn-primary' : 'btn-outline' }}">
-                            <i class="ph ph-users"></i> Tengah (50%)
-                        </button>
-                        <button type="button" 
-                                wire:click="setPodcastRightSpeaker"
-                                title="Fokus Pangkas ke Speaker Kanan (75%)"
-                                style="padding: 5px 10px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
-                                class="btn {{ $cropMode === 'manual' && abs($manualCropX - 0.75) < 0.05 ? 'btn-primary' : 'btn-outline' }}">
-                            <i class="ph ph-user"></i> Speaker Kanan (75%)
-                        </button>
-                        <button type="button" 
-                                wire:click="$set('cropMode', 'manual')"
-                                style="padding: 5px 10px; font-size: 11px; font-weight: 800; border-radius: 99px; transition: all 0.15s ease;"
-                                class="btn {{ $cropMode === 'manual' && abs($manualCropX - 0.25) >= 0.05 && abs($manualCropX - 0.50) >= 0.05 && abs($manualCropX - 0.75) >= 0.05 ? 'btn-primary' : 'btn-outline' }}">
-                            <i class="ph ph-crop"></i> ✂ Manual Drag
-                        </button>
-                    </div>
-                    <span class="badge badge-purple" style="padding: 4px 10px;">{{ strtoupper($renderFormat) }}</span>
+    <div class="edit-layout">
+        <!-- Stage: preview + trim + segments -->
+        <div class="edit-stage">
+            <section class="panel tape rise" style="--i:0" aria-labelledby="edit-preview-title">
+                <div class="section-head">
+                    <h2 id="edit-preview-title">Pratinjau</h2>
+                    <span class="tag mono">{{ $cropMode === 'auto' ? 'AUTO' : 'MANUAL' }}</span>
+                </div>
+
+                <!-- Framing mode -->
+                <div class="edit-tools">
+                    <button type="button"
+                            wire:click="runAutoFramingAI"
+                            wire:loading.attr="disabled"
+                            wire:target="runAutoFramingAI"
+                            aria-pressed="{{ $cropMode === 'auto' ? 'true' : 'false' }}"
+                            title="Deteksi wajah lalu geser framing mengikuti pembicara"
+                            class="edit-seg">
+                        <span wire:loading.remove wire:target="runAutoFramingAI">Auto framing AI</span>
+                        <span wire:loading wire:target="runAutoFramingAI" class="row">
+                            <span class="spinner" aria-hidden="true"></span> Menganalisis wajah
+                        </span>
+                    </button>
+
+                    <button type="button"
+                            wire:click="setPodcastLeftSpeaker"
+                            title="Pangkas ke 25% dari kiri"
+                            aria-pressed="{{ $cropMode === 'manual' && abs($manualCropX - 0.25) < 0.05 ? 'true' : 'false' }}"
+                            class="edit-seg">Kiri 25%</button>
+
+                    <button type="button"
+                            wire:click="setPodcastCenter"
+                            title="Pangkas ke tengah"
+                            aria-pressed="{{ $cropMode === 'manual' && abs($manualCropX - 0.50) < 0.05 ? 'true' : 'false' }}"
+                            class="edit-seg">Tengah 50%</button>
+
+                    <button type="button"
+                            wire:click="setPodcastRightSpeaker"
+                            title="Pangkas ke 25% dari kanan"
+                            aria-pressed="{{ $cropMode === 'manual' && abs($manualCropX - 0.75) < 0.05 ? 'true' : 'false' }}"
+                            class="edit-seg">Kanan 75%</button>
+
+                    <button type="button"
+                            wire:click="$set('cropMode', 'manual')"
+                            title="Seret bingkai secara manual"
+                            aria-pressed="{{ $cropMode === 'manual' && abs($manualCropX - 0.25) >= 0.05 && abs($manualCropX - 0.50) >= 0.05 && abs($manualCropX - 0.75) >= 0.05 ? 'true' : 'false' }}"
+                            class="edit-seg">Manual</button>
                 </div>
 
                 @if($cropMode === 'auto')
-                    <!-- 9:16 Simulated Mobile Player Screen (Auto AI Framing / Split Podcast Dual) -->
-                    <div style="display: flex; justify-content: center; width: 100%; margin-bottom: 20px;">
-                        <div id="live-canvas-frame" style="width: 250px; height: 444px; background: #000; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 12px 36px rgba(0,0,0,0.3); border: 2px solid {{ $renderFormat === 'split_podcast' ? '#00f0ff' : 'var(--border-color)' }};">
-                            
-                            @if($renderFormat === 'split_podcast')
-                                <!-- STACKED DUAL FRAME PREVIEW FOR PODCAST (Top = Speaker Left 25%, Bottom = Speaker Right 75%) -->
-                                <div style="position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 1;">
-                                    <!-- Top Frame (Speaker Left) -->
-                                    <div style="height: 50%; width: 100%; position: relative; overflow: hidden; border-bottom: 2px solid #00f0ff;">
-                                        <video id="editor-video-top" preload="metadata" muted
-                                               style="width: 100%; height: 100%; object-fit: cover; object-position: {{ $splitTopCropX * 100 }}% center; pointer-events: none;"
-                                               src="/videos/{{ $candidate->video_id }}/source">
-                                        </video>
-                                        <div style="position: absolute; top: 4px; left: 6px; background: rgba(0,240,255,0.85); color: #000; font-size: 8px; font-weight: 900; padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono);">
-                                            👤 TOP VIEW ({{ round($splitTopCropX * 100) }}%)
-                                        </div>
-                                    </div>
-
-                                    <!-- Bottom Frame (Speaker Right) -->
-                                    <div style="height: 50%; width: 100%; position: relative; overflow: hidden;">
-                                        <video id="editor-video-bottom" preload="metadata" muted
-                                               style="width: 100%; height: 100%; object-fit: cover; object-position: {{ $splitBottomCropX * 100 }}% center; pointer-events: none;"
-                                               src="/videos/{{ $candidate->video_id }}/source">
-                                        </video>
-                                        <div style="position: absolute; top: 4px; left: 6px; background: rgba(154,85,255,0.85); color: #fff; font-size: 8px; font-weight: 900; padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono);">
-                                            👤 BOT VIEW ({{ round($splitBottomCropX * 100) }}%)
-                                        </div>
-                                    </div>
+                    <!-- 9:16 live canvas -->
+                    <div id="live-canvas-frame" class="edit-canvas">
+                        @if($renderFormat === 'split_podcast')
+                            <div class="edit-canvas-frames">
+                                <div class="edit-canvas-half edit-canvas-half-top">
+                                    <video id="editor-video-top" preload="metadata" muted
+                                           class="edit-canvas-video"
+                                           style="object-position: {{ $splitTopCropX * 100 }}% center"
+                                           src="/videos/{{ $candidate->video_id }}/source"></video>
+                                    <span class="edit-frame-label">Atas {{ round($splitTopCropX * 100) }}%</span>
                                 </div>
-
-                                <!-- Hidden primary video driver for audio & timeline sync -->
-                                <video id="editor-video" controls preload="metadata" 
-                                       onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
-                                       onplay="document.getElementById('editor-video-top').play(); document.getElementById('editor-video-bottom').play();"
-                                       onpause="document.getElementById('editor-video-top').pause(); document.getElementById('editor-video-bottom').pause();"
-                                       onseeking="document.getElementById('editor-video-top').currentTime = this.currentTime; document.getElementById('editor-video-bottom').currentTime = this.currentTime;"
-                                       style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.01; z-index: 5;" 
-                                       src="/videos/{{ $candidate->video_id }}/source">
-                                </video>
-                            @else
-                                <video id="editor-video" controls preload="metadata" 
-                                       onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
-                                       style="width: 100%; height: 100%; object-fit: cover; display: block;" 
-                                       src="/videos/{{ $candidate->video_id }}/source">
-                                </video>
-                            @endif
-
-                            <!-- Real-Time Subtitle Overlay Preview (Opus Clip Style) -->
-                            @if($burnSubtitles === 'on')
-                                <div id="subtitle-overlay" style="position: absolute; bottom: {{ ($captionPosY / 1920) * 100 }}%; left: 4%; right: 4%; text-align: center; pointer-events: none; z-index: 10;">
-                                    <div id="caption-word-group"
-                                        data-animation="{{ $captionAnimation }}"
-                                        data-color="{{ $subtitleColor }}"
-                                        data-fontsize="{{ ($captionFontSize / 1920) * 450 }}"
-                                        style="
-                                            font-family: '{{ $captionFont }}', sans-serif;
-                                            font-size: {{ ($captionFontSize / 1920) * 450 }}px;
-                                            font-weight: 900;
-                                            text-transform: uppercase;
-                                            letter-spacing: 0.03em;
-                                            line-height: 1.3;
-                                            display: flex;
-                                            flex-wrap: wrap;
-                                            justify-content: center;
-                                            gap: 0 5px;
-                                            min-height: 1.5em;
-                                        ">
-                                        <!-- JS renders word spans here -->
-                                    </div>
+                                <div class="edit-canvas-half">
+                                    <video id="editor-video-bottom" preload="metadata" muted
+                                           class="edit-canvas-video"
+                                           style="object-position: {{ $splitBottomCropX * 100 }}% center"
+                                           src="/videos/{{ $candidate->video_id }}/source"></video>
+                                    <span class="edit-frame-label">Bawah {{ round($splitBottomCropX * 100) }}%</span>
                                 </div>
-                            @endif
-                        </div>
-                    </div>
-                @else
-                    <!-- 16:9 Full Source Container + Draggable 9:16 Manual Crop Box -->
-                    <div style="display: flex; flex-direction: column; align-items: center; width: 100%; margin-bottom: 20px;">
-                        <div id="manual-crop-container" 
-                             wire:ignore.self
-                             onclick="positionManualCropOnClick(event)"
-                             style="width: 100%; max-width: 560px; height: 315px; background: #080c14; border-radius: 16px; position: relative; overflow: hidden; border: 2px solid #00f0ff; box-shadow: 0 12px 36px rgba(0,0,0,0.4); user-select: none;">
-                            
-                            <!-- Source 16:9 Video (pointer-events: none prevents video shadow DOM from capturing mouse events) -->
-                            <video id="editor-video-manual" preload="metadata" 
+                            </div>
+                        @else
+                            <video id="editor-video" class="edit-canvas-video edit-canvas-fill" controls preload="metadata"
                                    onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
-                                   style="width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none;" 
-                                   src="/videos/{{ $candidate->video_id }}/source">
-                            </video>
+                                   src="/videos/{{ $candidate->video_id }}/source"></video>
+                        @endif
 
-                            <!-- 9:16 Draggable Overlay Window -->
-                            <div id="manual-crop-window" 
+                        @if($burnSubtitles === 'on')
+                            <div id="subtitle-overlay" class="edit-caption-overlay" style="bottom: {{ ($captionPosY / 1920) * 100 }}%;">
+                                <div id="caption-word-group"
+                                     data-animation="{{ $captionAnimation }}"
+                                     data-color="{{ $subtitleColor }}"
+                                     data-fontsize="{{ ($captionFontSize / 1920) * 450 }}"
+                                     style="
+                                         font-family: '{{ $captionFont }}', sans-serif;
+                                         font-size: {{ max(12, (int) round(($captionFontSize / 1920) * 450)) }}px;
+                                         font-weight: 800;
+                                         text-transform: uppercase;
+                                         line-height: 1.3;
+                                         display: flex;
+                                         flex-wrap: wrap;
+                                         justify-content: center;
+                                         gap: 0 4px;
+                                         min-height: 1.5em;
+                                     ">
+                                    <!-- JS renders word spans here -->
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    @if($renderFormat === 'split_podcast')
+                        <!-- Driver: audio + transport + timeline sync for the two frames above -->
+                        <video id="editor-video" class="edit-canvas-driver" controls preload="metadata"
+                               onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
+                               onplay="document.getElementById('editor-video-top').play(); document.getElementById('editor-video-bottom').play();"
+                               onpause="document.getElementById('editor-video-top').pause(); document.getElementById('editor-video-bottom').pause();"
+                               onseeking="document.getElementById('editor-video-top').currentTime = this.currentTime; document.getElementById('editor-video-bottom').currentTime = this.currentTime;"
+                               src="/videos/{{ $candidate->video_id }}/source"></video>
+                    @endif
+                @else
+                    <!-- 16:9 source + draggable 9:16 crop window -->
+                    <div class="edit-crop-wrap">
+                        <div id="manual-crop-container"
+                             wire:ignore.self
+                             class="edit-crop-stage"
+                             onclick="positionManualCropOnClick(event)">
+                            <video id="editor-video-manual" preload="metadata"
+                                   class="edit-crop-source"
+                                   onloadedmetadata="if (typeof seekEditorVideoTo === 'function') seekEditorVideoTo({{ $editStartMs }})"
+                                   src="/videos/{{ $candidate->video_id }}/source"></video>
+
+                            <div id="manual-crop-window"
+                                 class="edit-crop-window"
                                  onmousedown="startManualCropDrag(event)"
                                  ontouchstart="startManualCropDrag(event)"
-                                 style="
-                                     position: absolute; 
-                                     top: 0; 
-                                     bottom: 0; 
-                                     width: 177px; 
-                                     left: calc({{ $manualCropX * 100 }}% - 88.5px);
-                                     border: 2.5px solid #00f0ff; 
-                                     background: rgba(0, 240, 255, 0.15); 
-                                     box-shadow: 0 0 24px rgba(0, 240, 255, 0.6), inset 0 0 15px rgba(0, 240, 255, 0.25); 
-                                     cursor: grab; 
-                                     z-index: 10;
-                                     display: flex;
-                                     flex-direction: column;
-                                     justify-content: space-between;
-                                     touch-action: none;
-                                 ">
-                                <!-- Header Label / Handle -->
-                                <div style="background: rgba(0, 240, 255, 0.9); color: #000; font-size: 9px; font-weight: 900; text-transform: uppercase; padding: 4px; text-align: center; letter-spacing: 0.05em; font-family: var(--font-mono); pointer-events: none;">
-                                    ⟷ 9:16 FRAME CROP
-                                </div>
+                                 style="left: calc({{ $manualCropX * 100 }}% - 15.82%);">
+                                <div class="edit-crop-window-head">Bingkai 9:16</div>
 
-                                <!-- Real-Time Subtitle Overlay inside 9:16 window -->
                                 @if($burnSubtitles === 'on')
-                                    <div id="subtitle-overlay-manual" style="position: absolute; bottom: {{ ($captionPosY / 1920) * 100 }}%; left: 4%; right: 4%; text-align: center; pointer-events: none; z-index: 12;">
+                                    <div id="subtitle-overlay-manual" class="edit-caption-overlay" style="bottom: {{ ($captionPosY / 1920) * 100 }}%;">
                                         <div id="caption-word-group-manual"
                                              data-animation="{{ $captionAnimation }}"
                                              data-color="{{ $subtitleColor }}"
                                              data-fontsize="{{ ($captionFontSize / 1920) * 315 }}"
                                              style="
                                                  font-family: '{{ $captionFont }}', sans-serif;
-                                                 font-size: {{ ($captionFontSize / 1920) * 315 }}px;
-                                                 font-weight: 900;
+                                                 font-size: {{ max(10, (int) round(($captionFontSize / 1920) * 315)) }}px;
+                                                 font-weight: 800;
                                                  text-transform: uppercase;
-                                                 letter-spacing: 0.03em;
                                                  line-height: 1.3;
                                                  display: flex;
                                                  flex-wrap: wrap;
                                                  justify-content: center;
-                                                 gap: 0 4px;
+                                                 gap: 0 3px;
                                                  min-height: 1.5em;
                                              ">
                                             <!-- JS syncs word spans here -->
@@ -222,407 +181,539 @@
                                     </div>
                                 @endif
 
-                                <!-- Bottom Position Badge -->
-                                <div style="background: rgba(0, 0, 0, 0.85); color: #00f0ff; font-size: 9px; font-weight: 800; padding: 3px; text-align: center; font-family: var(--font-mono); pointer-events: none; border-top: 1px solid rgba(0, 240, 255, 0.4);">
-                                    POS X: <span id="manual-crop-x-label">{{ round($manualCropX * 100, 1) }}%</span>
+                                <div class="edit-crop-window-foot">
+                                    X <span id="manual-crop-x-label" class="mono">{{ round($manualCropX * 100, 1) }}%</span>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Interactive Framing Slider Bar -->
-                        <div style="display: flex; align-items: center; gap: 12px; width: 100%; max-width: 560px; margin-top: 10px; padding: 8px 16px; background: rgba(0,240,255,0.06); border: 1px solid rgba(0,240,255,0.25); border-radius: 12px;">
-                            <span style="font-size: 10px; font-weight: 800; color: #00f0ff; font-family: var(--font-mono); white-space: nowrap;">⟵ KIRI</span>
-                            <input type="range" 
-                                   id="manual-crop-range" 
-                                   min="0" 
-                                   max="1" 
-                                   step="0.002" 
-                                   value="{{ $manualCropX }}" 
-                                   oninput="window.updateCropBoxUI(parseFloat(this.value))"
-                                   style="flex: 1; height: 6px; border-radius: 4px; accent-color: #00f0ff; cursor: pointer;">
-                            <span style="font-size: 10px; font-weight: 800; color: #00f0ff; font-family: var(--font-mono); white-space: nowrap;">KANAN ⟶</span>
+
+                        <div class="edit-crop-range">
+                            <label for="manual-crop-range" class="edit-label">Posisi bingkai</label>
+                            <input type="range"
+                                   id="manual-crop-range"
+                                   min="0"
+                                   max="1"
+                                   step="0.002"
+                                   value="{{ $manualCropX }}"
+                                   oninput="window.updateCropBoxUI(parseFloat(this.value))">
                         </div>
 
-                        <!-- Instruction Banner -->
-                        <div style="margin-top: 6px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: center;">
-                            💡 Geser bingkai cyan 9:16 di atas video atau geser **Slider** untuk menentukan area pangkas.
-                        </div>
+                        <p class="edit-hint">Geser bingkai di atas video, atau pakai slider. Bisa juga tombol Kiri/Tengah/Kanan.</p>
                     </div>
                 @endif
 
-                <!-- Player Action Buttons -->
-                <div style="display: flex; gap: 8px; justify-content: center; width: 100%;">
-                    <button type="button" class="btn btn-sm btn-primary" onclick="playPreview(Livewire.find('{{ $this->getId() }}').get('editStartMs'), Livewire.find('{{ $this->getId() }}').get('editEndMs'))" style="flex: 2; padding: 10px; font-weight: 800; background: var(--purple-gradient);">
-                        <i class="ph ph-play-circle" style="font-size: 16px;"></i> Play Loop Preview
+                <!-- Transport -->
+                <div class="edit-transport">
+                    <button type="button" class="btn"
+                            onclick="playPreview(Livewire.find('{{ $this->getId() }}').get('editStartMs'), Livewire.find('{{ $this->getId() }}').get('editEndMs'))">
+                        Play loop
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="jumpToStart(Livewire.find('{{ $this->getId() }}').get('editStartMs'))" style="flex: 1; font-weight: 700;">
-                        <i class="ph ph-caret-double-left"></i> Awal
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="jumpToEnd(Livewire.find('{{ $this->getId() }}').get('editEndMs'))" style="flex: 1; font-weight: 700;">
-                        <i class="ph ph-caret-double-right"></i> Akhir
-                    </button>
+                    <button type="button" class="btn btn-secondary"
+                            onclick="jumpToStart(Livewire.find('{{ $this->getId() }}').get('editStartMs'))">Ke awal</button>
+                    <button type="button" class="btn btn-secondary"
+                            onclick="jumpToEnd(Livewire.find('{{ $this->getId() }}').get('editEndMs'))">Ke akhir</button>
+                </div>
+            </section>
+
+            <!-- Trim timeline -->
+            <section class="panel rise" style="--i:1" aria-labelledby="edit-trim-title">
+                <div class="section-head">
+                    <h2 id="edit-trim-title">Trim</h2>
+                    <span id="timeline-duration" class="tag mono">DUR: --:--</span>
                 </div>
 
-                <!-- Jiggle Effect Toggle -->
-                <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px;">
-                    <span style="font-size: 10px; font-weight: 700; color: var(--text-muted); font-family: var(--font-mono); letter-spacing: 0.1em;">JIGGLE EFFECT</span>
-                    <button id="jiggle-toggle-btn"
-                            type="button"
-                            onclick="toggleJiggleEffect(this)"
-                            style="padding: 4px 14px; font-size: 10px; font-weight: 800; border-radius: 99px; cursor: pointer; transition: all 0.15s ease;"
-                            class="btn">
-                        ✦ ON
-                    </button>
-                </div>
-            </div>
-
-
-
-            <!-- VISUAL TIMELINE FRAMING -->
-            <div class="panel" style="padding: 20px; background: var(--bg-surface);">
-                <div class="row between" style="margin-bottom: 12px;">
-                    <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--text-muted);">TIMELINE FRAMING</span>
-                    <span id="timeline-duration" style="font-size: 10px; font-weight: 700; color: var(--purple-primary); font-family: var(--font-mono);">DUR: --:--</span>
-                </div>
-
-                <!-- Start / End time labels -->
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px;">
-                    <div>
-                        <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; margin-bottom: 2px;">▶ START</div>
-                        <div id="tl-start-label" style="font-size: 15px; font-weight: 900; color: #4ade80; font-family: var(--font-mono); letter-spacing: 0.05em;">00:00</div>
+                <div class="edit-trim-labels">
+                    <div class="edit-trim-readout">
+                        <span class="edit-label">Mulai</span>
+                        <span id="tl-start-label" class="mono edit-time">00:00</span>
                     </div>
-                    <div style="text-align: right;">
-                        <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; margin-bottom: 2px;">END ⬛</div>
-                        <div id="tl-end-label" style="font-size: 15px; font-weight: 900; color: #f87171; font-family: var(--font-mono); letter-spacing: 0.05em;">00:00</div>
+                    <div class="edit-trim-readout edit-trim-readout-end">
+                        <span class="edit-label">Selesai</span>
+                        <span id="tl-end-label" class="mono edit-time">00:00</span>
                     </div>
                 </div>
 
-                <!-- Timeline track -->
-                <div id="timeline-track"
-                     style="position: relative; height: 38px; background: var(--bg-surface-subtle); border-radius: 8px; cursor: pointer; border: 1px solid var(--border-color); margin-bottom: 12px; user-select: none;">
-
-                    <!-- Selection region -->
-                    <div id="tl-selection"
-                         style="position: absolute; top: 0; bottom: 0; background: rgba(74,222,128,0.15); border-left: 2px solid #4ade80; border-right: 2px solid #f87171; border-radius: 4px; pointer-events: none;">
-                    </div>
-
-                    <!-- Playhead -->
-                    <div id="tl-playhead"
-                         style="position: absolute; top: -5px; bottom: -5px; width: 2px; background: var(--purple-primary); border-radius: 99px; pointer-events: none; z-index: 5; box-shadow: 0 0 8px rgba(154,85,255,0.8); transition: left 0.05s linear;">
-                        <div style="position: absolute; top: -1px; left: 50%; transform: translateX(-50%); width: 8px; height: 8px; background: var(--purple-primary); border-radius: 50%; box-shadow: 0 0 6px rgba(154,85,255,0.9);"></div>
-                    </div>
-
-                    <!-- Start handle -->
-                    <div id="tl-handle-start"
-                         title="Drag to set Start"
-                         style="position: absolute; top: 0; bottom: 0; width: 12px; background: #4ade80; border-radius: 4px 2px 2px 4px; cursor: ew-resize; transform: translateX(-50%); z-index: 4; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
-                        <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
-                            <div style="width: 2px; height: 14px; background: rgba(0,0,0,0.3); border-radius: 1px;"></div>
-                        </div>
-                    </div>
-
-                    <!-- End handle -->
-                    <div id="tl-handle-end"
-                         title="Drag to set End"
-                         style="position: absolute; top: 0; bottom: 0; width: 12px; background: #f87171; border-radius: 2px 4px 4px 2px; cursor: ew-resize; transform: translateX(-50%); z-index: 4; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
-                        <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
-                            <div style="width: 2px; height: 14px; background: rgba(0,0,0,0.3); border-radius: 1px;"></div>
-                        </div>
-                    </div>
+                <div id="timeline-track" class="edit-track">
+                    <div id="tl-selection" class="edit-track-selection"></div>
+                    <div id="tl-playhead" class="edit-track-playhead"></div>
+                    <div id="tl-handle-start" class="edit-handle edit-handle-start" title="Geser untuk atur mulai"></div>
+                    <div id="tl-handle-end" class="edit-handle edit-handle-end" title="Geser untuk atur selesai"></div>
                 </div>
 
-                <!-- Shortcut buttons -->
-                <div class="row" style="gap: 8px;">
-                    <button type="button" class="btn btn-sm btn-outline" onclick="setStartToCurrent(Livewire.find('{{ $this->getId() }}'))" style="flex: 1; font-size: 11px;">
-                        <i class="ph ph-map-pin-line"></i> Set Start
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="setEndToCurrent(Livewire.find('{{ $this->getId() }}'))" style="flex: 1; font-size: 11px;">
-                        <i class="ph ph-flag-banner"></i> Set End
-                    </button>
+                <div class="row row-wrap">
+                    <button type="button" class="btn btn-secondary btn-sm"
+                            onclick="setStartToCurrent(Livewire.find('{{ $this->getId() }}'))">Set mulai di playhead</button>
+                    <button type="button" class="btn btn-secondary btn-sm"
+                            onclick="setEndToCurrent(Livewire.find('{{ $this->getId() }}'))">Set selesai di playhead</button>
                 </div>
-            </div>
+            </section>
 
-            <!-- MULTI-SEGMENT SPLIT & JUMP-CUT TIMELINE PANEL -->
-            <div class="panel" style="padding: 20px; background: var(--bg-surface); border: 1px dashed var(--purple-primary);">
-                <div class="row between" style="margin-bottom: 12px;">
-                    <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--purple-primary);">✂️ MULTI-SEGMENT SPLIT &amp; JUMP-CUT</span>
-                    <span class="badge badge-purple" style="font-size: 10px;">{{ count($segments) }} SEGMEN</span>
+            <!-- Segments -->
+            <section class="panel rise" style="--i:2" aria-labelledby="edit-segments-title">
+                <div class="section-head">
+                    <h2 id="edit-segments-title">Split &amp; jump-cut</h2>
+                    <span class="tag mono">{{ $segCount }} segmen</span>
                 </div>
 
-                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
-                    Potong &amp; buang bagian filler yang tidak penting di dalam klip. Sistem akan menyatukan segmen yang dipilih (*jump-cut*) secara otomatis saat diekspor!
-                </div>
+                <p class="edit-hint">Buang bagian filler di dalam klip. Segmen digabung otomatis saat ekspor.</p>
 
-                <!-- SPLIT AT PLAYHEAD BUTTON -->
-                <button type="button" 
-                        onclick="splitAtCurrentPlayhead()" 
-                        style="width: 100%; padding: 8px; font-size: 11px; font-weight: 800; border-radius: 8px; margin-bottom: 14px; background: rgba(0, 240, 255, 0.1); border: 1px solid #00f0ff; color: #00f0ff; cursor: pointer;">
-                    <i class="ph ph-scissors"></i> ✂️ Potong / Split di Timestamp Saat Ini
+                <button type="button" onclick="splitAtCurrentPlayhead()" class="btn btn-secondary btn-block">
+                    Potong di playhead
                 </button>
 
-                <!-- SEGMENT LIST -->
-                <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div class="edit-seg-list">
                     @foreach($segments as $idx => $seg)
                         @php
                             $segDurSec = round(($seg['end_ms'] - $seg['start_ms']) / 1000);
                             $segStartSec = $seg['start_ms'] / 1000;
                             $segEndSec = $seg['end_ms'] / 1000;
                         @endphp
-                        <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface-subtle); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 11px; font-weight: 900; background: var(--purple-primary); color: #fff; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">{{ $idx + 1 }}</span>
-                                <div>
-                                    <div style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--text-main);">
-                                        {{ sprintf('%02d:%02d', floor($segStartSec / 60), $segStartSec % 60) }} ➔ {{ sprintf('%02d:%02d', floor($segEndSec / 60), $segEndSec % 60) }}
-                                    </div>
-                                    <div style="font-size: 9.5px; color: var(--text-muted); font-weight: 700;">Durasi: {{ $segDurSec }}s</div>
+                        <div class="edit-seg-row">
+                            <span class="edit-seg-index mono">{{ $idx + 1 }}</span>
+                            <div class="grow">
+                                <div class="mono">
+                                    {{ sprintf('%02d:%02d', floor($segStartSec / 60), $segStartSec % 60) }}
+                                    <span class="muted">&rarr;</span>
+                                    {{ sprintf('%02d:%02d', floor($segEndSec / 60), $segEndSec % 60) }}
                                 </div>
+                                <div class="edit-hint">Durasi {{ $segDurSec }}s</div>
                             </div>
-                            <div style="display: flex; gap: 6px;">
-                                <button type="button" wire:click="deleteSegment({{ $idx }})" class="btn btn-sm btn-outline" style="color: #f87171; border-color: rgba(248,113,113,0.3); font-size: 10px; padding: 3px 8px;" title="Hapus Segmen Ini">
-                                    <i class="ph ph-trash"></i> Hapus
-                                </button>
-                            </div>
+                            <button type="button" wire:click="deleteSegment({{ $idx }})"
+                                    class="btn btn-secondary btn-sm"
+                                    title="Hapus segmen ini">Hapus</button>
                         </div>
                     @endforeach
                 </div>
-            </div>
+            </section>
         </div>
 
-        <!-- Right Column: Inspector Controls (Caption Mood & Render Format) -->
-        <div class="grid" style="gap: 20px;">
-            <!-- FORMAT & ORIENTATION SELECTOR (Ref: orient.webp) -->
-            <div class="panel" style="padding: 20px; background: var(--bg-surface);">
-                <div class="row between" style="margin-bottom: 14px;">
-                    <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--text-muted);">RENDER FORMAT &amp; ORIENTATION</span>
-                    <span class="badge badge-purple" style="font-size: 10px;">LAYOUT</span>
+        <!-- Inspector -->
+        <aside class="edit-inspector">
+            <section class="panel rise" style="--i:0" aria-labelledby="edit-format-title">
+                <div class="section-head">
+                    <h2 id="edit-format-title">Format</h2>
+                    <span class="tag mono">{{ strtoupper($renderFormat) }}</span>
                 </div>
-                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <button type="button" wire:click="$set('renderFormat', 'face_916')" class="{{ $renderFormat === 'face_916' ? 'btn' : 'btn-outline' }}" style="padding: 10px 8px; font-size: 11px;">
-                        <i class="ph ph-user-focus"></i> Single Face 9:16
-                    </button>
-                    <button type="button" wire:click="$set('renderFormat', 'split_podcast')" class="{{ $renderFormat === 'split_podcast' ? 'btn' : 'btn-outline' }}" style="padding: 10px 8px; font-size: 11px; grid-column: span 2; background: {{ $renderFormat === 'split_podcast' ? 'var(--purple-gradient)' : 'rgba(0, 240, 255, 0.08)' }}; border-color: #00f0ff; color: {{ $renderFormat === 'split_podcast' ? '#fff' : '#00f0ff' }};">
-                        <i class="ph ph-users-three"></i> 🎙️ Split Podcast Dual 9:16 (Atas/Bawah)
-                    </button>
+
+                <div class="edit-seg-wrap">
+                    <button type="button" wire:click="$set('renderFormat', 'face_916')"
+                            aria-pressed="{{ $renderFormat === 'face_916' ? 'true' : 'false' }}"
+                            class="edit-seg">Single 9:16</button>
+                    <button type="button" wire:click="$set('renderFormat', 'split_podcast')"
+                            aria-pressed="{{ $renderFormat === 'split_podcast' ? 'true' : 'false' }}"
+                            class="edit-seg">Split podcast (atas/bawah)</button>
                 </div>
-            </div>
+            </section>
 
             @if($renderFormat === 'split_podcast')
-                <!-- PODCAST DUAL CAMERA POSITION CONTROL PANEL -->
-                <div class="panel" style="padding: 20px; background: var(--bg-surface); border: 1.5px solid #00f0ff; box-shadow: 0 0 15px rgba(0,240,255,0.15);">
-                    <div class="row between" style="margin-bottom: 14px;">
-                        <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: #00f0ff;">🎙️ PODCAST DUAL CAMERA POSITIONS</span>
-                        <span class="badge badge-purple" style="font-size: 10px;">TOP &amp; BOT CONTROL</span>
+                <section class="panel rise" style="--i:1" aria-labelledby="edit-split-title">
+                    <div class="section-head">
+                        <h2 id="edit-split-title">Posisi kamera ganda</h2>
+                        <span class="tag mono">ATAS &amp; BAWAH</span>
                     </div>
 
-                    <!-- TOP CAMERA POSITION (Speaker 1) -->
-                    <div style="margin-bottom: 16px; background: rgba(0,240,255,0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(0,240,255,0.2);">
-                        <div class="row between" style="margin-bottom: 6px;">
-                            <label style="font-size: 11px; font-weight: 800; color: #00f0ff;">👤 BINGKAI ATAS (TOP VIEW)</label>
-                            <span style="font-size: 11px; font-weight: 900; font-family: var(--font-mono); color: #00f0ff;">{{ round($splitTopCropX * 100) }}%</span>
+                    <div class="edit-split-block">
+                        <div class="row between">
+                            <label for="edit-split-top" class="edit-label">Bingkai atas</label>
+                            <span class="mono">{{ round($splitTopCropX * 100) }}%</span>
                         </div>
-                        <input type="range" min="0.0" max="1.0" step="0.005" wire:model.live="splitTopCropX" style="width: 100%; cursor: pointer; accent-color: #00f0ff; margin-bottom: 8px;">
-                        <div style="display: flex; gap: 6px;">
-                            <button type="button" wire:click="$set('splitTopCropX', 0.25)" class="btn btn-outline btn-sm" style="flex: 1; font-size: 10px; padding: 4px;">Kiri (25%)</button>
-                            <button type="button" wire:click="$set('splitTopCropX', 0.50)" class="btn btn-outline btn-sm" style="flex: 1; font-size: 10px; padding: 4px;">Tengah (50%)</button>
-                            <button type="button" wire:click="$set('splitTopCropX', 0.75)" class="btn btn-outline btn-sm" style="flex: 1; font-size: 10px; padding: 4px;">Kanan (75%)</button>
+                        <input type="range" id="edit-split-top" min="0.0" max="1.0" step="0.005"
+                               wire:model.live="splitTopCropX">
+                        <div class="edit-seg-wrap">
+                            <button type="button" wire:click="$set('splitTopCropX', 0.25)" class="edit-seg">Kiri 25%</button>
+                            <button type="button" wire:click="$set('splitTopCropX', 0.50)" class="edit-seg">Tengah 50%</button>
+                            <button type="button" wire:click="$set('splitTopCropX', 0.75)" class="edit-seg">Kanan 75%</button>
                         </div>
                     </div>
 
-                    <!-- BOTTOM CAMERA POSITION (Speaker 2) -->
-                    <div style="background: rgba(154,85,255,0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(154,85,255,0.2);">
-                        <div class="row between" style="margin-bottom: 6px;">
-                            <label style="font-size: 11px; font-weight: 800; color: var(--purple-primary);">👤 BINGKAI BAWAH (BOT VIEW)</label>
-                            <span style="font-size: 11px; font-weight: 900; font-family: var(--font-mono); color: var(--purple-primary);">{{ round($splitBottomCropX * 100) }}%</span>
+                    <div class="edit-split-block">
+                        <div class="row between">
+                            <label for="edit-split-bottom" class="edit-label">Bingkai bawah</label>
+                            <span class="mono">{{ round($splitBottomCropX * 100) }}%</span>
                         </div>
-                        <input type="range" min="0.0" max="1.0" step="0.005" wire:model.live="splitBottomCropX" style="width: 100%; cursor: pointer; accent-color: var(--purple-primary); margin-bottom: 8px;">
-                        <div style="display: flex; gap: 6px;">
-                            <button type="button" wire:click="$set('splitBottomCropX', 0.25)" class="btn btn-outline btn-sm" style="flex: 1; font-size: 10px; padding: 4px;">Kiri (25%)</button>
-                            <button type="button" wire:click="$set('splitBottomCropX', 0.50)" class="btn btn-outline btn-sm" style="flex: 1; font-size: 10px; padding: 4px;">Tengah (50%)</button>
-                            <button type="button" wire:click="$set('splitBottomCropX', 0.75)" class="btn btn-outline btn-sm" style="flex: 1; font-size: 10px; padding: 4px;">Kanan (75%)</button>
+                        <input type="range" id="edit-split-bottom" min="0.0" max="1.0" step="0.005"
+                               wire:model.live="splitBottomCropX">
+                        <div class="edit-seg-wrap">
+                            <button type="button" wire:click="$set('splitBottomCropX', 0.25)" class="edit-seg">Kiri 25%</button>
+                            <button type="button" wire:click="$set('splitBottomCropX', 0.50)" class="edit-seg">Tengah 50%</button>
+                            <button type="button" wire:click="$set('splitBottomCropX', 0.75)" class="edit-seg">Kanan 75%</button>
                         </div>
                     </div>
-                </div>
+                </section>
             @endif
 
-            <!-- STYLE & CAPTIONS MOOD PANEL (Ref: clip_caption.png) -->
-            <div class="panel" style="padding: 20px; background: var(--bg-surface);">
-                <div class="row between" style="margin-bottom: 16px;">
-                    <span style="font-size: 11px; font-weight: 800; font-family: var(--font-mono); color: var(--text-muted);">STYLE &amp; CAPTIONS</span>
-                    <span class="badge badge-purple" style="font-size: 10px;">CAPTION MOOD</span>
+            <section class="panel tape rise" style="--i:2" aria-labelledby="edit-caption-title">
+                <div class="section-head">
+                    <h2 id="edit-caption-title">Caption</h2>
+                    <span class="tag mono">{{ $burnSubtitles === 'on' ? 'AKTIF' : 'NONAKTIF' }}</span>
                 </div>
 
-                <!-- LIVE TRANSLATION SELECTOR -->
-                <div style="margin-bottom: 18px;">
-                    <div class="row between" style="margin-bottom: 6px;">
-                        <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin: 0;">TARGET TRANSLATION LANGUAGE</label>
-                        <span wire:loading wire:target="updatedTargetLanguage" class="badge badge-amber" style="font-size: 9px;">
-                            <i class="ph ph-spinner-gap spin-rotate"></i> Translating...
-                        </span>
-                    </div>
-                    <select wire:model.live="targetLanguage" style="width: 100%; padding: 8px 12px; border-radius: 8px; font-size: 11px; background: var(--bg-surface-subtle); border: 1px solid var(--border-color); color: var(--text-color); cursor: pointer; font-weight: 700;">
-                        @foreach(\App\Services\TranslationService::LANGUAGES as $code => $name)
-                            <option value="{{ $code }}">{{ $name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- BURN SUBTITLES TOGGLE -->
-                <div style="margin-bottom: 18px;">
-                    <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 8px;">BURN SUBTITLES INTO CLIP</label>
-                    <div style="display: flex; background: var(--bg-surface-subtle); border-radius: 99px; padding: 4px; border: 1px solid var(--border-color);">
-                        <button type="button" wire:click="$set('burnSubtitles', 'on')" style="flex: 1; padding: 7px; border-radius: 99px; border: none; font-weight: 700; font-size: 11px; cursor: pointer;" class="{{ $burnSubtitles === 'on' ? 'btn' : 'btn-outline' }}">ON</button>
-                        <button type="button" wire:click="$set('burnSubtitles', 'off')" style="flex: 1; padding: 7px; border-radius: 99px; border: none; font-weight: 700; font-size: 11px; cursor: pointer;" class="{{ $burnSubtitles === 'off' ? 'btn' : 'btn-outline' }}">OFF</button>
-                    </div>
-                </div>
-
-                <!-- SUBTITLE FONT FAMILY SELECTOR -->
-                <div style="margin-bottom: 18px;">
-                    <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 8px;">SUBTITLE FONT FAMILY</label>
-                    <select wire:model.live="captionFont" style="width: 100%; padding: 8px 12px; border-radius: 8px; font-size: 11px; background: var(--bg-surface-subtle); border: 1px solid var(--border-color); color: var(--text-main); font-weight: 800; cursor: pointer;">
-                        <option value="Outfit">Outfit (Opus Clip / CapCut Style)</option>
-                        <option value="Plus Jakarta Sans">Plus Jakarta Sans (Modern Clean)</option>
-                        <option value="Poppins">Poppins (Geometric Bold)</option>
-                        <option value="Montserrat">Montserrat (Heavy Impact)</option>
-                        <option value="Inter">Inter (Sleek Tech)</option>
-                        <option value="Fira Sans">Fira Sans (Clean Sans)</option>
-                    </select>
-                </div>
-
-
-                <!-- COLOR PRESET -->
-                <div style="margin-bottom: 18px;">
-                    <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 8px;">SUBTITLE COLOR PRESET</label>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <button type="button" wire:click="$set('subtitleColor', 'yellow')" style="width: 28px; height: 28px; border-radius: 50%; background: #ffff00; border: 3px solid {{ $subtitleColor === 'yellow' ? 'var(--purple-primary)' : 'transparent' }}; cursor: pointer;"></button>
-                        <button type="button" wire:click="$set('subtitleColor', 'pink')" style="width: 28px; height: 28px; border-radius: 50%; background: #ff4d6d; border: 3px solid {{ $subtitleColor === 'pink' ? 'var(--purple-primary)' : 'transparent' }}; cursor: pointer;"></button>
-                        <button type="button" wire:click="$set('subtitleColor', 'orange')" style="width: 28px; height: 28px; border-radius: 50%; background: #ff8c32; border: 3px solid {{ $subtitleColor === 'orange' ? 'var(--purple-primary)' : 'transparent' }}; cursor: pointer;"></button>
-                        <button type="button" wire:click="$set('subtitleColor', 'white')" style="width: 28px; height: 28px; border-radius: 50%; background: #ffffff; border: 3px solid {{ $subtitleColor === 'white' ? 'var(--purple-primary)' : 'transparent' }}; cursor: pointer;"></button>
-                    </div>
-                </div>
-
-                <!-- ANIMATION GRID -->
-                <div style="margin-bottom: 18px;">
-                    <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 8px;">ANIMATION PRESET (LIVE)</label>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
-                        @foreach(['KARAOKE', 'POP', 'GLOW', 'RISE', 'BLOCK', 'OFF'] as $anim)
-                            <button type="button" wire:click="$set('captionAnimation', '{{ strtolower($anim) }}')" 
-                                    style="padding: 7px 4px; font-size: 10px; font-weight: 800; border-radius: 8px; cursor: pointer;" 
-                                    class="{{ $captionAnimation === strtolower($anim) ? 'btn' : 'btn-outline' }}">
-                                {{ $anim }}
-                            </button>
-                        @endforeach
-                    </div>
-                </div>
-
-                <!-- SLIDERS -->
-                <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
-                    <div>
-                        <div class="row between" style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">
-                            <span>FONT SIZE</span>
-                            <span>{{ $captionFontSize }}</span>
+                <div class="edit-fields">
+                    <div class="field">
+                        <div class="row between">
+                            <label for="edit-language">Bahasa terjemahan</label>
+                            <span wire:loading wire:target="updatedTargetLanguage" class="row edit-hint">
+                                <span class="spinner" aria-hidden="true"></span> Menerjemahkan
+                            </span>
                         </div>
-                        <input type="range" min="40" max="120" wire:model.live.debounce.300ms="captionFontSize" style="width:100%; accent-color: var(--purple-primary);">
+                        <select id="edit-language" wire:model.live="targetLanguage">
+                            @foreach(\App\Services\TranslationService::LANGUAGES as $code => $name)
+                                <option value="{{ $code }}">{{ $name }}</option>
+                            @endforeach
+                        </select>
                     </div>
-                    <div>
-                        <div class="row between" style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">
-                            <span>CAPTION Y POSITION</span>
-                            <span>{{ $captionPosY }}</span>
+
+                    <div class="field">
+                        <label id="edit-burn-label">Burn subtitle</label>
+                        <div class="edit-seg-wrap" role="group" aria-labelledby="edit-burn-label">
+                            <button type="button" wire:click="$set('burnSubtitles', 'on')"
+                                    aria-pressed="{{ $burnSubtitles === 'on' ? 'true' : 'false' }}"
+                                    class="edit-seg">On</button>
+                            <button type="button" wire:click="$set('burnSubtitles', 'off')"
+                                    aria-pressed="{{ $burnSubtitles === 'off' ? 'true' : 'false' }}"
+                                    class="edit-seg">Off</button>
                         </div>
-                        <input type="range" min="200" max="1800" wire:model.live.debounce.300ms="captionPosY" style="width:100%; accent-color: var(--purple-primary);">
+                    </div>
+
+                    <div class="field">
+                        <label for="edit-font">Font subtitle</label>
+                        <select id="edit-font" wire:model.live="captionFont">
+                            <option value="Outfit">Outfit</option>
+                            <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                            <option value="Poppins">Poppins</option>
+                            <option value="Montserrat">Montserrat</option>
+                            <option value="Inter">Inter</option>
+                            <option value="Fira Sans">Fira Sans</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label id="edit-color-label">Warna caption</label>
+                        <div class="edit-seg-wrap" role="group" aria-labelledby="edit-color-label">
+                            @foreach(['yellow' => 'Kuning', 'pink' => 'Merah muda', 'orange' => 'Oranye', 'white' => 'Putih'] as $key => $label)
+                                <button type="button" wire:click="$set('subtitleColor', '{{ $key }}')"
+                                        aria-pressed="{{ $subtitleColor === $key ? 'true' : 'false' }}"
+                                        class="edit-seg">
+                                    <span class="mark {{ $subtitleColor === $key ? 'mark-on' : '' }}" aria-hidden="true"></span>
+                                    {{ $label }}
+                                </button>
+                            @endforeach
+                        </div>
+                        <p class="field-hint">Pratinjau di sini monokrom; warna asli diterapkan saat render.</p>
+                    </div>
+
+                    <div class="field">
+                        <label id="edit-anim-label">Animasi</label>
+                        <div class="edit-seg-grid" role="group" aria-labelledby="edit-anim-label">
+                            @foreach(['KARAOKE', 'POP', 'GLOW', 'RISE', 'BLOCK', 'OFF'] as $anim)
+                                <button type="button" wire:click="$set('captionAnimation', '{{ strtolower($anim) }}')"
+                                        aria-pressed="{{ $captionAnimation === strtolower($anim) ? 'true' : 'false' }}"
+                                        class="edit-seg">{{ $anim }}</button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <div class="row between">
+                            <label for="edit-font-size">Ukuran font</label>
+                            <span class="mono">{{ $captionFontSize }}</span>
+                        </div>
+                        <input type="range" id="edit-font-size" min="40" max="120"
+                               wire:model.live.debounce.300ms="captionFontSize">
+                    </div>
+
+                    <div class="field">
+                        <div class="row between">
+                            <label for="edit-pos-y">Posisi Y</label>
+                            <span class="mono">{{ $captionPosY }}</span>
+                        </div>
+                        <input type="range" id="edit-pos-y" min="200" max="1800"
+                               wire:model.live.debounce.300ms="captionPosY">
+                    </div>
+
+                    @if(count($clipWords) === 0)
+                        <div class="empty">
+                            <p>Tidak ada kata transkrip pada rentang ini. Caption tidak akan tampil di klip; geser trim ke area yang bertranskrip.</p>
+                        </div>
+                    @endif
+
+                    <div class="field">
+                        <label for="edit-cta">Call to action</label>
+                        <input type="text" id="edit-cta" wire:model="ctaText" placeholder="Teks CTA di klip">
+                    </div>
+
+                    <div class="field">
+                        <label for="edit-cta-preset">Preset CTA</label>
+                        <select id="edit-cta-preset" wire:model.live="ctaText">
+                            <option value="">Pilih preset</option>
+                            @foreach($this->ctaPresets() as $preset)
+                                <option value="{{ $preset }}">{{ $preset }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel rise" style="--i:3" aria-labelledby="edit-headline-title">
+                <div class="section-head">
+                    <h2 id="edit-headline-title">Judul &amp; musik latar</h2>
+                    <span class="tag">Opsional</span>
+                </div>
+
+                <div class="edit-fields">
+                    <div class="field">
+                        <label for="edit-headline">Auto Headline (5 detik pertama)</label>
+                        <input type="text" id="edit-headline" wire:model.live="headlineText" maxlength="80"
+                               placeholder="Judul singkat untuk hook klip">
+                        <div class="row between">
+                            <p class="field-hint">Maksimal 80 karakter. Kosongkan kalau tidak perlu judul.</p>
+                            <span class="mono muted">{{ mb_strlen($headlineText) }}/80</span>
+                        </div>
+                        @error('headlineText') <p class="field-error">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="field">
+                        <label for="edit-headline-style">Gaya judul</label>
+                        <select id="edit-headline-style" wire:model.live="headlineStyle">
+                            @foreach($headlineStyles as $styleKey => $style)
+                                <option value="{{ $styleKey }}">{{ $style['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <span class="edit-label">Pratinjau judul</span>
+                        <div class="edit-headline-stage">
+                            <span class="edit-headline-preview {{ match ($headlineStyle) {
+                                'highlight' => 'edit-hl-highlight',
+                                'sticker' => 'edit-hl-sticker',
+                                default => 'edit-hl-marker',
+                            } }}">{{ trim($headlineText) !== '' ? $headlineText : 'Pratinjau judul klip' }}</span>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="edit-music">Musik latar</label>
+                        <select id="edit-music" wire:model.live="musicAssetId">
+                            <option value="">Tanpa musik</option>
+                            @foreach($musicAssets as $asset)
+                                <option value="{{ $asset->id }}">{{ $asset->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('musicAssetId') <p class="field-error">{{ $message }}</p> @enderror
+                        @if($musicAssets->isEmpty())
+                            <p class="field-hint">Belum ada trek musik. <a href="/assets" wire:navigate>Unggah musik di Aset</a>.</p>
+                        @endif
+                    </div>
+
+                    <div class="field">
+                        <div class="row between">
+                            <label for="edit-music-volume">Volume musik</label>
+                            <span class="mono">{{ $musicVolume }}%</span>
+                        </div>
+                        <input type="range" id="edit-music-volume" min="0" max="60" step="1"
+                               wire:model.live="musicVolume" @disabled($musicAssetId === null)>
+                        <p class="field-hint">
+                            @if($musicAssetId === null)
+                                Pilih trek musik dulu untuk mengatur volume.
+                            @else
+                                Volume relatif terhadap audio asli klip.
+                            @endif
+                        </p>
+                        @error('musicVolume') <p class="field-error">{{ $message }}</p> @enderror
                     </div>
                 </div>
 
-                <!-- CTA INPUT & PRESETS -->
-                <div style="margin-bottom: 20px;">
-                    <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px;">CALL TO ACTION OVERLAY (CTA)</label>
-                    <input type="text" wire:model="ctaText" placeholder="Contoh: Follow Halaman Ini 🔔" style="margin-bottom: 8px;">
-                    
-                    <select wire:model.live="ctaText" style="width: 100%; padding: 8px 12px; border-radius: 8px; font-size: 11px; background: var(--bg-surface-subtle); border: 1px solid var(--border-color); color: var(--text-color); cursor: pointer;">
-                        <option value="">-- Pilih Preset CTA Facebook --</option>
-                        @foreach($this->ctaPresets() as $preset)
-                            <option value="{{ $preset }}">{{ $preset }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-
-                <!-- EXPORT BUTTON -->
-                <button type="button" wire:click="saveAndApprove" class="btn" style="width: 100%; padding: 14px; font-size: 14px; font-weight: 800; background: var(--purple-gradient); box-shadow: 0 4px 18px rgba(154, 85, 255, 0.4); border-radius: 99px;">
-                    ⚡ Export &amp; Render Klip Ini
+                <button type="button" wire:click="saveAndApprove" class="btn btn-block">
+                    Export &amp; Render Klip Ini
                 </button>
-            </div>
-        </div>
+            </section>
+        </aside>
     </div>
 
-    <!-- CSS: 6 Premium Caption Animation Presets (Opus Clip / CapCut / Vizard style) -->
     <style>
-        /* Base word span — no default transition on transform to avoid fighting animations */
-        .cw { display: inline-block; transition: color 0.08s ease, opacity 0.1s ease; transform-origin: center bottom; }
+        /* ---------- Page frame ---------- */
+        .edit-page { display: flex; flex-direction: column; gap: var(--s-5); }
 
-        /* KARAOKE: active word neon highlight scale bounce, others white */
-        .anim-karaoke .cw { color: #ffffff; text-shadow: 0 1px 6px rgba(0,0,0,0.9), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
-        .anim-karaoke .cw.active { animation: cwKaraoke 0.15s ease-out forwards; }
-        @keyframes cwKaraoke { 0% { transform: scale(1.0); } 45% { transform: scale(1.22); } 100% { transform: scale(1.08); } }
+        .edit-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); font-size: 12px; color: var(--muted-ink); }
+        .edit-crumbs a { color: var(--muted-ink); }
+        .edit-crumbs a:hover { color: var(--ink); }
+        .edit-crumbs span[aria-current="page"] { color: var(--ink); font-weight: 600; }
 
-        /* POP: CapCut spring bounce pop per word */
-        .anim-pop .cw { color: #ffffff; text-shadow: 0 1px 6px rgba(0,0,0,0.9), -1px -1px 0 #000, 1px 1px 0 #000; opacity: 0.5; transform: scale(0.85); }
-        .anim-pop .cw.active { opacity: 1; animation: cwPop 0.22s cubic-bezier(0.34,1.56,0.64,1) forwards; }
-        @keyframes cwPop { 0% { transform: scale(0.5) rotate(-5deg); opacity: 0; } 70% { transform: scale(1.14) rotate(2deg); opacity: 1; } 100% { transform: scale(1.0) rotate(0); } }
+        .edit-hint { font-size: 12px; color: var(--muted-ink); line-height: 1.45; }
+        .edit-label { font-size: 12px; color: var(--muted-ink); font-weight: 500; }
+        .edit-time { font-size: 16px; font-weight: 650; }
 
-        /* GLOW: Vizard/Hormozi neon pulse on active word */
-        .anim-glow .cw { color: #ffffff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); opacity: 0.55; }
-        .anim-glow .cw.active { opacity: 1; animation: cwGlow 0.35s ease-in-out infinite alternate; }
-        @keyframes cwGlow {
-            0%   { text-shadow: 0 0 4px currentColor, 0 0 8px currentColor, 0 1px 4px rgba(0,0,0,0.9); }
-            100% { text-shadow: 0 0 16px currentColor, 0 0 32px currentColor, 0 0 52px currentColor, 0 1px 4px rgba(0,0,0,0.9); }
+        .edit-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--s-5); align-items: start; }
+        .edit-stage, .edit-inspector { display: flex; flex-direction: column; gap: var(--s-5); min-width: 0; }
+
+        /* ---------- Segmented controls (toggle, not action) ---------- */
+        .edit-seg {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            min-height: 34px; padding: 0 var(--s-3);
+            background: transparent; color: var(--ink);
+            border: 1px solid var(--border-ctl); border-radius: var(--r);
+            font: 600 12px/1 var(--font-sans); cursor: pointer;
+        }
+        .edit-seg:hover { background: var(--paper-2); }
+        .edit-seg[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+        .edit-seg[aria-pressed="true"]:hover { background: var(--graphite); }
+        @media (pointer: coarse) { .edit-seg { min-height: 44px; } }
+
+        .edit-tools, .edit-seg-wrap { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+        .edit-seg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 84px), 1fr)); gap: var(--s-2); }
+        .edit-seg-list { display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-4); }
+        .edit-seg-row { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) var(--s-3); border: 1px solid var(--border-soft); }
+        .edit-seg-index {
+            flex: none; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+            border: 1px solid var(--border-ctl); border-radius: var(--r); font-size: 11px;
         }
 
-        /* RISE: each new word slides up from below */
-        .anim-rise .cw { color: #ffffff; text-shadow: 0 1px 6px rgba(0,0,0,0.9), -1px -1px 0 #000, 1px 1px 0 #000; opacity: 0.45; }
-        .anim-rise .cw.active { opacity: 1; animation: cwRise 0.22s cubic-bezier(0.22,1,0.36,1) forwards; }
-        @keyframes cwRise { 0% { transform: translateY(16px) scale(0.9); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+        /* ---------- Canvas ---------- */
+        .edit-canvas {
+            position: relative; display: flex; flex-direction: column;
+            width: 100%; max-width: 280px; margin: 0 auto;
+            aspect-ratio: 9 / 16; overflow: hidden;
+            background: var(--paper-2); border: 1px solid var(--border-ctl);
+        }
+        .edit-canvas-video { display: block; width: 100%; height: 100%; object-fit: cover; }
+        .edit-canvas-fill { flex: 1 1 auto; min-height: 0; height: auto; }
+        .edit-canvas-frames { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+        .edit-canvas-half { position: relative; flex: 1 1 50%; min-height: 0; overflow: hidden; }
+        .edit-canvas-half-top { border-bottom: 1px solid var(--border-ctl); }
+        .edit-canvas-driver {
+            display: block; flex: none; width: 100%; height: 44px;
+            background: var(--paper); border-top: 1px solid var(--border-soft);
+        }
+        .edit-frame-label {
+            position: absolute; top: var(--s-1); left: var(--s-1);
+            padding: 1px 5px; background: var(--ink); color: var(--paper);
+            font: 600 10px/1.5 var(--font-mono);
+        }
 
-        /* BLOCK: solid neon background box on active word (MrBeast / IShowSpeed style) */
-        .anim-block .cw { color: #ffffff; text-shadow: none; border-radius: 5px; padding: 1px 5px; }
-        .anim-block .cw.active { color: #000000 !important; background: var(--block-color, #ffff00); text-shadow: none; animation: cwBlock 0.12s ease-out forwards; }
-        @keyframes cwBlock { 0% { transform: scale(0.88); } 60% { transform: scale(1.06); } 100% { transform: scale(1.0); } }
+        /* ---------- Manual crop ---------- */
+        .edit-crop-wrap { display: flex; flex-direction: column; gap: var(--s-3); }
+        .edit-crop-stage {
+            position: relative; width: 100%; max-width: 560px; margin: 0 auto;
+            aspect-ratio: 16 / 9; overflow: hidden; user-select: none;
+            background: var(--paper-2); border: 1px solid var(--border-ctl);
+        }
+        .edit-crop-source { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+        .edit-crop-window {
+            position: absolute; top: 0; bottom: 0; width: 31.64%;
+            display: flex; flex-direction: column; justify-content: space-between;
+            border: 2px solid var(--ink); background: transparent;
+            cursor: grab; touch-action: none; z-index: 10;
+        }
+        .edit-crop-window-head, .edit-crop-window-foot {
+            background: var(--ink); color: var(--paper);
+            font: 600 9px/1.6 var(--font-mono); text-align: center; pointer-events: none;
+        }
+        .edit-crop-range { display: flex; flex-direction: column; gap: var(--s-1); }
 
-        /* OFF: show only active word, no animation */
+        /* ---------- Caption live preview ---------- */
+        .edit-caption-overlay { position: absolute; left: 4%; right: 4%; text-align: center; pointer-events: none; z-index: 10; }
+
+        #caption-word-group, #caption-word-group-manual {
+            background: var(--paper); color: var(--ink); padding: 2px 6px;
+        }
+
+        .cw { display: inline-block; color: var(--ink); transform-origin: center bottom; }
+        .cw.active { background: var(--ink); color: var(--paper); }
+
+        .anim-karaoke .cw.active { animation: cwKaraoke .15s ease-out forwards; }
+        @keyframes cwKaraoke { 0% { transform: scale(1); } 45% { transform: scale(1.18); } 100% { transform: scale(1.06); } }
+
+        .anim-pop .cw { opacity: .5; transform: scale(.9); }
+        .anim-pop .cw.active { opacity: 1; animation: cwPop .22s cubic-bezier(.34, 1.56, .64, 1) forwards; }
+        @keyframes cwPop { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
+
+        .anim-glow .cw { opacity: .5; }
+        .anim-glow .cw.active { opacity: 1; animation: cwGlow .4s ease-in-out infinite alternate; }
+        @keyframes cwGlow { from { opacity: .55; } to { opacity: 1; } }
+
+        .anim-rise .cw { opacity: .45; }
+        .anim-rise .cw.active { opacity: 1; animation: cwRise .22s cubic-bezier(.22, 1, .36, 1) forwards; }
+        @keyframes cwRise { 0% { transform: translateY(12px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+
+        .anim-block .cw { padding: 0 3px; }
+        .anim-block .cw.active { animation: cwBlock .12s ease-out forwards; }
+        @keyframes cwBlock { 0% { transform: scale(.9); } 60% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
         .anim-off .cw { display: none; }
-        .anim-off .cw.active { display: inline-block; color: #ffffff; text-shadow: 0 1px 6px rgba(0,0,0,0.9), -1px -1px 0 #000, 1px 1px 0 #000; }
+        .anim-off .cw.active { display: inline-block; }
 
-        /* Canvas Jiggle-Drop — phone frame drops & bounces when Play is clicked */
-        @keyframes canvasJiggleDrop {
-            0%   { transform: translateY(0px)  rotate(0deg);    }
-            12%  { transform: translateY(-6px) rotate(-0.4deg); }
-            30%  { transform: translateY(8px)  rotate( 0.35deg);}
-            50%  { transform: translateY(-3px) rotate(-0.2deg); }
-            68%  { transform: translateY(2px)  rotate( 0.1deg); }
-            84%  { transform: translateY(-1px) rotate(0deg);    }
-            100% { transform: translateY(0px)  rotate(0deg);    }
+        @media (prefers-reduced-motion: reduce) {
+            .anim-karaoke .cw.active, .anim-pop .cw.active, .anim-glow .cw.active,
+            .anim-rise .cw.active, .anim-block .cw.active { animation: none; }
+            .anim-pop .cw, .anim-rise .cw, .anim-glow .cw { opacity: 1; transform: none; }
         }
-        #live-canvas-frame.canvas-jiggle {
-            animation: canvasJiggleDrop 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+
+        /* ---------- Transport + timeline ---------- */
+        .edit-transport { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+
+        .edit-trim-labels { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--s-3); }
+        .edit-trim-readout { display: flex; flex-direction: column; gap: 2px; }
+        .edit-trim-readout-end { align-items: flex-end; }
+
+        .edit-track {
+            position: relative; height: 40px; margin: var(--s-3) 0 var(--s-4);
+            background: var(--paper-2); border: 1px solid var(--border-ctl);
+            cursor: pointer; user-select: none; touch-action: none;
+        }
+        .edit-track-selection {
+            position: absolute; top: 0; bottom: 0;
+            background: transparent; border-left: 2px solid var(--ink); border-right: 2px solid var(--ink);
+            pointer-events: none;
+        }
+        .edit-track-playhead {
+            position: absolute; top: -4px; bottom: -4px; width: 2px;
+            background: var(--graphite); pointer-events: none; z-index: 5;
+        }
+        .edit-handle {
+            position: absolute; top: 0; bottom: 0; width: 12px;
+            transform: translateX(-50%); cursor: ew-resize; z-index: 4;
+        }
+        .edit-handle-start { background: var(--ink); }
+        .edit-handle-end { background: transparent; border: 2px solid var(--ink); }
+        @media (pointer: coarse) {
+            .edit-handle { width: 24px; }
+        }
+
+        /* ---------- Inspector fields ---------- */
+        .edit-fields { display: flex; flex-direction: column; gap: var(--s-4); margin-bottom: var(--s-5); }
+
+        /* ---------- Auto Headline live preview ---------- */
+        .edit-headline-stage {
+            padding: var(--s-4); border: 1.5px dashed var(--border-ctl); border-radius: var(--r);
+            background: var(--paper-2); text-align: center;
+        }
+        .edit-headline-preview {
+            display: inline-block; max-width: 100%; padding: 2px var(--s-3);
+            font-weight: 700; font-size: 1.25rem; line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+        .edit-hl-marker { color: var(--card); -webkit-text-stroke: 1.5px var(--ink); text-shadow: 0 1px 0 var(--ink); }
+        .edit-hl-highlight { color: var(--ink); background: var(--hl); }
+        .edit-hl-sticker { color: var(--card); background: var(--red); border-radius: var(--r); }
+        .edit-split-block { display: flex; flex-direction: column; gap: var(--s-2); padding-bottom: var(--s-3); margin-bottom: var(--s-3); border-bottom: 1px solid var(--border-soft); }
+        .edit-split-block:last-child { border-bottom: 0; padding-bottom: 0; margin-bottom: 0; }
+
+        /* ---------- Small screens ---------- */
+        @media (max-width: 900px) {
+            .edit-layout { grid-template-columns: minmax(0, 1fr); }
+            .edit-canvas { max-width: 240px; }
+        }
+        @media (max-width: 480px) {
+            .edit-transport .btn, .edit-transport .btn-secondary { flex: 1 1 auto; }
+            .edit-seg { flex: 1 1 auto; }
         }
     </style>
 
-    <!-- JS Studio Player Controls & Live Subtitle Engine -->
     <script>
         if (typeof window.previewInterval === 'undefined') window.previewInterval = null;
         if (typeof window.lastCaptionActiveIdx === 'undefined') window.lastCaptionActiveIdx = -1;
         if (typeof window.cfTimeupdateHandler === 'undefined') window.cfTimeupdateHandler = null;
-        if (typeof window.cfJiggleEnabled === 'undefined') window.cfJiggleEnabled = true;
-
-        // Toggle jiggle-drop effect ON/OFF
-        window.toggleJiggleEffect = function(btn) {
-            window.cfJiggleEnabled = !window.cfJiggleEnabled;
-            btn.textContent = window.cfJiggleEnabled ? '✦ ON' : '✦ OFF';
-            btn.className   = window.cfJiggleEnabled
-                ? 'btn'
-                : 'btn-outline';
-            btn.style.cssText = 'padding:4px 14px; font-size:10px; font-weight:800; border-radius:99px; cursor:pointer; transition:all 0.15s ease;';
-        };
 
         window.clipWordsData = @json($clipWords);
 
@@ -633,21 +724,21 @@
             }
         });
 
-        window.cfColorMap = { yellow:'#ffff00', pink:'#ff4d6d', orange:'#ff8c32', white:'#ffffff' };
+        // Color keys map to the monochrome plate tokens; the export applies the real hue.
+        window.cfColorMap = { yellow: 'var(--paper)', pink: 'var(--paper)', orange: 'var(--paper)', white: 'var(--paper)' };
 
         window.getActiveVideo = function() {
             return document.getElementById('editor-video-manual') || document.getElementById('editor-video');
         };
 
-        // ✅ FIX: Smart DOM diff — only rebuild innerHTML when word GROUP changes;
-        //         within same group, only swap active class + force reflow to re-trigger animation.
+        // Smart DOM diff: only rebuild innerHTML when word GROUP changes;
+        // within same group, only swap active class + force reflow to re-trigger animation.
         window.renderCaptionGroup = function(groupWords, activeInGroup, animation, activeColor) {
             ['caption-word-group', 'caption-word-group-manual'].forEach(id => {
                 const container = document.getElementById(id);
                 if (!container) return;
 
                 container.className = 'anim-' + animation;
-                container.style.setProperty('--block-color', activeColor);
 
                 const groupKey = groupWords.map(w => w.word).join('|');
 
@@ -677,7 +768,7 @@
             });
         };
 
-        // ✅ Singleton event listener for Live Subtitle Sync
+        // Singleton event listener for live subtitle sync
         window.initLiveSubtitleSync = function() {
             const video = window.getActiveVideo();
             if (!video) return;
@@ -715,7 +806,7 @@
                 const container = document.getElementById('caption-word-group') || document.getElementById('caption-word-group-manual');
                 const animation  = (container?.dataset.animation) || 'karaoke';
                 const colorKey   = (container?.dataset.color) || 'yellow';
-                const activeColor = window.cfColorMap[colorKey] || '#ffff00';
+                const activeColor = window.cfColorMap[colorKey] || 'var(--paper)';
 
                 window.renderCaptionGroup(group, activeInGroup, animation, activeColor);
             };
@@ -759,11 +850,16 @@
             }
         };
 
-        // ✅ Visual Timeline Scrubber Engine
+        // Visual timeline scrubber
         window.initTimelineScrubber = function() {
             const video = window.getActiveVideo();
             const track = document.getElementById('timeline-track');
             if (!video || !track) return;
+
+            const rootElem = track.closest('[wire\\:id]');
+            if (rootElem && window.Livewire) {
+                window.cfLivewireComp = Livewire.find(rootElem.getAttribute('wire:id'));
+            }
 
             const toMMSS = ms => {
                 const s = Math.floor(Math.max(0, ms) / 1000);
@@ -882,14 +978,6 @@
                 video.currentTime = (startMs || 0) / 1000;
                 video.play();
 
-                // Jiggle-drop effect on 9:16 canvas frame
-                const frame = document.getElementById('live-canvas-frame');
-                if (frame && window.cfJiggleEnabled) {
-                    frame.classList.remove('canvas-jiggle');
-                    void frame.offsetWidth; // force reflow so animation always restarts
-                    frame.classList.add('canvas-jiggle');
-                }
-
                 if (window.previewInterval) clearInterval(window.previewInterval);
 
                 window.cfTimeupdateHandler = function() {
@@ -947,7 +1035,7 @@
             }, 80);
         };
 
-        // ✅ Interactive 9:16 Manual Crop Drag Engine (Direct Inline + Global Window Handlers)
+        // Manual 9:16 crop drag
         window.startManualCropDrag = function(e) {
             const cropBox = document.getElementById('manual-crop-window');
             const container = document.getElementById('manual-crop-container');
@@ -1085,5 +1173,3 @@
         });
     </script>
 </div>
-
-

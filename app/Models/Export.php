@@ -32,6 +32,10 @@ class Export extends Model
         'last_error',
         'rendered_at',
         'caption_margin_v',
+        'headline_text',
+        'headline_style',
+        'music_asset_id',
+        'music_volume',
     ];
 
     protected $casts = [
@@ -42,7 +46,13 @@ class Export extends Model
         'split_top_crop_x' => 'float',
         'split_bottom_crop_x' => 'float',
         'segments' => 'array',
+        'music_volume' => 'integer',
     ];
+
+    public function musicAsset(): BelongsTo
+    {
+        return $this->belongsTo(Asset::class, 'music_asset_id');
+    }
 
     public function clipCandidate(): BelongsTo
     {

@@ -13,6 +13,17 @@ Times are float seconds; the PHP side converts to integer milliseconds.
 import os
 import tempfile
 
+# faster-whisper (ctranslate2) on Windows does not search the pip `nvidia-*-cu12`
+# wheels for cublas/cudnn DLLs; register them so WHISPER_DEVICE=cuda works.
+if os.name == "nt":
+    import glob
+    import site
+
+    for _sp in site.getsitepackages():
+        for _bin in glob.glob(os.path.join(_sp, "nvidia", "*", "bin")):
+            os.add_dll_directory(_bin)
+            os.environ["PATH"] = _bin + os.pathsep + os.environ["PATH"]
+
 from faster_whisper import WhisperModel
 from flask import Flask, jsonify, request
 

@@ -71,6 +71,66 @@ class ReviewVideoTest extends TestCase
         $this->assertSame("Pablo Sanchez is back and he's still HIM", $export->cta_text);
     }
 
+    public function test_approve_passes_headline_and_music_to_the_export(): void
+    {
+        [$video, $candidate] = $this->videoWithCandidate();
+
+        $music = \App\Models\Asset::create([
+            'kind' => \App\Models\Asset::KIND_MUSIC,
+            'name' => 'Lofi Bed',
+            'path' => 'assets/music/lofi.mp3',
+            'mime' => 'audio/mpeg',
+            'size_bytes' => 1024,
+        ]);
+
+        Livewire::test(ReviewVideo::class, ['video' => $video])
+            ->set('headlineText', '  Judul Hook  ')
+            ->set('headlineStyle', 'sticker')
+            ->set('musicAssetId', $music->id)
+            ->set('musicVolume', 35)
+            ->call('approve', $candidate->id)
+            ->assertHasNoErrors();
+
+        $export = Export::where('clip_candidate_id', $candidate->id)->firstOrFail();
+        $this->assertSame('Judul Hook', $export->headline_text);
+        $this->assertSame('sticker', $export->headline_style);
+        $this->assertSame($music->id, $export->music_asset_id);
+        $this->assertSame(35, $export->music_volume);
+    }
+
+    public function test_approve_rejects_a_music_id_that_is_not_a_music_asset(): void
+    {
+        [$video, $candidate] = $this->videoWithCandidate();
+
+        $image = \App\Models\Asset::create([
+            'kind' => \App\Models\Asset::KIND_IMAGE,
+            'name' => 'Logo',
+            'path' => 'assets/images/logo.png',
+            'mime' => 'image/png',
+            'size_bytes' => 512,
+        ]);
+
+        Livewire::test(ReviewVideo::class, ['video' => $video])
+            ->set('musicAssetId', $image->id)
+            ->call('approve', $candidate->id)
+            ->assertHasErrors('musicAssetId');
+
+        $this->assertSame(ClipCandidate::STATUS_PENDING, $candidate->fresh()->status);
+        $this->assertSame(0, Export::count());
+    }
+
+    public function test_approve_rejects_an_overlong_headline(): void
+    {
+        [$video, $candidate] = $this->videoWithCandidate();
+
+        Livewire::test(ReviewVideo::class, ['video' => $video])
+            ->set('headlineText', str_repeat('a', 81))
+            ->call('approve', $candidate->id)
+            ->assertHasErrors('headlineText');
+
+        $this->assertSame(0, Export::count());
+    }
+
     public function test_reject_marks_candidate_rejected_without_export(): void
     {
         [$video, $candidate] = $this->videoWithCandidate();

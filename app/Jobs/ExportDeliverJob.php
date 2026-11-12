@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\BrandKit;
 use App\Models\ClipCandidate;
 use App\Models\Export;
 use App\Models\PipelineJob;
@@ -52,7 +53,7 @@ class ExportDeliverJob implements ShouldQueue
         $pipelineJob = $this->markRunning($export);
 
         $disk = Storage::disk((string) config('autoclip.render.disk'));
-        $watermarkPath = config('autoclip.render.watermark_path');
+        $watermarkPath = $this->watermarkPath();
 
         if (is_string($watermarkPath) && $watermarkPath !== '' && is_file($watermarkPath)) {
             $oldRelative = $export->output_path;
@@ -80,6 +81,24 @@ class ExportDeliverJob implements ShouldQueue
             'export_id' => $export->id,
             'watermark' => $export->watermark_applied,
         ]);
+    }
+
+    /**
+     * Brand-kit logo wins over the configured watermark PNG.
+     */
+    private function watermarkPath(): ?string
+    {
+        $logo = BrandKit::current()->logo_path;
+        if (is_string($logo) && $logo !== '') {
+            $disk = Storage::disk((string) config('autoclip.assets.disk'));
+            if ($disk->exists($logo)) {
+                return $disk->path($logo);
+            }
+        }
+
+        $configured = config('autoclip.render.watermark_path');
+
+        return is_string($configured) ? $configured : null;
     }
 
     private function markRunning(Export $export): PipelineJob

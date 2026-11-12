@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Jobs\ReframeJob;
+use App\Models\BrandKit;
 use App\Models\ClipCandidate;
 use App\Models\Export;
 use RuntimeException;
@@ -32,7 +33,11 @@ class ClipReviewService
         ?string $captionFont = null,
         ?float $splitTopCropX = null,
         ?float $splitBottomCropX = null,
-        ?array $segments = null
+        ?array $segments = null,
+        ?string $headlineText = null,
+        ?string $headlineStyle = null,
+        ?int $musicAssetId = null,
+        ?int $musicVolume = null
     ): Export {
         $claimed = ClipCandidate::whereKey($candidate->getKey())
             ->whereIn('status', [ClipCandidate::STATUS_PENDING, ClipCandidate::STATUS_REJECTED])
@@ -50,13 +55,15 @@ class ClipReviewService
 
         $candidate->refresh();
 
+        $brand = BrandKit::current();
+
         $cta = $ctaText !== null && trim($ctaText) !== ''
             ? trim($ctaText)
-            : (string) config('autoclip.render.cta_text', '');
+            : (trim((string) $brand->cta_text) !== '' ? trim((string) $brand->cta_text) : (string) config('autoclip.render.cta_text', ''));
 
         $style = $captionStyle !== null && trim($captionStyle) !== ''
             ? trim($captionStyle)
-            : (string) config('autoclip.render.caption_style', 'default');
+            : (trim((string) $brand->caption_style) !== '' ? trim((string) $brand->caption_style) : (string) config('autoclip.render.caption_style', 'default'));
 
         $marginV = $captionMarginV !== null
             ? (int) $captionMarginV
@@ -64,7 +71,11 @@ class ClipReviewService
 
         $font = $captionFont !== null && trim($captionFont) !== ''
             ? trim($captionFont)
-            : 'Outfit';
+            : (trim((string) $brand->caption_font) !== '' ? trim((string) $brand->caption_font) : 'Outfit');
+
+        $headlineStyle = $headlineStyle !== null && trim($headlineStyle) !== ''
+            ? trim($headlineStyle)
+            : ($brand->headline_style ?: null);
 
         $export = Export::create([
             'clip_candidate_id' => $candidate->id,
@@ -79,6 +90,10 @@ class ClipReviewService
             'cta_text' => $cta,
             'status' => Export::STATUS_QUEUED,
             'caption_margin_v' => $marginV,
+            'headline_text' => $headlineText !== null && trim($headlineText) !== '' ? trim($headlineText) : null,
+            'headline_style' => $headlineStyle,
+            'music_asset_id' => $musicAssetId,
+            'music_volume' => $musicVolume ?? 20,
         ]);
 
         ReframeJob::dispatch($export->id);

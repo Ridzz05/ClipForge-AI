@@ -1,7 +1,11 @@
 <?php
 
+use App\Http\Controllers\AssetFileController;
 use App\Http\Controllers\OpenReelController;
 use App\Http\Controllers\VideoStreamController;
+use App\Livewire\AssetLibrary;
+use App\Livewire\BrandKitPage;
+use App\Livewire\Calendar;
 use App\Livewire\ClipEditor;
 use App\Livewire\Dashboard;
 use App\Livewire\Exports;
@@ -11,6 +15,16 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', Dashboard::class)->name('dashboard');
 
 Route::get('/exports', Exports::class)->name('exports');
+
+Route::get('/calendar', Calendar::class)->name('calendar');
+
+Route::get('/brand', BrandKitPage::class)->name('brand');
+
+Route::get('/assets', AssetLibrary::class)->name('assets');
+
+Route::get('/assets/{asset}/file', [AssetFileController::class, 'asset'])->name('assets.file');
+
+Route::get('/brand/logo', [AssetFileController::class, 'logo'])->name('brand.logo');
 
 Route::get('/videos/{video}/review', ReviewVideo::class)->name('videos.review');
 

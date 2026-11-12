@@ -7,6 +7,7 @@ use App\Models\PipelineJob;
 use App\Models\TranscriptSegment;
 use App\Services\FfprobeService;
 use App\Services\Reframe\CaptionRenderer;
+use App\Services\Reframe\MusicMixCommandBuilder;
 use App\Services\Reframe\FaceTrackingService;
 use App\Services\Reframe\FfmpegService;
 use App\Services\Reframe\ReframeCommandBuilder;
@@ -117,7 +118,9 @@ class ReframeJob implements ShouldQueue
                     $ctaText,
                     $segDurMs,
                     $export->caption_margin_v,
-                    $export->caption_font
+                    $export->caption_font,
+                    $sIdx === 0 ? $export->headline_text : null,
+                    $export->headline_style
                 ));
                 $temp[] = $segAssRelative;
                 $segAssPath = $exportDisk->path($segAssRelative);
@@ -170,7 +173,9 @@ class ReframeJob implements ShouldQueue
                 $ctaText,
                 $clipDurationMs,
                 $export->caption_margin_v,
-                $export->caption_font
+                $export->caption_font,
+                $export->headline_text,
+                $export->headline_style
             ));
             $temp[] = $assRelative;
             $assPath = $exportDisk->path($assRelative);
@@ -189,6 +194,28 @@ class ReframeJob implements ShouldQueue
                 splitBottomCropX: $export->split_bottom_crop_x,
             );
             $ffmpeg->run($args);
+        }
+
+        // Background music from the asset library, mixed under the clip audio.
+        $music = $export->music_asset_id !== null ? $export->musicAsset : null;
+        if ($music !== null) {
+            $assetsDisk = Storage::disk((string) config('autoclip.assets.disk'));
+            if ($assetsDisk->exists($music->path)) {
+                $mixedRelative = "exports/{$export->id}/".Str::uuid().'-mix.mp4';
+                $ffmpeg->run(app(MusicMixCommandBuilder::class)->build(
+                    $outputPath,
+                    $assetsDisk->path($music->path),
+                    $exportDisk->path($mixedRelative),
+                    (int) $export->music_volume,
+                ));
+                $exportDisk->delete($outputRelative);
+                $outputRelative = $mixedRelative;
+            } else {
+                Log::warning('Reframe: music asset file missing, rendering without music', [
+                    'export_id' => $export->id,
+                    'asset_id' => $music->id,
+                ]);
+            }
         }
 
         $export->update([

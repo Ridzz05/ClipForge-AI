@@ -110,6 +110,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Asset library (brand logo, background music, images)
+    |--------------------------------------------------------------------------
+    */
+    'assets' => [
+        'disk' => env('AUTOCLIP_ASSETS_DISK', 'local'),
+        'max_size_kb' => (int) env('AUTOCLIP_ASSET_MAX_KB', 51_200), // 50 MB
+        'music_mimes' => ['mp3', 'wav', 'm4a', 'aac', 'ogg'],
+        'image_mimes' => ['png', 'jpg', 'jpeg', 'webp'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Per-job hard timeouts in seconds (resource exhaustion mitigation).
     |--------------------------------------------------------------------------
     */

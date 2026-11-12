@@ -2,9 +2,13 @@
 
 namespace App\Livewire;
 
+use App\Models\Asset;
+use App\Models\BrandKit;
 use App\Models\ClipCandidate;
 use App\Models\Video;
 use App\Services\ClipReviewService;
+use App\Services\Reframe\CaptionRenderer;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -32,6 +36,12 @@ class ReviewVideo extends Component
     public int $captionMarginV = 320;
 
     public string $layout = 'single';
+
+    // --- Auto Headline & background music ---
+    public string $headlineText = '';
+    public string $headlineStyle = 'marker';
+    public ?int $musicAssetId = null;
+    public int $musicVolume = 20;
 
     // --- Caption Mood & Customizer State (Ref: clip_caption.png) ---
     public string $burnSubtitles = 'on'; // 'on' | 'off'
@@ -62,9 +72,15 @@ class ReviewVideo extends Component
     public function mount(Video $video): void
     {
         $this->video = $video;
-        // Seed with the configured default CTA so the field isn't empty.
-        $this->ctaText = (string) config('autoclip.render.cta_text', '');
-        $this->captionStyle = (string) config('autoclip.render.caption_style', 'default');
+        // Seed with brand defaults so the fields aren't empty; the operator can override.
+        $brand = BrandKit::current();
+        $this->ctaText = trim((string) $brand->cta_text) !== ''
+            ? (string) $brand->cta_text
+            : (string) config('autoclip.render.cta_text', '');
+        $this->captionStyle = trim((string) $brand->caption_style) !== ''
+            ? (string) $brand->caption_style
+            : (string) config('autoclip.render.caption_style', 'default');
+        $this->headlineStyle = (string) ($brand->headline_style ?: 'marker');
     }
 
     public function selectCandidate(int $id): void
@@ -156,6 +172,8 @@ class ReviewVideo extends Component
             return;
         }
 
+        $this->validate($this->exportRules());
+
         try {
             $styleKey = $this->burnSubtitles === 'off' ? 'none' : $this->captionStyle;
 
@@ -164,7 +182,16 @@ class ReviewVideo extends Component
                 $this->ctaText,
                 $styleKey,
                 $this->captionMarginV,
-                $this->layout
+                $this->layout,
+                null,
+                null,
+                0.25,
+                0.75,
+                null,
+                $this->headlineText,
+                $this->headlineStyle,
+                $this->musicAssetId,
+                $this->musicVolume
             );
         } catch (\RuntimeException $e) {
             $this->error = $e->getMessage();
@@ -175,6 +202,16 @@ class ReviewVideo extends Component
 
         $this->error = null;
         $this->dispatch('toast', message: "Klip #{$candidate->id} disetujui — render dimulai (export #{$export->id}).", type: 'success');
+    }
+
+    /** Validation for the Auto Headline + background music inputs. */
+    public static function exportRules(): array
+    {
+        return [
+            'headlineText' => ['nullable', 'string', 'max:80'],
+            'musicAssetId' => ['nullable', 'integer', Rule::exists('assets', 'id')->where('kind', Asset::KIND_MUSIC)],
+            'musicVolume' => ['required', 'integer', 'min:0', 'max:100'],
+        ];
     }
 
     public function reject(int $candidateId, ClipReviewService $review): void
@@ -208,7 +245,16 @@ class ReviewVideo extends Component
                     $this->ctaText,
                     $this->captionStyle,
                     $this->captionMarginV,
-                    $this->layout
+                    $this->layout,
+                    null,
+                    null,
+                    0.25,
+                    0.75,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
                 );
                 $count++;
             } catch (\Throwable $e) {}
@@ -238,6 +284,11 @@ class ReviewVideo extends Component
         return view('livewire.review-video', [
             'candidates' => $candidates,
             'poll' => $poll,
+            'musicAssets' => Asset::query()
+                ->where('kind', Asset::KIND_MUSIC)
+                ->orderBy('name')
+                ->get(['id', 'name']),
+            'headlineStyles' => CaptionRenderer::headlineStyles(),
         ]);
     }
 }

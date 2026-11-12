@@ -1,76 +1,77 @@
 <div @if($poll) wire:poll.4s @endif class="panel">
-    <div class="row between" style="margin-bottom: 20px;">
-        <h3 style="margin: 0; font-family: var(--font-title); font-size: 20px; font-weight: 800; color: var(--text-title);">
-            Aktivitas Pipeline Terbaru
-        </h3>
+<style>
+    .dash-feed-list { list-style: none; margin: 0; padding: 0; }
+    .dash-feed-item { padding: var(--s-3) 0; border-bottom: 1px dashed var(--border-soft); min-width: 0; }
+    .dash-feed-item:last-child { border-bottom: 0; }
+    .dash-feed-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); min-width: 0; }
+    .dash-feed-video { font-weight: 700; font-size: 0.875rem; }
+    .dash-feed-ref { font-size: 0.875rem; color: var(--muted-ink); max-width: 34ch; }
+    .dash-feed-error {
+        margin-top: var(--s-2); padding: var(--s-2); background: var(--hl);
+        border: 1.5px dashed var(--border-ctl); border-radius: var(--r);
+        font-size: 0.75rem; overflow-wrap: anywhere;
+    }
+    .dash-feed-live { display: inline-flex; align-items: center; gap: var(--s-2); font-size: 0.875rem; color: var(--muted-ink); }
+    .dash-mark-failed { border-style: dashed; border-color: var(--muted-ink); color: var(--muted-ink); }
+</style>
+    <div class="section-head">
+        <h2>Aktivitas Pipeline Terbaru</h2>
         @if($poll)
-            <span class="badge badge-purple">
-                <i class="ph ph-spinner-gap spin-rotate"></i>&nbsp;Live Feed
+            <span class="dash-feed-live">
+                <span class="spinner" aria-hidden="true"></span>Live feed
             </span>
         @endif
     </div>
 
     @if($events->isEmpty())
-        <div style="text-align: center; padding: 30px; color: var(--text-muted); font-size: 13px;">
-            Belum ada riwayat aktivitas pipeline yang tercatat.
+        <div class="empty">
+            <svg class="doodle" viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M16 10 L 48 10 L 48 54 L 16 54 Z" />
+                <path d="M24 22 L 40 22 M 24 32 L 40 32 M 24 42 L 34 42" />
+                <path d="M10 18 L 16 18 M 10 30 L 16 30 M 10 42 L 16 42" />
+            </svg>
+            <p>Belum ada riwayat aktivitas pipeline yang tercatat. Riwayat muncul setelah sebuah video masuk ke tahap pipeline.</p>
+            <a href="#upload-section" class="btn btn-sm btn-secondary">Ke area unggah</a>
         </div>
     @else
-        <!-- Timeline Layout -->
-        <div style="position: relative; padding-left: 20px; border-left: 2px dashed var(--border-color); display: flex; flex-direction: column; gap: 16px;">
+        <ul class="dash-feed-list">
             @foreach($events as $e)
                 @php
-                    [$badgeCls, $label] = match($e->status) {
-                        'done' => ['badge-green', 'Selesai'],
-                        'running' => ['badge-purple', 'Berjalan'],
-                        'queued' => ['badge-amber', 'Dalam Antrian'],
-                        'failed' => ['badge-red', 'Gagal'],
-                        default => ['badge-purple', $e->status],
+                    [$tagClass, $markOn, $label] = match($e->status) {
+                        'done' => ['tag', true, 'Selesai'],
+                        'running' => ['tag', false, 'Berjalan'],
+                        'queued' => ['tag tag-dashed', false, 'Dalam Antrian'],
+                        'failed' => ['tag tag-dashed', false, 'Gagal'],
+                        default => ['tag tag-dashed', false, $e->status],
                     };
-                    $dotColor = match($e->status) {
-                        'done' => '#10b981',
-                        'running' => 'var(--purple-primary)',
-                        'queued' => '#f59e0b',
-                        'failed' => '#ef4444',
-                        default => 'var(--purple-primary)',
-                    };
+                    $failed = $e->status === 'failed';
                 @endphp
-                
-                <div wire:key="pj-{{ $e->id }}" style="position: relative;">
-                    <!-- Timeline Node -->
-                    <div style="position: absolute; left: -27px; top: 12px; width: 12px; height: 12px; border-radius: 50%; background: {{ $dotColor }}; border: 2px solid var(--bg-surface); box-shadow: 0 0 10px {{ $dotColor }};"></div>
-                    
-                    <!-- Content Card -->
-                    <div class="row between" style="padding: 12px 18px; border-radius: 14px; border: 1px solid var(--border-color); background: var(--bg-surface-subtle); transition: all 0.2s ease;">
-                        <div class="row" style="gap: 12px; flex-wrap: wrap;">
-                            <span class="badge {{ $badgeCls }}" style="font-size: 10px;">
-                                @if(in_array($e->status,['running','queued']))
-                                    <i class="ph ph-spinner-gap spin-rotate"></i>
-                                @endif
-                                {{ ucfirst($e->stage) }} &middot; {{ $label }}
+
+                <li wire:key="pj-{{ $e->id }}" class="dash-feed-item">
+                    <div class="row row-wrap between" style="align-items: baseline">
+                        <div class="dash-feed-meta">
+                            <span class="{{ $tagClass }}">
+                                <span class="mark {{ $markOn ? 'mark-on' : '' }} {{ $failed ? 'dash-mark-failed' : '' }}" aria-hidden="true"></span>
+                                {{ ucfirst($e->stage) }} · {{ $label }}
                             </span>
 
-                            
-                            <span style="font-size: 12.5px; font-weight: 700; color: var(--text-title);">
-                                Video #{{ $e->video_id }}
-                            </span>
-                            
-                            <span style="font-size: 12px; color: var(--text-muted); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                {{ $e->video?->source_ref }}
-                            </span>
+                            <span class="dash-feed-video mono">Video #{{ $e->video_id }}</span>
+
+                            <span class="dash-feed-ref truncate">{{ $e->video?->source_ref }}</span>
                         </div>
-                        
-                        <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
+
+                        <time class="mono muted" datetime="{{ $e->updated_at?->toIso8601String() }}">
                             {{ $e->updated_at?->diffForHumans() }}
-                        </span>
+                        </time>
                     </div>
 
-                    @if($e->status==='failed' && $e->last_error)
-                        <div style="margin-top: 6px; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px; padding: 10px 14px; background: rgba(239, 68, 68, 0.08); color: #ef4444; font-size: 12px;">
+                    @if($failed && $e->last_error)
+                        <div class="dash-feed-error mono">
                             <strong>Log Error:</strong> {{ $e->last_error }}
                         </div>
                     @endif
-                </div>
+                </li>
             @endforeach
-        </div>
+        </ul>
     @endif
 </div>

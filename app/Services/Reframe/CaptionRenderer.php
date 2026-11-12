@@ -144,7 +144,9 @@ class CaptionRenderer
         string $ctaText = '',
         int $clipDurationMs = 0,
         ?int $customMarginV = null,
-        ?string $customFontName = null
+        ?string $customFontName = null,
+        ?string $headlineText = null,
+        ?string $headlineStyle = null
     ): string {
         $tpl = $this->templates[$style] ?? $this->templates['default'];
         if ($customMarginV !== null) {
@@ -155,12 +157,17 @@ class CaptionRenderer
             $tpl['Fontname'] = trim($customFontName);
         }
 
-        $header = $this->header($tpl, $playResX, $playResY);
+        $header = $this->header($tpl, $playResX, $playResY, $headlineStyle);
         $events = $this->events($words, $tpl);
 
         $cta = $this->ctaEvent($ctaText, $clipDurationMs);
         if ($cta !== '') {
             $events = $events === '' ? $cta : $events."\n".$cta;
+        }
+
+        $headline = $this->headlineEvent((string) $headlineText, $clipDurationMs);
+        if ($headline !== '') {
+            $events = $events === '' ? $headline : $events."\n".$headline;
         }
 
         return $header."\n".$events."\n";
@@ -172,9 +179,24 @@ class CaptionRenderer
     }
 
     /**
+     * Auto Headline looks (ASS colours are BGR). Box styles use BorderStyle 3,
+     * where OutlineColour paints the opaque box behind the text.
+     *
+     * @return array<string, array{label:string, primary:string, outline:string, borderStyle:int, outlineSize:int}>
+     */
+    public static function headlineStyles(): array
+    {
+        return [
+            'marker' => ['label' => 'Spidol', 'primary' => '&H00FFFFFF', 'outline' => '&H00000000', 'borderStyle' => 1, 'outlineSize' => 5],
+            'highlight' => ['label' => 'Stabilo', 'primary' => '&H00000000', 'outline' => '&H0000FFFF', 'borderStyle' => 3, 'outlineSize' => 12],
+            'sticker' => ['label' => 'Stiker', 'primary' => '&H00FFFFFF', 'outline' => '&H002828D1', 'borderStyle' => 3, 'outlineSize' => 12],
+        ];
+    }
+
+    /**
      * @param  array<string, string|int>  $tpl
      */
-    private function header(array $tpl, int $playResX, int $playResY): string
+    private function header(array $tpl, int $playResX, int $playResY, ?string $headlineStyle = null): string
     {
         $outline = $tpl['Outline'] ?? 4;
         $shadow = $tpl['Shadow'] ?? 1;
@@ -222,6 +244,28 @@ class CaptionRenderer
             1,
         ]);
 
+        // Auto Headline: top-centre, below the CTA line, large bold.
+        $hs = self::headlineStyles()[$headlineStyle ?? ''] ?? self::headlineStyles()['marker'];
+        $headlineLine = implode(',', [
+            'Headline',
+            $tpl['Fontname'],
+            (int) $tpl['Fontsize'] + 8,
+            $hs['primary'],
+            '&H000000FF',
+            $hs['outline'],
+            '&H64000000',
+            1,
+            0, 0, 0,
+            100, 100,
+            0, 0,
+            $hs['borderStyle'],
+            $hs['outlineSize'], 0,
+            8,
+            60, 60,
+            180,
+            1,
+        ]);
+
         return <<<ASS
         [Script Info]
         ScriptType: v4.00+
@@ -233,6 +277,7 @@ class CaptionRenderer
         Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
         Style: {$style}
         Style: {$ctaStyle}
+        Style: {$headlineLine}
 
         [Events]
         Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -254,6 +299,22 @@ class CaptionRenderer
         $end = $this->toAssTime(max(1, $clipDurationMs));
 
         return "Dialogue: 0,{$this->toAssTime(0)},{$end},CTA,,0,0,0,,{$text}";
+    }
+
+    /**
+     * Headline for the first seconds of the clip (hook). Returns '' when empty.
+     * Sanitised like captions so it can't inject ASS override tags.
+     */
+    private function headlineEvent(string $text, int $clipDurationMs): string
+    {
+        $text = $this->sanitize($text);
+        if ($text === '') {
+            return '';
+        }
+
+        $end = $this->toAssTime(max(1, min($clipDurationMs, 5000)));
+
+        return "Dialogue: 1,{$this->toAssTime(0)},{$end},Headline,,0,0,0,,{$text}";
     }
 
     /**

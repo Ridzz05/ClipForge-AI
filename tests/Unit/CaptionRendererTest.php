@@ -125,6 +125,48 @@ class CaptionRendererTest extends TestCase
         $this->assertCount(1, $ctaLines);
     }
 
+    // --- Auto Headline overlay -------------------------------------------
+
+    public function test_headline_is_burned_for_the_first_five_seconds(): void
+    {
+        $ass = $this->renderer->renderAss(
+            $this->words, 'default', 1080, 1920,
+            clipDurationMs: 30_000,
+            headlineText: 'Judul',
+            headlineStyle: 'sticker',
+        );
+
+        $this->assertStringContainsString('Style: Headline,', $ass);
+        $this->assertStringContainsString(',Headline,,0,0,0,,Judul', $ass);
+        // Ends at 5s, not the clip end.
+        $this->assertStringContainsString('Dialogue: 1,0:00:00.00,0:00:05.00,Headline,', $ass);
+    }
+
+    public function test_headline_text_cannot_inject_ass_override_tags(): void
+    {
+        $ass = $this->renderer->renderAss(
+            $this->words, 'default', 1080, 1920,
+            clipDurationMs: 30_000,
+            headlineText: "{\\an1}x\nDialogue: 0,0,0,CTA,,0,0,0,,pwned",
+            headlineStyle: 'marker',
+        );
+
+        $this->assertStringNotContainsString('{\\an1', $ass);
+        $headlineLines = array_filter(
+            explode("\n", $ass),
+            fn ($l) => str_contains($l, ',Headline,,'),
+        );
+        $this->assertCount(1, $headlineLines);
+        $this->assertStringContainsString('an1x Dialogue: 0,0,0,CTA,,0,0,0,,pwned', $ass);
+        $this->assertStringNotContainsString('{\an1', $ass);
+    }
+
+    public function test_no_headline_dialogue_when_text_empty(): void
+    {
+        $ass = $this->renderer->renderAss($this->words, 'default', 1080, 1920, clipDurationMs: 30_000);
+        $this->assertStringNotContainsString(',Headline,,', $ass);
+    }
+
     private function dialogueBlock(string $ass): string
     {
         $pos = strpos($ass, '[Events]');

@@ -36,6 +36,11 @@ Environment overrides:
 | `WHISPER_COMPUTE_TYPE` | `int8` | `float16` for GPU |
 | `WHISPER_PORT` | `9000` | must match `AUTOCLIP_WHISPER_ENDPOINT` |
 
+GPU (NVIDIA): `pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12==9.*"` into the venv,
+then run with `WHISPER_DEVICE=cuda WHISPER_COMPUTE_TYPE=float16`. `app.py` registers the
+wheel DLL folders itself on Windows. Measured on an RTX 3050 6GB with `large-v3-turbo`:
+60 s of audio in ~5 s (CPU int8 is roughly realtime).
+
 First run downloads the model weights (~500 MB for `small`).
 
 ## Verify

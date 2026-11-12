@@ -1,55 +1,80 @@
-<div @if($poll) wire:poll.4s @endif class="grid" style="gap: 24px;">
-    <!-- Breadcrumb -->
-    <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
-        <a href="/" wire:navigate style="color: var(--text-muted);"><i class="ph ph-house"></i> Dashboard</a>
-        <span>/</span>
-        <span style="color: var(--purple-primary);">Exports & Klip Vertikal</span>
-    </div>
+<div @if($poll) wire:poll.4s @endif class="stack">
+<style>
+    .exp-name { font-weight: 700; overflow-wrap: anywhere; }
+    .exp-meta {
+        color: var(--muted-ink); font-size: 0.875rem; margin-top: 2px;
+        display: flex; flex-wrap: wrap; gap: 2px var(--s-3);
+    }
 
-    <!-- Header -->
-    <div class="row between" style="align-items: flex-start;">
-        <div>
-            <h1 class="page-title">Daftar Klip Ekspor (9:16)</h1>
-            <p class="page-sub" style="margin-bottom:0;">Unduh hasil potongan klip vertikal berkualifikasi tinggi yang telah selesai di-render oleh pipeline.</p>
+    .exp-col-status { width: 160px; }
+    .exp-col-act { width: 220px; }
+
+    .exp-error { color: var(--graphite); font-size: 0.875rem; margin-top: var(--s-1); overflow-wrap: anywhere; }
+    .exp-error::before { content: "Penyebab: "; font-weight: 700; color: var(--ink); }
+
+    .exp-wait { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--muted-ink); font-size: 0.875rem; }
+    .exp-act { display: flex; gap: var(--s-2); justify-content: flex-end; flex-wrap: wrap; }
+    .exp-paths { color: var(--graphite); font-size: 0.875rem; }
+    .exp-paths a { white-space: nowrap; }
+    .exp-table { min-width: 560px; }
+
+    @media (max-width: 760px) {
+        .exp-col-status, .exp-col-act { width: auto; }
+        .exp-table { min-width: 0; }
+        .exp-table thead { display: none; }
+        .exp-table tbody, .exp-table tr, .exp-table td { display: block; width: 100%; }
+        .exp-table tr { padding: var(--s-4) 0; border-bottom: 1px dashed var(--border-soft); }
+        .exp-table td { padding: 0; border-bottom: 0; }
+        .exp-table td + td { margin-top: var(--s-3); }
+        .exp-act { justify-content: flex-start; }
+        .exp-act .btn { width: 100%; }
+    }
+</style>
+    <div class="page-head rise" style="--i:0">
+        <div class="row row-wrap between">
+            <h1>Klip Ekspor</h1>
+            @if($poll)
+                <span class="tag"><span class="spinner" aria-hidden="true"></span> Menunggu render selesai</span>
+            @endif
         </div>
-        @if($poll)
-            <span class="badge badge-purple" style="padding: 8px 16px;">
-                <i class="ph ph-spinner-gap spin-rotate"></i>&nbsp;Proses Rendering Aktif
-            </span>
-        @endif
+        <p>Klip vertikal hasil render pipeline. Unduh MP4, atau lanjutkan penyuntingan di OpenReel.</p>
+        <p class="exp-paths">
+            Klip yang sudah jadi bisa dijadwalkan di <a href="/calendar" wire:navigate>Kalender</a>,
+            dengan gaya bawaan dari <a href="/brand" wire:navigate>Brand kit</a>.
+        </p>
     </div>
 
-    <!-- Table Panel -->
-    <div class="panel">
-        @if($exports->isEmpty())
-            <div style="text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 14px;">
-                <i class="ph ph-film-strip" style="font-size: 42px; color: var(--purple-primary); margin-bottom: 12px; display: block;"></i>
-                Belum ada klip yang diekspor. Pergi ke 
-                <a href="/" wire:navigate style="font-weight: 700; color: var(--purple-primary);">Dashboard &rarr; Review Video</a> untuk menyetujui kandidat klip.
-            </div>
-        @else
-            <div style="overflow-x: auto;">
-                <table>
+    @if($exports->isEmpty())
+        <div class="empty rise" style="--i:1">
+            <svg class="doodle" viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M14 20 L 50 20 L 50 48 L 14 48 Z" />
+                <path d="M32 6 L 32 38" />
+                <path d="M22 28 L 32 38 L 42 28" />
+                <path d="M18 54 C 25 51, 40 57, 47 53" />
+            </svg>
+            <p>Belum ada klip yang diekspor. Klip muncul setelah sebuah kandidat disetujui dan render selesai.</p>
+            <p>Unggah video di Dashboard, lalu setujui kandidat klip di halaman review.</p>
+            <a href="/" wire:navigate class="btn btn-secondary">Buka Dashboard</a>
+        </div>
+    @else
+        <div class="panel rise" style="--i:1">
+            <div class="table-wrap">
+                <table class="exp-table">
                     <thead>
                         <tr>
-                            <th style="width:50px; text-align: center;">#</th>
-                            <th>Detail Video Sumber</th>
-                            <th style="width:100px; text-align: center;">Rasio</th>
-                            <th style="width:120px; text-align: center;">Watermark</th>
-                            <th style="width:160px;">Status Ekspor</th>
-                            <th style="width:240px; text-align: right;">Aksi</th>
+                            <th scope="col">Klip</th>
+                            <th scope="col" class="exp-col-status">Status</th>
+                            <th scope="col" class="exp-col-act">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($exports as $e)
                             @php
                                 $video = $e->clipCandidate?->video;
-                                $badgeCls = match($e->status) {
-                                    'rendered' => 'badge-green',
-                                    'rendering' => 'badge-purple',
-                                    'queued' => 'badge-amber',
-                                    'failed' => 'badge-red',
-                                    default => 'badge-purple',
+                                $tagCls = match($e->status) {
+                                    'rendered' => 'tag tag-solid',
+                                    'failed' => 'tag tag-dashed',
+                                    default => 'tag',
                                 };
                                 $label = match($e->status) {
                                     'rendered' => 'Selesai',
@@ -60,50 +85,35 @@
                                 };
                             @endphp
                             <tr wire:key="export-{{ $e->id }}">
-                                <td style="text-align: center; font-weight: 700; color: var(--text-muted);">{{ $e->id }}</td>
                                 <td>
-                                    <div style="max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight: 700; color: var(--text-title);">
-                                        {{ $video?->source_ref ?? '—' }}
+                                    <div class="exp-name">{{ $video?->source_ref ?? '—' }}</div>
+                                    <div class="exp-meta">
+                                        <span class="mono">Ekspor #{{ $e->id }}</span>
+                                        <span>Video #{{ $video?->id ?? '—' }}</span>
+                                        <span>Kandidat #{{ $e->clip_candidate_id }}</span>
+                                        <span class="mono">{{ $e->aspect_ratio }}</span>
+                                        <span>Watermark {{ $e->watermark_applied ? 'aktif' : 'tidak' }}</span>
                                     </div>
-                                    <span style="font-size:11px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px; margin-top: 2px;">
-                                        Video #{{ $video?->id ?? '—' }} &middot; Klip Kandidat #{{ $e->clip_candidate_id }}
-                                    </span>
-                                </td>
-                                <td style="text-align: center; font-weight: 600;">{{ $e->aspect_ratio }}</td>
-                                <td style="text-align: center;">
-                                    @if($e->watermark_applied)
-                                        <span class="badge badge-green">Aktif</span>
-                                    @else
-                                        <span style="color: var(--text-muted);">—</span>
-                                    @endif
                                 </td>
                                 <td>
-                                    <span class="badge {{ $badgeCls }}">
-                                        @if($e->status==='rendering' || $e->status==='queued')<i class="ph ph-spinner-gap spin-rotate"></i>@endif
+                                    <span class="{{ $tagCls }}">
+                                        @if($e->status === 'rendering' || $e->status === 'queued')
+                                            <span class="spinner" aria-hidden="true"></span>
+                                        @endif
                                         {{ $label }}
                                     </span>
-                                    @if($e->status==='failed' && $e->last_error)
-                                        <div style="font-size:10px; color: #ef4444; margin-top:4px; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ $e->last_error }}">
-                                            {{ $e->last_error }}
-                                        </div>
+                                    @if($e->status === 'failed' && $e->last_error)
+                                        <div class="exp-error">{{ $e->last_error }}</div>
                                     @endif
                                 </td>
-                                <td style="text-align: right;">
-                                    @if($e->status==='rendered' && $e->output_path)
-                                        <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center;">
-                                            <a href="/openreel/?video_url={{ urlencode('/api/exports/' . $e->id . '/download') }}" target="_blank" class="btn btn-sm btn-outline" style="border-color: #3b82f6; color: #3b82f6; font-weight: 700;">
-                                                <i class="ph ph-video"></i> Edit di OpenReel
-                                            </a>
-                                            <a href="/api/exports/{{ $e->id }}/download" class="btn btn-sm">
-                                                <i class="ph ph-download-simple"></i> Download MP4
-                                            </a>
-                                        </div>
-                                    @elseif($e->status==='failed')
-                                        <span style="color: var(--text-muted);">—</span>
+                                <td class="exp-act">
+                                    @if($e->status === 'rendered' && $e->output_path)
+                                        <a href="/api/exports/{{ $e->id }}/download" class="btn btn-sm">Unduh MP4</a>
+                                        <a href="/openreel/?video_url={{ urlencode('/api/exports/' . $e->id . '/download') }}" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">Edit di OpenReel</a>
+                                    @elseif($e->status === 'failed')
+                                        <span class="muted">Tidak ada unduhan</span>
                                     @else
-                                        <span style="font-size:12px; color: var(--purple-primary); font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                                            <i class="ph ph-spinner-gap spin-rotate"></i> Rendering...
-                                        </span>
+                                        <span class="exp-wait"><span class="spinner" aria-hidden="true"></span> Menunggu render</span>
                                     @endif
                                 </td>
                             </tr>
@@ -111,6 +121,6 @@
                     </tbody>
                 </table>
             </div>
-        @endif
-    </div>
+        </div>
+    @endif
 </div>

@@ -24,6 +24,9 @@ class ReframeJobTest extends TestCase
 
     private array $capturedFfmpegArgs = [];
 
+    /** @var array<int, array<int, string>> every ffmpeg arg set, in call order. */
+    private array $capturedFfmpegRuns = [];
+
     /** @var array<string, string> ASS files as they existed while ffmpeg ran. */
     private array $capturedAss = [];
 
@@ -50,6 +53,7 @@ class ReframeJobTest extends TestCase
         $ffmpeg = Mockery::mock(FfmpegService::class);
         $ffmpeg->shouldReceive('run')->andReturnUsing(function (array $args) {
             $this->capturedFfmpegArgs = $args;
+            $this->capturedFfmpegRuns[] = $args;
             foreach (Storage::disk('local')->allFiles() as $f) {
                 if (str_ends_with($f, '.ass')) {
                     $this->capturedAss[$f] = Storage::disk('local')->get($f);
@@ -165,6 +169,57 @@ class ReframeJobTest extends TestCase
         $this->assertDatabaseHas('pipeline_jobs', [
             'stage' => 'reframe', 'status' => 'failed', 'last_error' => 'ffmpeg boom',
         ]);
+    }
+
+    // --- Background music (asset library) --------------------------------
+
+    public function test_mixes_the_looped_music_track_when_the_export_has_one(): void
+    {
+        $export = $this->makeApprovedExport();
+
+        $music = \App\Models\Asset::create([
+            'kind' => \App\Models\Asset::KIND_MUSIC,
+            'name' => 'Lofi Bed',
+            'path' => 'assets/music/lofi.mp3',
+            'mime' => 'audio/mpeg',
+            'size_bytes' => 1024,
+        ]);
+        Storage::disk((string) config('autoclip.assets.disk'))->put($music->path, 'fake-audio');
+        $export->update(['music_asset_id' => $music->id, 'music_volume' => 20]);
+
+        $this->runJob($export);
+
+        $export->refresh();
+        $this->assertSame(Export::STATUS_RENDERED, $export->status);
+        // Two ffmpeg runs: the clip render, then the audio mix. Last one wins as output.
+        $this->assertCount(2, $this->capturedFfmpegRuns);
+        $mix = implode(' ', $this->capturedFfmpegRuns[1]);
+        $this->assertStringContainsString('amix', $mix);
+        $this->assertStringContainsString('-stream_loop', $mix);
+        $this->assertStringContainsString('volume=0.20', $mix);
+        Storage::disk('local')->assertExists($export->output_path);
+    }
+
+    public function test_renders_without_a_mix_when_the_music_file_is_missing(): void
+    {
+        $export = $this->makeApprovedExport();
+
+        $music = \App\Models\Asset::create([
+            'kind' => \App\Models\Asset::KIND_MUSIC,
+            'name' => 'Gone',
+            'path' => 'assets/music/gone.mp3',
+            'mime' => 'audio/mpeg',
+            'size_bytes' => 0,
+        ]);
+        $export->update(['music_asset_id' => $music->id, 'music_volume' => 20]);
+
+        $this->runJob($export);
+
+        $export->refresh();
+        $this->assertSame(Export::STATUS_RENDERED, $export->status);
+        $this->assertCount(1, $this->capturedFfmpegRuns);
+        $this->assertStringNotContainsString('amix', implode(' ', $this->capturedFfmpegRuns[0]));
+        Storage::disk('local')->assertExists($export->output_path);
     }
 
     public function test_missing_export_is_a_noop(): void

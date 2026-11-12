@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
+use App\Models\Asset;
+use App\Models\BrandKit;
 use App\Models\ClipCandidate;
 use App\Services\ClipReviewService;
+use App\Services\Reframe\CaptionRenderer;
 use App\Services\TranslationService;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -34,6 +38,12 @@ class ClipEditor extends Component
 
     // --- Format & Orientation Selector ---
     public string $renderFormat = 'face_916';
+
+    // --- Auto Headline & background music ---
+    public string $headlineText = '';
+    public string $headlineStyle = 'marker';
+    public ?int $musicAssetId = null;
+    public int $musicVolume = 20;
 
     // --- Framing Mode & Manual Crop State ---
     public string $cropMode = 'auto'; // 'auto' | 'manual'
@@ -77,7 +87,7 @@ class ClipEditor extends Component
             $this->autoPanPath = $jsPath;
             $this->cropMode = 'auto';
             $this->dispatch('auto-pan-updated', path: $jsPath);
-            $this->dispatch('toast', message: '⚡ AI Auto Framing aktif! Kamera akan slide mengikuti pembicara.', type: 'success');
+            $this->dispatch('toast', message: 'AI Auto Framing aktif. Kamera akan mengikuti pembicara.', type: 'success');
         } catch (\Throwable $e) {
             $this->dispatch('toast', message: 'Gagal menganalisis wajah: ' . $e->getMessage(), type: 'error');
         } finally {
@@ -136,7 +146,7 @@ class ClipEditor extends Component
                 $seg1 = ['start_ms' => $seg['start_ms'], 'end_ms' => $currentMs];
                 $seg2 = ['start_ms' => $currentMs, 'end_ms' => $seg['end_ms']];
                 array_splice($this->segments, $i, 1, [$seg1, $seg2]);
-                $this->dispatch('toast', message: '✂️ Segment berhasil dipotong pada timestamp ini!', type: 'success');
+                $this->dispatch('toast', message: 'Segment berhasil dipotong pada timestamp ini.', type: 'success');
                 return;
             }
         }
@@ -169,7 +179,15 @@ class ClipEditor extends Component
         $this->editEndMs = $candidate->end_ms;
         $this->editHookScore = $candidate->hook_score;
         $this->editRationale = $candidate->score_rationale ?? '';
-        $this->ctaText = (string) config('autoclip.render.cta_text', '');
+        // Seed with brand defaults; the operator can override before export.
+        $brand = BrandKit::current();
+        $this->ctaText = trim((string) $brand->cta_text) !== ''
+            ? (string) $brand->cta_text
+            : (string) config('autoclip.render.cta_text', '');
+        $this->captionFont = trim((string) $brand->caption_font) !== ''
+            ? (string) $brand->caption_font
+            : 'Outfit';
+        $this->headlineStyle = (string) ($brand->headline_style ?: 'marker');
         $this->segments = [
             ['start_ms' => $candidate->start_ms, 'end_ms' => $candidate->end_ms]
         ];
@@ -247,6 +265,8 @@ class ClipEditor extends Component
             'score_rationale' => $this->editRationale,
         ]);
 
+        $this->validate(ReviewVideo::exportRules());
+
         try {
             $styleKey = $this->burnSubtitles === 'off'
                 ? 'none'
@@ -267,11 +287,17 @@ class ClipEditor extends Component
                 $this->captionFont,
                 $this->splitTopCropX,
                 $this->splitBottomCropX,
-                count($this->segments) > 1 ? $this->segments : null
+                count($this->segments) > 1 ? $this->segments : null,
+                $this->headlineText,
+                $this->headlineStyle,
+                $this->musicAssetId,
+                $this->musicVolume
             );
 
             $this->dispatch('toast', message: "Klip #{$this->candidate->id} disetujui & sedang diekspor!", type: 'success');
             return redirect()->to('/exports');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Throwable $e) {
             $this->error = $e->getMessage();
             $this->dispatch('toast', message: $e->getMessage(), type: 'error');
@@ -280,6 +306,12 @@ class ClipEditor extends Component
 
     public function render()
     {
-        return view('livewire.clip-editor');
+        return view('livewire.clip-editor', [
+            'musicAssets' => Asset::query()
+                ->where('kind', Asset::KIND_MUSIC)
+                ->orderBy('name')
+                ->get(['id', 'name']),
+            'headlineStyles' => CaptionRenderer::headlineStyles(),
+        ]);
     }
 }
