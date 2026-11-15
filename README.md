@@ -210,7 +210,7 @@ pip install nvidia-cublas-cu12 "nvidia-cudnn-cu12==9.*"
 php artisan test
 ```
 
-Suite memakai fake untuk Whisper, LLM, dan FFmpeg, jadi tidak butuh service eksternal. Hasil terakhir: 182 test, 179 lulus. Tiga test `OpenReelTest` gagal karena aset `resources/openreel/` sedang tidak ada di working tree.
+Suite memakai fake untuk Whisper, LLM, dan FFmpeg, jadi tidak butuh service eksternal. Hasil terakhir: 194 test, semuanya lulus.
 
 ## Struktur singkat
 
