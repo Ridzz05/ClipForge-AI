@@ -33,6 +33,21 @@ class ReframePlannerTest extends TestCase
         $this->assertTrue($this->planner->isAlreadyVertical(1080, 1920));
     }
 
+    public function test_crop_size_follows_requested_output_ratio(): void
+    {
+        $square = $this->planner->cropSize(1920, 1080, '1:1');
+        $this->assertSame([1080, 1080], [$square['width'], $square['height']]);
+
+        $portrait45 = $this->planner->cropSize(1920, 1080, '4:5');
+        $this->assertSame([864, 1080], [$portrait45['width'], $portrait45['height']]);
+
+        $wide = $this->planner->cropSize(1080, 1920, '16:9');
+        $this->assertSame(1080, $wide['width']);
+        $this->assertSame(608, $wide['height']);
+
+        $this->assertSame([1080, 1350], array_values(ReframePlanner::renderSize('4:5')));
+    }
+
     public function test_no_faces_yields_static_centre_crop(): void
     {
         $path = $this->planner->panPath(1920, 1080, []);

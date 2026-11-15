@@ -30,14 +30,15 @@ class ClipEditor extends Component
     public string $burnSubtitles = 'on';
     public string $subtitleColor = 'yellow';
     public string $captionFont = 'Outfit';
-    public bool $glowEffect = false;
-    public string $captionAnimation = 'karaoke';
+    public string $captionAnimation = 'pop'; // pop, fade, rise, drop, zoom, blur, type, off
     public int $captionFontSize = 76;
     public int $captionPosY = 960;
     public int $captionPosX = 540;
 
     // --- Format & Orientation Selector ---
     public string $renderFormat = 'face_916';
+    public string $aspectRatio = '9:16'; // 9:16 | 1:1 | 4:5 | 16:9 (single layout only)
+    public string $captionEffect = 'none'; // none | outline | glow | shadow | box
 
     // --- Auto Headline & background music ---
     public string $headlineText = '';
@@ -69,9 +70,10 @@ class ClipEditor extends Component
             $dims = $ffprobe->dimensions($inputPath);
 
             $centers = $faces->sampleCenters($inputPath, $this->editStartMs, $this->editEndMs);
-            $rawPath = $planner->panPath($dims['width'], $dims['height'], $centers);
+            $ratio = $this->renderFormat === 'face_916' ? $this->aspectRatio : '9:16';
+            $rawPath = $planner->panPath($dims['width'], $dims['height'], $centers, $ratio);
 
-            $cropW = $planner->cropSize($dims['width'], $dims['height'])['width'];
+            $cropW = $planner->cropSize($dims['width'], $dims['height'], $ratio)['width'];
             $srcW = max(1, $dims['width']);
 
             // Convert panPath to normalized crop center X (0.0 to 1.0) and time (seconds)
@@ -291,7 +293,10 @@ class ClipEditor extends Component
                 $this->headlineText,
                 $this->headlineStyle,
                 $this->musicAssetId,
-                $this->musicVolume
+                $this->musicVolume,
+                $this->aspectRatio,
+                $this->captionAnimation,
+                $this->captionEffect
             );
 
             $this->dispatch('toast', message: "Klip #{$this->candidate->id} disetujui & sedang diekspor!", type: 'success');

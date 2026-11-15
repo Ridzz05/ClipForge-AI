@@ -7,6 +7,7 @@ namespace App\Livewire;
 use App\Exceptions\IngestValidationException;
 use App\Jobs\IngestUrlJob;
 use App\Models\Video;
+use App\Services\MediaCleanupService;
 use App\Services\SystemHealthService;
 use App\Services\VideoIngestService;
 use App\Services\YtDlpService;
@@ -129,43 +130,15 @@ class Dashboard extends Component
         $this->dispatch('toast', message: "URL diterima (video #{$video->id}). Mengunduh di background.", type: 'success');
     }
 
-    public function deleteVideo(int $id): void
+    public function deleteVideo(int $id, MediaCleanupService $cleanup): void
     {
         $video = Video::find($id);
-        if (!$video) {
+        if (! $video) {
             return;
         }
 
         try {
-            // 1. Delete source video folder
-            if ($video->storage_path) {
-                $dir = dirname($video->storage_path);
-                \Illuminate\Support\Facades\Storage::disk((string) config('autoclip.ingest.disk'))->deleteDirectory($dir);
-            } else {
-                // If it is a url-ingest video that hasn't finished, delete job dir
-                \Illuminate\Support\Facades\Storage::disk((string) config('autoclip.ingest.disk'))->deleteDirectory("videos/url-{$video->id}");
-            }
-
-            // 2. Delete exports folders & files
-            foreach ($video->clipCandidates as $candidate) {
-                foreach ($candidate->exports as $export) {
-                    if ($export->output_path) {
-                        \Illuminate\Support\Facades\Storage::disk((string) config('autoclip.render.disk'))->deleteDirectory("exports/{$export->id}");
-                    }
-                    $export->delete();
-                }
-                $candidate->delete();
-            }
-
-            // 3. Delete pipelines and transcript
-            $video->pipelineJobs()->delete();
-            if ($video->transcript) {
-                $video->transcript->segments()->delete();
-                $video->transcript->delete();
-            }
-
-            // 4. Delete the video row itself
-            $video->delete();
+            $cleanup->deleteVideo($video);
 
             $this->dispatch('toast', message: "Video #{$id} dan seluruh berkas/kandidat terkait berhasil dihapus.", type: 'success');
         } catch (\Throwable $e) {

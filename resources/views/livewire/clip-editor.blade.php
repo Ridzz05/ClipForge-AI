@@ -1,5 +1,13 @@
 @php
     $segCount = count($segments);
+    // Split layouts are always 9:16; the ratio picker only applies to the single layout.
+    $effRatio = $renderFormat === 'split_podcast' ? '9:16' : $aspectRatio;
+    $rs = \App\Services\Reframe\ReframePlanner::renderSize($effRatio);
+    $canvasMaxW = ['9:16' => 280, '4:5' => 340, '1:1' => 340, '16:9' => 480][$effRatio] ?? 280;
+    $canvasH = $canvasMaxW * $rs['height'] / $rs['width'];
+    // Width of the manual crop window relative to the 16:9 source stage.
+    $cropWinPct = min(100, round(($rs['width'] / $rs['height']) / (16 / 9) * 100, 2));
+    $capBottomPct = ($captionPosY / $rs['height']) * 100;
 @endphp
 
 <div class="edit-page">
@@ -34,7 +42,7 @@
     <div class="edit-layout">
         <!-- Stage: preview + trim + segments -->
         <div class="edit-stage">
-            <section class="panel tape rise" style="--i:0" aria-labelledby="edit-preview-title">
+            <section class="panel rise" style="--i:0" aria-labelledby="edit-preview-title">
                 <div class="section-head">
                     <h2 id="edit-preview-title">Pratinjau</h2>
                     <span class="tag mono">{{ $cropMode === 'auto' ? 'AUTO' : 'MANUAL' }}</span>
@@ -82,7 +90,7 @@
 
                 @if($cropMode === 'auto')
                     <!-- 9:16 live canvas -->
-                    <div id="live-canvas-frame" class="edit-canvas">
+                    <div id="live-canvas-frame" class="edit-canvas" style="aspect-ratio: {{ $rs['width'] }} / {{ $rs['height'] }}; max-width: {{ $canvasMaxW }}px;">
                         @if($renderFormat === 'split_podcast')
                             <div class="edit-canvas-frames">
                                 <div class="edit-canvas-half edit-canvas-half-top">
@@ -107,14 +115,15 @@
                         @endif
 
                         @if($burnSubtitles === 'on')
-                            <div id="subtitle-overlay" class="edit-caption-overlay" style="bottom: {{ ($captionPosY / 1920) * 100 }}%;">
+                            <div id="subtitle-overlay" class="edit-caption-overlay" style="bottom: {{ $capBottomPct }}%;">
                                 <div id="caption-word-group"
                                      data-animation="{{ $captionAnimation }}"
+                                     data-effect="{{ $captionEffect }}"
                                      data-color="{{ $subtitleColor }}"
-                                     data-fontsize="{{ ($captionFontSize / 1920) * 450 }}"
+                                     data-fontsize="{{ ($captionFontSize / $rs['height']) * $canvasH }}"
                                      style="
                                          font-family: '{{ $captionFont }}', sans-serif;
-                                         font-size: {{ max(12, (int) round(($captionFontSize / 1920) * 450)) }}px;
+                                         font-size: {{ max(12, (int) round(($captionFontSize / $rs['height']) * $canvasH)) }}px;
                                          font-weight: 800;
                                          text-transform: uppercase;
                                          line-height: 1.3;
@@ -155,18 +164,19 @@
                                  class="edit-crop-window"
                                  onmousedown="startManualCropDrag(event)"
                                  ontouchstart="startManualCropDrag(event)"
-                                 style="left: calc({{ $manualCropX * 100 }}% - 15.82%);">
-                                <div class="edit-crop-window-head">Bingkai 9:16</div>
+                                 style="left: calc({{ $manualCropX * 100 }}% - {{ $cropWinPct / 2 }}%); width: {{ $cropWinPct }}%;">
+                                <div class="edit-crop-window-head">Bingkai {{ $effRatio }}</div>
 
                                 @if($burnSubtitles === 'on')
-                                    <div id="subtitle-overlay-manual" class="edit-caption-overlay" style="bottom: {{ ($captionPosY / 1920) * 100 }}%;">
+                                    <div id="subtitle-overlay-manual" class="edit-caption-overlay" style="bottom: {{ $capBottomPct }}%;">
                                         <div id="caption-word-group-manual"
                                              data-animation="{{ $captionAnimation }}"
+                                             data-effect="{{ $captionEffect }}"
                                              data-color="{{ $subtitleColor }}"
-                                             data-fontsize="{{ ($captionFontSize / 1920) * 315 }}"
+                                             data-fontsize="{{ ($captionFontSize / $rs['height']) * 315 }}"
                                              style="
                                                  font-family: '{{ $captionFont }}', sans-serif;
-                                                 font-size: {{ max(10, (int) round(($captionFontSize / 1920) * 315)) }}px;
+                                                 font-size: {{ max(10, (int) round(($captionFontSize / $rs['height']) * 315)) }}px;
                                                  font-weight: 800;
                                                  text-transform: uppercase;
                                                  line-height: 1.3;
@@ -292,7 +302,7 @@
             <section class="panel rise" style="--i:0" aria-labelledby="edit-format-title">
                 <div class="section-head">
                     <h2 id="edit-format-title">Format</h2>
-                    <span class="tag mono">{{ strtoupper($renderFormat) }}</span>
+                    <span class="tag mono">{{ $effRatio }}</span>
                 </div>
 
                 <div class="edit-seg-wrap">
@@ -303,6 +313,21 @@
                             aria-pressed="{{ $renderFormat === 'split_podcast' ? 'true' : 'false' }}"
                             class="edit-seg">Split podcast (atas/bawah)</button>
                 </div>
+
+                @if($renderFormat === 'face_916')
+                    <div class="field" style="margin-top: var(--s-4);">
+                        <label id="edit-ratio-label">Rasio output</label>
+                        <div class="edit-seg-wrap" role="group" aria-labelledby="edit-ratio-label">
+                            @foreach(array_keys(\App\Services\Reframe\ReframePlanner::RATIOS) as $ratioKey)
+                                <button type="button" wire:click="$set('aspectRatio', '{{ $ratioKey }}')"
+                                        aria-pressed="{{ $aspectRatio === $ratioKey ? 'true' : 'false' }}"
+                                        class="edit-seg">{{ $ratioKey }}</button>
+                            @endforeach
+                        </div>
+                    </div>
+                @else
+                    <p class="field-hint" style="margin-top: var(--s-3);">Layout split selalu dirender 9:16.</p>
+                @endif
             </section>
 
             @if($renderFormat === 'split_podcast')
@@ -342,7 +367,7 @@
                 </section>
             @endif
 
-            <section class="panel tape rise" style="--i:2" aria-labelledby="edit-caption-title">
+            <section class="panel rise" style="--i:2" aria-labelledby="edit-caption-title">
                 <div class="section-head">
                     <h2 id="edit-caption-title">Caption</h2>
                     <span class="tag mono">{{ $burnSubtitles === 'on' ? 'AKTIF' : 'NONAKTIF' }}</span>
@@ -405,10 +430,21 @@
                     <div class="field">
                         <label id="edit-anim-label">Animasi</label>
                         <div class="edit-seg-grid" role="group" aria-labelledby="edit-anim-label">
-                            @foreach(['KARAOKE', 'POP', 'GLOW', 'RISE', 'BLOCK', 'OFF'] as $anim)
+                            @foreach(['POP', 'FADE', 'RISE', 'DROP', 'ZOOM', 'BLUR', 'TYPE', 'OFF'] as $anim)
                                 <button type="button" wire:click="$set('captionAnimation', '{{ strtolower($anim) }}')"
                                         aria-pressed="{{ $captionAnimation === strtolower($anim) ? 'true' : 'false' }}"
                                         class="edit-seg">{{ $anim }}</button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label id="edit-effect-label">Efek teks</label>
+                        <div class="edit-seg-grid" role="group" aria-labelledby="edit-effect-label">
+                            @foreach(['none' => 'TANPA', 'outline' => 'OUTLINE', 'glow' => 'GLOW', 'shadow' => 'BAYANGAN', 'box' => 'KOTAK'] as $fxKey => $fxLabel)
+                                <button type="button" wire:click="$set('captionEffect', '{{ $fxKey }}')"
+                                        aria-pressed="{{ $captionEffect === $fxKey ? 'true' : 'false' }}"
+                                        class="edit-seg">{{ $fxLabel }}</button>
                             @endforeach
                         </div>
                     </div>
@@ -621,32 +657,39 @@
         .cw { display: inline-block; color: var(--ink); transform-origin: center bottom; }
         .cw.active { background: var(--ink); color: var(--paper); }
 
-        .anim-karaoke .cw.active { animation: cwKaraoke .15s ease-out forwards; }
-        @keyframes cwKaraoke { 0% { transform: scale(1); } 45% { transform: scale(1.18); } 100% { transform: scale(1.06); } }
+        .anim-pop .cw.active { animation: cwPop .22s cubic-bezier(.34, 1.56, .64, 1) forwards; }
+        @keyframes cwPop { 0% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
-        .anim-pop .cw { opacity: .5; transform: scale(.9); }
-        .anim-pop .cw.active { opacity: 1; animation: cwPop .22s cubic-bezier(.34, 1.56, .64, 1) forwards; }
-        @keyframes cwPop { 0% { transform: scale(.6); opacity: 0; } 70% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
+        .anim-fade .cw.active { animation: cwFade .25s ease-out forwards; }
+        @keyframes cwFade { 0% { opacity: 0; } 100% { opacity: 1; } }
 
-        .anim-glow .cw { opacity: .5; }
-        .anim-glow .cw.active { opacity: 1; animation: cwGlow .4s ease-in-out infinite alternate; }
-        @keyframes cwGlow { from { opacity: .55; } to { opacity: 1; } }
-
-        .anim-rise .cw { opacity: .45; }
-        .anim-rise .cw.active { opacity: 1; animation: cwRise .22s cubic-bezier(.22, 1, .36, 1) forwards; }
+        .anim-rise .cw.active { animation: cwRise .22s cubic-bezier(.22, 1, .36, 1) forwards; }
         @keyframes cwRise { 0% { transform: translateY(12px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
 
-        .anim-block .cw { padding: 0 3px; }
-        .anim-block .cw.active { animation: cwBlock .12s ease-out forwards; }
-        @keyframes cwBlock { 0% { transform: scale(.9); } 60% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .anim-drop .cw.active { animation: cwDrop .22s cubic-bezier(.22, 1, .36, 1) forwards; }
+        @keyframes cwDrop { 0% { transform: translateY(-12px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+
+        .anim-zoom .cw.active { animation: cwZoom .22s ease-out forwards; }
+        @keyframes cwZoom { 0% { transform: scale(.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        .anim-blur .cw.active { animation: cwBlur .26s ease-out forwards; }
+        @keyframes cwBlur { 0% { filter: blur(6px); opacity: 0; } 100% { filter: blur(0); opacity: 1; } }
+
+        .anim-type .cw.active { animation: cwType .3s steps(8, end) forwards; }
+        @keyframes cwType { 0% { clip-path: inset(0 100% 0 0); } 100% { clip-path: inset(0 0 0 0); } }
 
         .anim-off .cw { display: none; }
         .anim-off .cw.active { display: inline-block; }
 
+        /* Text effects (monochrome approximation; real colours are applied at render) */
+        .fx-outline .cw:not(.active) { -webkit-text-stroke: 1px var(--ink); color: transparent; }
+        .fx-glow { text-shadow: 0 0 6px var(--ink), 0 0 12px var(--ink); }
+        .fx-shadow { text-shadow: 3px 3px 0 var(--graphite); }
+        .fx-box { background: var(--ink) !important; color: var(--paper) !important; }
+        .fx-box .cw:not(.active) { color: var(--paper); }
+
         @media (prefers-reduced-motion: reduce) {
-            .anim-karaoke .cw.active, .anim-pop .cw.active, .anim-glow .cw.active,
-            .anim-rise .cw.active, .anim-block .cw.active { animation: none; }
-            .anim-pop .cw, .anim-rise .cw, .anim-glow .cw { opacity: 1; transform: none; }
+            .cw.active { animation: none !important; }
         }
 
         /* ---------- Transport + timeline ---------- */
@@ -685,7 +728,7 @@
 
         /* ---------- Auto Headline live preview ---------- */
         .edit-headline-stage {
-            padding: var(--s-4); border: 1.5px dashed var(--border-ctl); border-radius: var(--r);
+            padding: var(--s-4); border: 1px solid var(--border-ctl); border-radius: var(--r);
             background: var(--paper-2); text-align: center;
         }
         .edit-headline-preview {
@@ -693,9 +736,9 @@
             font-weight: 700; font-size: 1.25rem; line-height: 1.35;
             overflow-wrap: anywhere;
         }
-        .edit-hl-marker { color: var(--card); -webkit-text-stroke: 1.5px var(--ink); text-shadow: 0 1px 0 var(--ink); }
+        .edit-hl-marker { color: var(--paper); -webkit-text-stroke: 1.5px var(--ink); text-shadow: 0 1px 0 var(--ink); }
         .edit-hl-highlight { color: var(--ink); background: var(--hl); }
-        .edit-hl-sticker { color: var(--card); background: var(--red); border-radius: var(--r); }
+        .edit-hl-sticker { color: #FFFFFF; background: var(--accent-ink); border-radius: var(--r); }
         .edit-split-block { display: flex; flex-direction: column; gap: var(--s-2); padding-bottom: var(--s-3); margin-bottom: var(--s-3); border-bottom: 1px solid var(--border-soft); }
         .edit-split-block:last-child { border-bottom: 0; padding-bottom: 0; margin-bottom: 0; }
 
@@ -738,7 +781,7 @@
                 const container = document.getElementById(id);
                 if (!container) return;
 
-                container.className = 'anim-' + animation;
+                container.className = 'anim-' + animation + ' fx-' + (container.dataset.effect || 'none');
 
                 const groupKey = groupWords.map(w => w.word).join('|');
 
@@ -804,7 +847,7 @@
                 const activeInGroup = activeIdx - start;
 
                 const container = document.getElementById('caption-word-group') || document.getElementById('caption-word-group-manual');
-                const animation  = (container?.dataset.animation) || 'karaoke';
+                const animation  = (container?.dataset.animation) || 'pop';
                 const colorKey   = (container?.dataset.color) || 'yellow';
                 const activeColor = window.cfColorMap[colorKey] || 'var(--paper)';
 

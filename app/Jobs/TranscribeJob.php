@@ -58,7 +58,7 @@ class TranscribeJob implements ShouldQueue
         Log::info('Transcribe: start', ['video_id' => $video->id]);
 
         // Network/CPU-heavy call happens OUTSIDE the transaction so we don't
-        // hold a write lock on SQLite for the whole transcription.
+        // hold a write lock on the database for the whole transcription.
         $result = $whisper->transcribe($absolutePath);
 
         DB::transaction(function () use ($video, $result) {

@@ -24,19 +24,20 @@
     .dash-status-value { font-weight: 700; }
     .dash-status-note { font-size: 0.875rem; display: flex; flex-direction: column; gap: var(--s-1); }
 
-    /* Upload zone: a paper note taped to the panel. */
+    /* Upload zone: a recessed well inside the panel, with a connector ring. */
     .dash-note {
         position: relative;
         display: flex; flex-direction: column; align-items: center; gap: var(--s-3);
         padding: var(--s-6) var(--s-4) var(--s-5);
-        background: var(--paper);
-        border: 1.5px dashed var(--border-ctl);
-        border-radius: var(--r);
+        background: var(--paper-2);
+        border: 0;
+        border-radius: var(--r-md);
+        box-shadow: var(--shadow-well);
         text-align: center;
         overflow-wrap: anywhere;
     }
     .dash-note > * { max-width: 100%; min-width: 0; }
-    .dash-doodle { width: 46px; height: 46px; color: var(--red); }
+    .dash-doodle { width: 64px; height: 64px; color: var(--accent-ink); }
     .dash-drop-title { font-weight: 700; }
     .dash-drop-hint { color: var(--muted-ink); font-size: 0.875rem; }
     .dash-drop-file { font-size: 0.875rem; overflow-wrap: anywhere; }
@@ -45,8 +46,8 @@
 
     .dash-check {
         display: flex; align-items: flex-start; gap: var(--s-3);
-        padding: var(--s-3); background: var(--paper);
-        border: 1.5px dashed var(--border-soft); border-radius: var(--r);
+        padding: var(--s-3) var(--s-4); background: var(--paper-2);
+        border: 0; border-radius: var(--r-sm); box-shadow: var(--shadow-inset);
     }
     .dash-check label { font-size: 0.875rem; line-height: 1.5; cursor: pointer; }
     .dash-check strong { display: block; font-weight: 700; margin-bottom: var(--s-1); }
@@ -58,23 +59,23 @@
         min-height: 44px; padding: 0; background: none; border: 0;
         font: inherit; color: inherit; text-align: left; cursor: pointer;
     }
-    .dash-mark-failed { border-style: dashed; border-color: var(--muted-ink); color: var(--muted-ink); }
+    .dash-mark-failed { border-color: var(--accent-ink); color: var(--accent-ink); }
     .dash-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--s-2); flex-wrap: wrap; }
     .dash-reason { font-size: 0.75rem; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted-ink); }
 
     .dash-modal { position: fixed; inset: 0; z-index: var(--z-modal); display: flex; align-items: center; justify-content: center; padding: var(--s-4); }
     .dash-modal-scrim { position: absolute; inset: 0; background: var(--ink); opacity: .45; }
-    .dash-modal-panel { position: relative; width: 100%; max-width: 640px; max-height: 85dvh; overflow-y: auto; background: var(--card); }
-    .dash-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-4); border-bottom: 1.5px solid var(--ink); padding-bottom: var(--s-3); margin-bottom: var(--s-4); }
+    .dash-modal-panel { position: relative; width: 100%; max-width: 640px; max-height: 85dvh; overflow-y: auto; background: var(--paper); border-radius: var(--r-md); box-shadow: var(--shadow-lift); }
+    .dash-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border-ctl); padding-bottom: var(--s-3); margin-bottom: var(--s-4); }
     .dash-modal-source { font-size: 0.875rem; color: var(--muted-ink); overflow-wrap: anywhere; }
-    .dash-stage-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); padding: var(--s-3) 0; border-bottom: 1px dashed var(--border-soft); }
-    .dash-stage-error { margin-top: var(--s-2); padding: var(--s-2); border: 1.5px dashed var(--border-ctl); font-size: 0.75rem; overflow-wrap: anywhere; }
+    .dash-stage-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); padding: var(--s-3) 0; border-bottom: 1px solid var(--border-soft); }
+    .dash-stage-error { margin-top: var(--s-2); padding: var(--s-2) var(--s-3); border: 1px solid var(--accent-ink); border-radius: 12px; background: var(--hl); font-size: 0.75rem; overflow-wrap: anywhere; }
 
     @media (max-width: 760px) {
         .dash-table { min-width: 0; }
         .dash-table thead { display: none; }
         .dash-table tbody, .dash-table tr, .dash-table td { display: block; width: 100%; }
-        .dash-table tr { padding: var(--s-4) 0; border-bottom: 1px dashed var(--border-soft); }
+        .dash-table tr { padding: var(--s-4) 0; border-bottom: 1px solid var(--border-soft); }
         .dash-table td { padding: 0; border-bottom: 0; }
         .dash-table td + td { margin-top: var(--s-2); }
         .dash-source { max-width: 100%; }
@@ -159,7 +160,7 @@
             @endif
 
             <form wire:submit="save" class="stack">
-                <div class="dash-note tape"
+                <div class="dash-note"
                      x-data="{ isUploading: false, progress: 0 }"
                      x-on:livewire-upload-start="isUploading = true"
                      x-on:livewire-upload-finish="isUploading = false"
@@ -308,7 +309,7 @@
                                     <button type="button" class="dash-stages" wire:click="showStatusModal({{ $video->id }})"
                                             aria-label="Detail pipeline video {{ $video->id }}">
                                         @if($video->status === 'failed')
-                                            <span class="tag tag-dashed">Pipeline gagal</span>
+                                            <span class="tag tag-quiet">Pipeline gagal</span>
                                         @else
                                             @foreach($video->stageProgress() as $stage)
                                                 @php
@@ -324,7 +325,7 @@
                                                     };
                                                     $tagClass = match($stage['state']) {
                                                         'done' => 'tag',
-                                                        'failed' => 'tag tag-dashed',
+                                                        'failed' => 'tag tag-quiet',
                                                         default => 'tag',
                                                     };
                                                 @endphp
@@ -412,7 +413,7 @@
                                 <span class="{{ $markClass }}" aria-hidden="true"></span>
                                 {{ $progress['label'] }}
                             </strong>
-                            <span class="tag {{ $state === 'failed' ? 'tag-dashed' : '' }}">{{ $stateLabel }}</span>
+                            <span class="tag {{ $state === 'failed' ? 'tag-quiet' : '' }}">{{ $stateLabel }}</span>
                         </div>
                         @if($dbJob && $dbJob->last_error)
                             <div class="dash-stage-error mono">{{ $dbJob->last_error }}</div>

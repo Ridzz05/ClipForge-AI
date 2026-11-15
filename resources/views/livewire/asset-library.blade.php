@@ -13,7 +13,7 @@
         display: flex; align-items: center; gap: var(--s-3);
         padding: var(--s-3);
         border: 1px solid var(--border-soft); border-radius: var(--r);
-        background: var(--card);
+        background: var(--paper-2);
         min-width: 0;
     }
     .lib-row-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
@@ -25,7 +25,7 @@
 
     .lib-thumb {
         width: 56px; height: 56px; flex: none;
-        border: 1.5px solid var(--border-soft); border-radius: var(--r);
+        border: 1px solid var(--border-soft); border-radius: var(--r);
         overflow: hidden; background: var(--paper-2);
     }
     .lib-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -39,7 +39,7 @@
     </div>
 
     <div class="lib-layout">
-        <section class="panel tape rise" style="--i:0" aria-labelledby="lib-music-title">
+        <section class="panel rise" style="--i:0" aria-labelledby="lib-music-title">
             <div class="section-head">
                 <h2 id="lib-music-title">Musik</h2>
                 <span class="mono muted">{{ $musicAssets->count() }} berkas</span>

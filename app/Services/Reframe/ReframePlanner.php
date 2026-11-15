@@ -12,10 +12,20 @@ namespace App\Services\Reframe;
  */
 class ReframePlanner
 {
-    /** Target aspect: 9:16 (portrait). */
-    public const TARGET_W = 9;
+    /** Default output aspect: 9:16 (portrait). */
+    public const DEFAULT_RATIO = '9:16';
 
-    public const TARGET_H = 16;
+    /**
+     * Supported output ratios → render size in px (width, height).
+     *
+     * @var array<string, array{0:int, 1:int}>
+     */
+    public const RATIOS = [
+        '9:16' => [1080, 1920],
+        '1:1' => [1080, 1080],
+        '4:5' => [1080, 1350],
+        '16:9' => [1920, 1080],
+    ];
 
     /**
      * Exponential-smoothing factor for the pan path (0..1). Lower = smoother /
@@ -25,23 +35,37 @@ class ReframePlanner
     public const SMOOTHING = 0.15;
 
     /**
-     * Compute the crop width/height for a 9:16 window inside the source.
+     * Render size (px) for an output ratio; unknown ratios fall back to 9:16.
      *
      * @return array{width:int, height:int}
      */
-    public function cropSize(int $srcWidth, int $srcHeight): array
+    public static function renderSize(string $ratio): array
     {
-        // Height-driven: take full height, derive the 9:16 width.
+        [$w, $h] = self::RATIOS[$ratio] ?? self::RATIOS[self::DEFAULT_RATIO];
+
+        return ['width' => $w, 'height' => $h];
+    }
+
+    /**
+     * Compute the crop width/height for the output ratio inside the source.
+     *
+     * @return array{width:int, height:int}
+     */
+    public function cropSize(int $srcWidth, int $srcHeight, string $ratio = self::DEFAULT_RATIO): array
+    {
+        $out = self::renderSize($ratio);
+
+        // Height-driven: take full height, derive the width for the ratio.
         $cropH = $srcHeight;
-        $cropW = (int) round($srcHeight * self::TARGET_W / self::TARGET_H);
+        $cropW = (int) round($srcHeight * $out['width'] / $out['height']);
 
         if ($cropW <= $srcWidth) {
             return ['width' => $cropW, 'height' => $cropH];
         }
 
-        // Source is narrower than 9:16 (already portrait-ish): width-driven.
+        // Source is narrower than the ratio: width-driven.
         $cropW = $srcWidth;
-        $cropH = (int) round($srcWidth * self::TARGET_H / self::TARGET_W);
+        $cropH = (int) round($srcWidth * $out['height'] / $out['width']);
 
         return ['width' => $cropW, 'height' => min($cropH, $srcHeight)];
     }
@@ -53,9 +77,9 @@ class ReframePlanner
      * @param  array<int, array{t_ms:int, cx:float}>  $faceCenters  normalized cx in 0..1
      * @return array<int, array{t_ms:int, x:int}>
      */
-    public function panPath(int $srcWidth, int $srcHeight, array $faceCenters): array
+    public function panPath(int $srcWidth, int $srcHeight, array $faceCenters, string $ratio = self::DEFAULT_RATIO): array
     {
-        $cropW = $this->cropSize($srcWidth, $srcHeight)['width'];
+        $cropW = $this->cropSize($srcWidth, $srcHeight, $ratio)['width'];
         $maxX = max(0, $srcWidth - $cropW);
 
         // No detections → static centre crop (spec: fallback).
@@ -136,8 +160,8 @@ class ReframePlanner
      * Whether the source is already tall enough that no horizontal pan is
      * meaningful (crop spans full width).
      */
-    public function isAlreadyVertical(int $srcWidth, int $srcHeight): bool
+    public function isAlreadyVertical(int $srcWidth, int $srcHeight, string $ratio = self::DEFAULT_RATIO): bool
     {
-        return $this->cropSize($srcWidth, $srcHeight)['width'] >= $srcWidth;
+        return $this->cropSize($srcWidth, $srcHeight, $ratio)['width'] >= $srcWidth;
     }
 }

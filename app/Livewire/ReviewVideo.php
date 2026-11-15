@@ -8,6 +8,7 @@ use App\Models\ClipCandidate;
 use App\Models\Video;
 use App\Services\ClipReviewService;
 use App\Services\Reframe\CaptionRenderer;
+use App\Services\Reframe\ReframePlanner;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -37,6 +38,10 @@ class ReviewVideo extends Component
 
     public string $layout = 'single';
 
+    public string $aspectRatio = '9:16'; // 9:16 | 1:1 | 4:5 | 16:9 (single layout only)
+
+    public string $captionEffect = 'none'; // none | outline | glow | shadow | box
+
     // --- Auto Headline & background music ---
     public string $headlineText = '';
     public string $headlineStyle = 'marker';
@@ -46,7 +51,6 @@ class ReviewVideo extends Component
     // --- Caption Mood & Customizer State (Ref: clip_caption.png) ---
     public string $burnSubtitles = 'on'; // 'on' | 'off'
     public string $subtitleColor = 'yellow'; // yellow, pink, orange, white, split_yellow, split_orange, glow
-    public bool $glowEffect = false;
     public string $captionAnimation = 'rise'; // pop, fade, rise, drop, zoom, blur, type, off
     public int $captionFontSize = 76;
     public int $captionPosY = 960;
@@ -191,7 +195,10 @@ class ReviewVideo extends Component
                 $this->headlineText,
                 $this->headlineStyle,
                 $this->musicAssetId,
-                $this->musicVolume
+                $this->musicVolume,
+                $this->aspectRatio,
+                $this->captionAnimation,
+                $this->captionEffect
             );
         } catch (\RuntimeException $e) {
             $this->error = $e->getMessage();
@@ -211,6 +218,9 @@ class ReviewVideo extends Component
             'headlineText' => ['nullable', 'string', 'max:80'],
             'musicAssetId' => ['nullable', 'integer', Rule::exists('assets', 'id')->where('kind', Asset::KIND_MUSIC)],
             'musicVolume' => ['required', 'integer', 'min:0', 'max:100'],
+            'aspectRatio' => ['required', Rule::in(array_keys(ReframePlanner::RATIOS))],
+            'captionAnimation' => ['required', Rule::in(CaptionRenderer::ANIMATIONS)],
+            'captionEffect' => ['required', Rule::in(CaptionRenderer::EFFECTS)],
         ];
     }
 
@@ -254,7 +264,10 @@ class ReviewVideo extends Component
                     null,
                     null,
                     null,
-                    null
+                    null,
+                    $this->aspectRatio,
+                    $this->captionAnimation,
+                    $this->captionEffect
                 );
                 $count++;
             } catch (\Throwable $e) {}

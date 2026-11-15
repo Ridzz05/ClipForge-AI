@@ -67,12 +67,14 @@ class ReframeJob implements ShouldQueue
         $inputDisk = Storage::disk((string) config('autoclip.ingest.disk'));
         $inputPath = $inputDisk->path($video->storage_path);
 
-        $renderW = (int) config('autoclip.render.width');
-        $renderH = (int) config('autoclip.render.height');
+        $ratio = (string) ($export->aspect_ratio ?: ReframePlanner::DEFAULT_RATIO);
+        $render = ReframePlanner::renderSize($ratio);
+        $renderW = $render['width'];
+        $renderH = $render['height'];
 
         // 1. Source dimensions + crop plan.
         $dims = $ffprobe->dimensions($inputPath);
-        $crop = $planner->cropSize($dims['width'], $dims['height']);
+        $crop = $planner->cropSize($dims['width'], $dims['height'], $ratio);
 
         // 2. Face centres → smoothed pan or manual crop position.
         if ($export->manual_crop_x !== null) {
@@ -83,7 +85,7 @@ class ReframeJob implements ShouldQueue
             Log::info('Reframe: using manual crop X', ['manual_crop_x' => $export->manual_crop_x, 'computed_pan_x' => $panX]);
         } else {
             $centers = $faces->sampleCenters($inputPath, $candidate->start_ms, $candidate->end_ms);
-            $panPath = $planner->panPath($dims['width'], $dims['height'], $centers);
+            $panPath = $planner->panPath($dims['width'], $dims['height'], $centers, $ratio);
             if (count($panPath) > 1) {
                 $panX = $planner->buildCropXExpression($panPath, $candidate->start_ms);
                 Log::info('Reframe: using dynamic camera pan path', ['keyframes' => count($panPath)]);
@@ -120,7 +122,9 @@ class ReframeJob implements ShouldQueue
                     $export->caption_margin_v,
                     $export->caption_font,
                     $sIdx === 0 ? $export->headline_text : null,
-                    $export->headline_style
+                    $export->headline_style,
+                    $export->caption_animation,
+                    $export->caption_effect
                 ));
                 $temp[] = $segAssRelative;
                 $segAssPath = $exportDisk->path($segAssRelative);
@@ -175,7 +179,9 @@ class ReframeJob implements ShouldQueue
                 $export->caption_margin_v,
                 $export->caption_font,
                 $export->headline_text,
-                $export->headline_style
+                $export->headline_style,
+                $export->caption_animation,
+                $export->caption_effect
             ));
             $temp[] = $assRelative;
             $assPath = $exportDisk->path($assRelative);

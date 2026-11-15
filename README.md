@@ -2,7 +2,7 @@
 
 Pipeline self-hosted yang mengubah video panjang (podcast, webinar, livestream, UGC) menjadi klip vertikal 9:16 berkaption, siap untuk Reels, Shorts, dan TikTok. Konsepnya mirip OpusClip atau Vizard, tetapi berjalan di mesin sendiri: data tidak keluar, tanpa biaya langganan.
 
-Stack: Laravel 13, Livewire 4, SQLite, queue database, FFmpeg, faster-whisper, LLM lewat endpoint OpenAI-compatible.
+Stack: Laravel 13, Livewire 4, MariaDB, queue database, FFmpeg, faster-whisper, LLM lewat endpoint OpenAI-compatible.
 
 ---
 
@@ -63,8 +63,8 @@ Tiap kandidat menampilkan skor hook, rentang waktu, durasi, alasan dari LLM, dan
 - **Pratinjau** vertikal dengan mode framing: Auto framing AI, Kiri 25%, Tengah 50%, Kanan 75%, Manual. Ada *Play loop*.
 - **Trim**: ubah awal dan akhir klip, atau set dari posisi playhead.
 - **Split & jump-cut**: buang bagian filler di tengah klip; segmen disambung otomatis saat render.
-- **Format**: Single 9:16 atau Split podcast (atas/bawah).
-- **Caption**: bahasa terjemahan, burn subtitle on/off, font, warna, animasi (Karaoke, Pop, Glow, Rise, Block, Off), ukuran font, posisi Y, teks CTA.
+- **Format & rasio**: Single (9:16, 1:1, 4:5, atau 16:9) atau Split podcast/gaming (selalu 9:16). Rasio dipakai crop, render, dan pratinjau.
+- **Caption**: bahasa terjemahan, burn subtitle on/off, font, warna, animasi (Pop, Fade, Rise, Drop, Zoom, Blur, Type, Off), efek teks (Tanpa, Outline, Glow, Bayangan, Kotak), ukuran font, posisi Y, teks CTA.
 - **Judul & musik latar**: Auto Headline (maks. 80 karakter, tampil 5 detik pertama, beberapa gaya), pilih musik dari Aset, atur volume.
 - **Export & Render Klip Ini**: kirim ke render.
 
@@ -73,6 +73,10 @@ Tiap kandidat menampilkan skor hook, rentang waktu, durasi, alasan dari LLM, dan
 ![Exports](docs/screenshots/04-exports.png)
 
 Daftar klip hasil render beserta status. *Unduh MP4* mengambil file final; *Edit di OpenReel* membuka editor video di `/openreel`.
+
+### Proyek `/projects`
+
+Statistik pemakaian disk: jumlah video, total GB (sumber + ekspor), dan berkas yang bisa dibebaskan per video. *Bersihkan berkas kerja* menghapus sisa render sementara (`seg_*.mp4`, `captions*.ass`, `concat.txt`, file pra-mix) dari ekspor yang sudah selesai; klip final tidak disentuh dan ekspor yang masih dirender dilewati. Logika hapus video dipakai bersama oleh Dashboard dan `autoclip:prune`.
 
 ### 5. Kalender `/calendar`
 
@@ -144,9 +148,24 @@ Face tracker ada di `services/reframe` (setup sama, lihat README di foldernya).
 Jalankan tiap proses di terminal terpisah.
 
 ```bash
-php artisan serve                       # web, http://127.0.0.1:8000
+powershell -File deploy/serve-web.ps1   # web, http://127.0.0.1:8000 (Caddy + pool php-cgi)
 php artisan queue:work --tries=3        # worker pipeline
 ```
+
+Kenapa bukan `php artisan serve`: server bawaan PHP single-thread dan `PHP_CLI_SERVER_WORKERS` tidak didukung di Windows. Satu request lambat (mis. stream video di halaman review) memblok semua halaman lain. `deploy/serve-web.ps1` menjalankan 8 proses `php-cgi` di belakang Caddy (`-Workers N` untuk mengubah). Kebutuhan: `caddy.exe` (default `~/.clipforge/caddy/caddy.exe`, atau set `CLIPFORGE_CADDY`) dan `php-cgi.exe` di folder PHP. Di Linux pakai nginx/Caddy + php-fpm seperti biasa.
+
+### Database
+
+Default MariaDB 10.6+/MySQL 8+. Contoh instance dev terpisah (tidak menyentuh instalasi lain):
+
+```bash
+mariadb-install-db --datadir=%USERPROFILE%\.clipforge\mariadb-data --port=3307
+mariadbd --defaults-file=%USERPROFILE%\.clipforge\mariadb-data\my.ini
+mariadb -P3307 -uroot -e "CREATE DATABASE clipforge CHARACTER SET utf8mb4; CREATE USER 'clipforge'@'127.0.0.1' IDENTIFIED BY '...'; GRANT ALL ON clipforge.* TO 'clipforge'@'127.0.0.1';"
+php artisan migrate
+```
+
+Isi `DB_*` di `.env` (lihat `.env.example`). Test memakai SQLite `:memory:` (`phpunit.xml`), jadi tidak butuh server DB.
 
 ```bash
 cd services/whisper
@@ -201,6 +220,6 @@ app/Jobs/                IngestUrlJob, TranscribeJob, ScoreHighlightsJob, Refram
 app/Services/            Whisper, Scoring (LLM), Reframe (FFmpeg builder, caption ASS, musik), ClipReviewService
 services/whisper/        faster-whisper HTTP service
 services/reframe/        face tracking HTTP service
-public/css/clipforge.css tema sketch-note
+public/css/clipforge.css design system (sidebar + panel UI)
 docs/screenshots/        gambar untuk README ini
 ```

@@ -23,7 +23,7 @@
         .exp-table { min-width: 0; }
         .exp-table thead { display: none; }
         .exp-table tbody, .exp-table tr, .exp-table td { display: block; width: 100%; }
-        .exp-table tr { padding: var(--s-4) 0; border-bottom: 1px dashed var(--border-soft); }
+        .exp-table tr { padding: var(--s-4) 0; border-bottom: 1px solid var(--border-soft); }
         .exp-table td { padding: 0; border-bottom: 0; }
         .exp-table td + td { margin-top: var(--s-3); }
         .exp-act { justify-content: flex-start; }
@@ -73,7 +73,7 @@
                                 $video = $e->clipCandidate?->video;
                                 $tagCls = match($e->status) {
                                     'rendered' => 'tag tag-solid',
-                                    'failed' => 'tag tag-dashed',
+                                    'failed' => 'tag tag-quiet',
                                     default => 'tag',
                                 };
                                 $label = match($e->status) {

@@ -13,6 +13,12 @@ namespace App\Services\Reframe;
  */
 class CaptionRenderer
 {
+    /** Entrance animations a caption line can use (null = template default). */
+    public const ANIMATIONS = ['pop', 'fade', 'rise', 'drop', 'zoom', 'blur', 'type', 'off'];
+
+    /** Text effects layered over the template style (null = template default). */
+    public const EFFECTS = ['none', 'outline', 'glow', 'shadow', 'box'];
+
     /**
      * Named style templates. A caller passes a style key; unknown keys fall
      * back to 'default'. Values map to ASS V4+ style fields.
@@ -135,6 +141,8 @@ class CaptionRenderer
      * @param  string  $ctaText  optional fixed CTA burned at the top for the whole clip
      * @param  int  $clipDurationMs  clip length, used for the CTA's end time
      * @param  int|null  $customMarginV  optional custom vertical margin
+     * @param  string|null  $animation  one of self::ANIMATIONS; null keeps the template's own motion
+     * @param  string|null  $effect  one of self::EFFECTS; null keeps the template's own outline/shadow
      */
     public function renderAss(
         array $words,
@@ -146,7 +154,9 @@ class CaptionRenderer
         ?int $customMarginV = null,
         ?string $customFontName = null,
         ?string $headlineText = null,
-        ?string $headlineStyle = null
+        ?string $headlineStyle = null,
+        ?string $animation = null,
+        ?string $effect = null
     ): string {
         $tpl = $this->templates[$style] ?? $this->templates['default'];
         if ($customMarginV !== null) {
@@ -157,8 +167,10 @@ class CaptionRenderer
             $tpl['Fontname'] = trim($customFontName);
         }
 
+        $tpl = $this->applyEffect($tpl, $effect);
+
         $header = $this->header($tpl, $playResX, $playResY, $headlineStyle);
-        $events = $this->events($words, $tpl);
+        $events = $this->events($words, $tpl, in_array($animation, self::ANIMATIONS, true) ? $animation : null, $playResX, $playResY);
 
         $cta = $this->ctaEvent($ctaText, $clipDurationMs);
         if ($cta !== '') {
@@ -208,12 +220,12 @@ class CaptionRenderer
             $tpl['PrimaryColour'],
             '&H000000FF',        // SecondaryColour
             $tpl['OutlineColour'],
-            '&H64000000',        // BackColour (semi-transparent)
+            $tpl['BackColour'] ?? '&H64000000', // BackColour (semi-transparent by default)
             $tpl['Bold'],
             0, 0, 0,             // Italic, Underline, StrikeOut
             100, 100,            // ScaleX, ScaleY
             0, 0,                // Spacing, Angle
-            1,                   // BorderStyle (outline+shadow)
+            $tpl['BorderStyle'] ?? 1, // BorderStyle (1 outline+shadow, 3 opaque box)
             $outline,
             $shadow,             // Outline, Shadow
             $tpl['Alignment'],
@@ -318,15 +330,110 @@ class CaptionRenderer
     }
 
     /**
+     * Overlay a text effect on the template. Unknown/null effects leave it as is.
+     *
+     * @param  array<string, string|int>  $tpl
+     * @return array<string, string|int>
+     */
+    private function applyEffect(array $tpl, ?string $effect): array
+    {
+        switch ($effect) {
+            case 'none':
+                $tpl['Outline'] = 0;
+                $tpl['Shadow'] = 0;
+                break;
+            case 'outline':
+                $tpl['Outline'] = 5;
+                $tpl['Shadow'] = 0;
+                $tpl['OutlineColour'] = '&H00000000';
+                break;
+            case 'glow':
+                // Soft neon halo: coloured outline + blur on the line.
+                $tpl['Outline'] = 6;
+                $tpl['Shadow'] = 0;
+                $tpl['OutlineColour'] = '&H00FFCC00';
+                $tpl['LineTags'] = '\\blur5';
+                $tpl['BlurBase'] = 5;
+                break;
+            case 'shadow':
+                $tpl['Outline'] = 0;
+                $tpl['Shadow'] = 7;
+                $tpl['BackColour'] = '&H00000000';
+                break;
+            case 'box':
+                // BorderStyle 3: OutlineColour paints the opaque box behind the text.
+                $tpl['BorderStyle'] = 3;
+                $tpl['Outline'] = 10;
+                $tpl['Shadow'] = 0;
+                $tpl['OutlineColour'] = '&H00000000';
+                break;
+        }
+
+        return $tpl;
+    }
+
+    /**
+     * ASS override tags (no braces) for a line's entrance animation.
+     *
+     * @param  array<string, string|int>  $tpl
+     */
+    private function entranceTags(string $animation, array $tpl, int $playResX, int $playResY): string
+    {
+        $x = intdiv($playResX, 2);
+        $y = $playResY - (int) ($tpl['MarginV'] ?? 0);
+        $blurBase = (int) ($tpl['BlurBase'] ?? 0);
+
+        return match ($animation) {
+            'pop' => '\\fscx130\\fscy130\\t(0,100,\\fscx100\\fscy100)',
+            'fade' => '\\fad(250,0)',
+            'rise' => '\\an2\\move('.$x.','.($y + 60).','.$x.','.$y.',0,200)\\fad(120,0)',
+            'drop' => '\\an2\\move('.$x.','.($y - 60).','.$x.','.$y.',0,200)\\fad(120,0)',
+            'zoom' => '\\fscx60\\fscy60\\t(0,220,\\fscx100\\fscy100)\\fad(120,0)',
+            'blur' => '\\blur14\\t(0,260,\\blur'.$blurBase.')\\fad(200,0)',
+            default => '',
+        };
+    }
+
+    /**
+     * Typewriter reveal: every character starts fully transparent and is
+     * switched on $stepMs after the previous one. $cursorMs carries across
+     * words so a phrase types out continuously.
+     *
+     * @param  array<string, string|int>  $tpl
+     */
+    private function typed(string $text, int &$cursorMs, int $stepMs, array $tpl): string
+    {
+        $shadowAlpha = strtoupper(substr((string) ($tpl['BackColour'] ?? '&H64000000'), 2, 2));
+        $out = '';
+        foreach (mb_str_split($text) as $ch) {
+            $on = $cursorMs;
+            $out .= '{\\1a&HFF&\\3a&HFF&\\4a&HFF&\\t('.$on.','.($on + 1).',\\1a&H00&\\3a&H00&\\4a&H'.$shadowAlpha.'&)}'.$ch;
+            $cursorMs += $stepMs;
+        }
+
+        return $out;
+    }
+
+    private function tagBlock(string $tags): string
+    {
+        return $tags === '' ? '' : '{'.$tags.'}';
+    }
+
+    /**
      * @param  array<int, array{word:string, start_ms:int, end_ms:int}>  $words
      * @param  array<string, string|int>  $tpl
      */
-    private function events(array $words, array $tpl): string
+    private function events(array $words, array $tpl, ?string $animation, int $playResX, int $playResY): string
     {
         $mode = $tpl['Mode'] ?? 'pop';
         if ($mode === 'none') {
             return '';
         }
+
+        // Template default: pop templates bounce, karaoke templates stay still.
+        $anim = $animation ?? ($mode === 'pop' ? 'pop' : 'off');
+        $entrance = $this->entranceTags($anim, $tpl, $playResX, $playResY);
+        $lineTags = (string) ($tpl['LineTags'] ?? '');
 
         $isUppercase = (bool)($tpl['Uppercase'] ?? false);
         $lines = [];
@@ -336,7 +443,7 @@ class CaptionRenderer
             // Colors: White, White, Neon Green, White, Neon Yellow
             $multiColors = ['&H00FFFFFF', '&H00FFFFFF', '&H0000FF00', '&H00FFFFFF', '&H0000FFFF'];
 
-            // One word at a time with zoom bounce animation
+            // One word at a time, each with the entrance animation
             foreach ($words as $idx => $w) {
                 $start = $this->toAssTime((int) $w['start_ms']);
                 $end = $this->toAssTime((int) $w['end_ms']);
@@ -355,9 +462,15 @@ class CaptionRenderer
                     $colorOverride = "\\c{$color}";
                 }
 
-                // Zoom bounce: fscx130\fscy130 at start, transition to 100% over 100ms
-                $animatedText = "{\\fscx130\\fscy130\\t(0,100,\\fscx100\\fscy100){$colorOverride}}" . $text;
-                $lines[] = "Dialogue: 0,{$start},{$end},Default,,0,0,0,,{$animatedText}";
+                $body = $text;
+                if ($anim === 'type') {
+                    $durMs = max(1, (int) $w['end_ms'] - (int) $w['start_ms']);
+                    $step = max(15, min(45, intdiv((int) ($durMs * 0.7), max(1, mb_strlen($text)))));
+                    $cursor = 0;
+                    $body = $this->typed($text, $cursor, $step, $tpl);
+                }
+
+                $lines[] = "Dialogue: 0,{$start},{$end},Default,,0,0,0,,{$this->tagBlock($lineTags.$entrance.$colorOverride)}{$body}";
             }
         } else {
             // Karaoke Phrase Style: group words into phrases of 3 words
@@ -366,6 +479,11 @@ class CaptionRenderer
                 foreach ($chunk as $index => $activeWord) {
                     $wordStart = (int) $activeWord['start_ms'];
                     $wordEnd = (int) $activeWord['end_ms'];
+
+                    // The entrance plays once, when the phrase first appears.
+                    $first = $index === 0;
+                    $cursor = 0;
+                    $step = max(15, min(45, intdiv((int) (max(1, $wordEnd - $wordStart) * 0.7), 12)));
 
                     $lineWords = [];
                     foreach ($chunk as $i => $w) {
@@ -378,14 +496,19 @@ class CaptionRenderer
                             $cleanWord = mb_strtoupper($cleanWord);
                         }
 
+                        $shown = $first && $anim === 'type'
+                            ? $this->typed($cleanWord, $cursor, $step, $tpl)
+                            : $cleanWord;
+
                         if ($i === $index) {
                             $highlight = $tpl['HighlightColour'] ?? '&H0000FFFF';
                             $primary = $tpl['PrimaryColour'] ?? '&H00FFFFFF';
                             // Format: {\c<Highlight>}word{\c<Primary>}
-                            $lineWords[] = "{\\c{$highlight}}" . $cleanWord . "{\\c{$primary}}";
+                            $lineWords[] = "{\\c{$highlight}}" . $shown . "{\\c{$primary}}";
                         } else {
-                            $lineWords[] = $cleanWord;
+                            $lineWords[] = $shown;
                         }
+                        $cursor += $step;
                     }
 
                     $text = implode(' ', $lineWords);
@@ -395,7 +518,8 @@ class CaptionRenderer
 
                     $startStr = $this->toAssTime($wordStart);
                     $endStr = $this->toAssTime($wordEnd);
-                    $lines[] = "Dialogue: 0,{$startStr},{$endStr},Default,,0,0,0,,{$text}";
+                    $prefix = $this->tagBlock($lineTags.($first && $anim !== 'type' ? $entrance : ''));
+                    $lines[] = "Dialogue: 0,{$startStr},{$endStr},Default,,0,0,0,,{$prefix}{$text}";
                 }
             }
         }

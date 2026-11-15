@@ -36,6 +36,8 @@ class Export extends Model
         'headline_style',
         'music_asset_id',
         'music_volume',
+        'caption_animation',
+        'caption_effect',
     ];
 
     protected $casts = [

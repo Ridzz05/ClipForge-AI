@@ -99,4 +99,26 @@ class ClipCandidateReviewTest extends TestCase
 
         $this->assertEquals(0.35, $export->manual_crop_x);
     }
+
+    public function test_approve_persists_ratio_animation_and_effect_and_rejects_unknown_values(): void
+    {
+        $service = new \App\Services\ClipReviewService();
+
+        $ok = $service->approve($this->makeCandidate(), null, 'default', null, 'single', null, null, null, null, null, null, null, null, null, '1:1', 'rise', 'box');
+        $this->assertSame(['1:1', 'rise', 'box'], [$ok->aspect_ratio, $ok->caption_animation, $ok->caption_effect]);
+
+        $bad = $service->approve($this->makeCandidate(), null, 'default', null, 'single', null, null, null, null, null, null, null, null, null, '3:2', 'spin', 'neon');
+        $this->assertSame('9:16', $bad->aspect_ratio);
+        $this->assertNull($bad->caption_animation);
+        $this->assertNull($bad->caption_effect);
+    }
+
+    public function test_split_layout_is_always_rendered_9_16(): void
+    {
+        $service = new \App\Services\ClipReviewService();
+
+        $export = $service->approve($this->makeCandidate(), null, 'default', null, 'split_gaming', null, null, null, null, null, null, null, null, null, '16:9');
+
+        $this->assertSame('9:16', $export->aspect_ratio);
+    }
 }

@@ -108,10 +108,11 @@ class ReframeCommandBuilder
             ];
         }
 
-        // Single speaker vertical crop (default)
+        // Single speaker crop (any output ratio). Vertical offset centres the
+        // window when the source is taller than the crop (e.g. portrait → 16:9).
         $panExpr = is_numeric($panX) ? (string) $panX : "'".str_replace("'", "", (string) $panX)."'";
         $filter = sprintf(
-            'crop=%d:%d:%s:0,scale=%d:%d,subtitles=%s',
+            'crop=%d:%d:%s:(in_h-out_h)/2,scale=%d:%d,subtitles=%s',
             $crop['width'],
             $crop['height'],
             $panExpr,

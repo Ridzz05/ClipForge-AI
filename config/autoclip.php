@@ -96,8 +96,6 @@ return [
     |--------------------------------------------------------------------------
     */
     'render' => [
-        'width' => (int) env('AUTOCLIP_RENDER_WIDTH', 1080),
-        'height' => (int) env('AUTOCLIP_RENDER_HEIGHT', 1920),
         'caption_style' => env('AUTOCLIP_CAPTION_STYLE', 'default'),
         // Default on-screen CTA burned onto every clip (campaign requirement:
         // clips must carry a call-to-action). Empty disables the overlay.

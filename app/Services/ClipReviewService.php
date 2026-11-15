@@ -6,6 +6,8 @@ use App\Jobs\ReframeJob;
 use App\Models\BrandKit;
 use App\Models\ClipCandidate;
 use App\Models\Export;
+use App\Services\Reframe\CaptionRenderer;
+use App\Services\Reframe\ReframePlanner;
 use RuntimeException;
 
 /**
@@ -37,7 +39,10 @@ class ClipReviewService
         ?string $headlineText = null,
         ?string $headlineStyle = null,
         ?int $musicAssetId = null,
-        ?int $musicVolume = null
+        ?int $musicVolume = null,
+        ?string $aspectRatio = null,
+        ?string $captionAnimation = null,
+        ?string $captionEffect = null
     ): Export {
         $claimed = ClipCandidate::whereKey($candidate->getKey())
             ->whereIn('status', [ClipCandidate::STATUS_PENDING, ClipCandidate::STATUS_REJECTED])
@@ -77,12 +82,23 @@ class ClipReviewService
             ? trim($headlineStyle)
             : ($brand->headline_style ?: null);
 
+        // Split layouts stack two 9:16 halves; they only exist in portrait.
+        $layout = $layout ?? 'single';
+        $ratio = $layout === 'single' && isset(ReframePlanner::RATIOS[(string) $aspectRatio])
+            ? (string) $aspectRatio
+            : ReframePlanner::DEFAULT_RATIO;
+
+        $animation = in_array($captionAnimation, CaptionRenderer::ANIMATIONS, true) ? $captionAnimation : null;
+        $effect = in_array($captionEffect, CaptionRenderer::EFFECTS, true) ? $captionEffect : null;
+
         $export = Export::create([
             'clip_candidate_id' => $candidate->id,
-            'aspect_ratio' => '9:16',
+            'aspect_ratio' => $ratio,
+            'caption_animation' => $animation,
+            'caption_effect' => $effect,
             'caption_style' => $style,
             'caption_font' => $font,
-            'layout' => $layout ?? 'single',
+            'layout' => $layout,
             'manual_crop_x' => $manualCropX,
             'split_top_crop_x' => $splitTopCropX ?? 0.25,
             'split_bottom_crop_x' => $splitBottomCropX ?? 0.75,

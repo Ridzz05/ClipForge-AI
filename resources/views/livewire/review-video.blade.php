@@ -23,7 +23,7 @@
         .rev-toggles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 84px), 1fr)); gap: var(--s-2); }
         .rev-slider-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); font-size: 0.9375rem; }
         .rev-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-        .rev-cand { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4) 0; border-top: 1.5px dashed var(--border-soft); min-width: 0; }
+        .rev-cand { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4) 0; border-top: 1px solid var(--border-soft); min-width: 0; }
         .rev-cand:first-of-type { border-top: 0; padding-top: 0; }
         .rev-cand-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-4); }
         .rev-score { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 26px; font-weight: 600; line-height: 1; color: var(--ink); }
@@ -39,12 +39,12 @@
             font-weight: 700; font-size: 1.25rem; line-height: 1.35;
             overflow-wrap: anywhere; text-align: center;
         }
-        .rev-hl-marker { color: var(--card); -webkit-text-stroke: 1.5px var(--ink); text-shadow: 0 1px 0 var(--ink); }
+        .rev-hl-marker { color: var(--paper-2); -webkit-text-stroke: 1.5px var(--ink); text-shadow: 0 1px 0 var(--ink); }
         .rev-hl-highlight { color: var(--ink); background: var(--hl); }
-        .rev-hl-sticker { color: var(--card); background: var(--red); border-radius: var(--r); }
+        .rev-hl-sticker { color: #FFFFFF; background: var(--accent-ink); border-radius: var(--r); }
         .rev-headline-stage {
-            padding: var(--s-4); border: 1.5px dashed var(--border-ctl); border-radius: var(--r);
-            background: var(--paper-2); text-align: center;
+            padding: var(--s-4); border: 0; border-radius: var(--r-md);
+            background: var(--paper-2); box-shadow: var(--shadow-well); text-align: center;
         }
         @media (max-width: 768px) {
             .rev-layout { grid-template-columns: minmax(0, 1fr); }
@@ -83,7 +83,7 @@
         <div class="rev-col">
             @if($editingId === null)
 
-                <div class="panel tape rev-panel rise" style="--i:0">
+                <div class="panel rev-panel rise" style="--i:0">
                     <div class="section-head" style="margin-bottom: 0;">
                         <h2>Video sumber</h2>
                         @if($video->duration_seconds)
@@ -100,7 +100,7 @@
                 <div class="panel rev-panel rise" style="--i:1">
                     <div class="section-head" style="margin-bottom: 0;">
                         <h2>Gaya caption</h2>
-                        <span class="tag tag-dashed">Mood caption</span>
+                        <span class="tag tag-quiet">Mood caption</span>
                     </div>
 
                     <div class="field">
@@ -132,6 +132,17 @@
                             @foreach(['POP', 'FADE', 'RISE', 'DROP', 'ZOOM', 'BLUR', 'TYPE', 'OFF'] as $anim)
                                 <button type="button" class="btn btn-sm {{ $captionAnimation === strtolower($anim) ? '' : 'btn-secondary' }}"
                                         wire:click="$set('captionAnimation', '{{ strtolower($anim) }}')">{{ $anim }}</button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <span class="rev-label" id="rev-effect-label">Efek teks</span>
+                        <div class="rev-toggles" role="group" aria-labelledby="rev-effect-label">
+                            @foreach(['none' => 'TANPA', 'outline' => 'OUTLINE', 'glow' => 'GLOW', 'shadow' => 'BAYANGAN', 'box' => 'KOTAK'] as $fxKey => $fxLabel)
+                                <button type="button" class="btn btn-sm {{ $captionEffect === $fxKey ? '' : 'btn-secondary' }}"
+                                        aria-pressed="{{ $captionEffect === $fxKey ? 'true' : 'false' }}"
+                                        wire:click="$set('captionEffect', '{{ $fxKey }}')">{{ $fxLabel }}</button>
                             @endforeach
                         </div>
                     </div>
@@ -215,7 +226,7 @@
             <div class="panel rev-panel rise" style="--i:1">
                 <div class="section-head" style="margin-bottom: 0;">
                     <h2>Pengaturan ekspor &amp; subtitle</h2>
-                    <span class="tag tag-dashed">Dipakai saat approve</span>
+                    <span class="tag tag-quiet">Dipakai saat approve</span>
                 </div>
                 <p class="rev-hint">Teks CTA, layout, dan gaya subtitle dipakai saat kandidat disetujui.</p>
 
@@ -244,6 +255,18 @@
                         <option value="single">Single Speaker Crop (9:16 Face Tracking)</option>
                         <option value="split_gaming">Gaming Split-Screen (Facecam Atas + Gameplay Bawah)</option>
                     </select>
+                </div>
+
+                <div class="field">
+                    <label for="rev-ratio">Rasio output</label>
+                    <select id="rev-ratio" wire:model="aspectRatio" @disabled($layout !== 'single')>
+                        @foreach(array_keys(\App\Services\Reframe\ReframePlanner::RATIOS) as $ratioKey)
+                            <option value="{{ $ratioKey }}">{{ $ratioKey }}</option>
+                        @endforeach
+                    </select>
+                    @if($layout !== 'single')
+                        <p class="field-hint">Layout split selalu dirender 9:16.</p>
+                    @endif
                 </div>
 
                 <div class="field">
@@ -347,7 +370,7 @@
                         [$sCls, $sLabel, $sMark] = match ($c->status) {
                             'approved' => ['tag tag-solid', 'Disetujui · Rendering', 'mark mark-on'],
                             'exported' => ['tag tag-solid', 'Selesai Diekspor', 'mark mark-on'],
-                            'rejected' => ['tag tag-dashed', 'Ditolak', 'mark'],
+                            'rejected' => ['tag tag-quiet', 'Ditolak', 'mark'],
                             default => ['tag', 'Menunggu Tinjauan', 'mark'],
                         };
                         $fmt = fn ($ms) => gmdate('i:s', intdiv($ms, 1000));

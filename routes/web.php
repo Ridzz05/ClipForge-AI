@@ -9,12 +9,15 @@ use App\Livewire\Calendar;
 use App\Livewire\ClipEditor;
 use App\Livewire\Dashboard;
 use App\Livewire\Exports;
+use App\Livewire\Projects;
 use App\Livewire\ReviewVideo;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', Dashboard::class)->name('dashboard');
 
 Route::get('/exports', Exports::class)->name('exports');
+
+Route::get('/projects', Projects::class)->name('projects');
 
 Route::get('/calendar', Calendar::class)->name('calendar');
 

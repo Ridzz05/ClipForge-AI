@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Models\Export;
-use App\Models\Video;
+use App\Services\MediaCleanupService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Manual retention: removes failed videos (and their files) older than N days.
@@ -21,14 +19,10 @@ class PruneMediaCommand extends Command
 
     protected $description = 'Delete failed videos and their stored media older than the retention window';
 
-    public function handle(): int
+    public function handle(MediaCleanupService $cleanup): int
     {
         $days = (int) ($this->option('days') ?: config('autoclip.retention_days', 30));
-        $cutoff = now()->subDays($days);
-
-        $videos = Video::where('status', 'failed')
-            ->where('updated_at', '<', $cutoff)
-            ->get();
+        $videos = $cleanup->staleFailedVideos($days);
 
         $n = $videos->count();
 
@@ -38,26 +32,8 @@ class PruneMediaCommand extends Command
             return self::SUCCESS;
         }
 
-        $ingestDisk = Storage::disk((string) config('autoclip.ingest.disk'));
-        $exportDisk = Storage::disk((string) config('autoclip.render.disk'));
-
         foreach ($videos as $video) {
-            $exportIds = Export::whereIn(
-                'clip_candidate_id',
-                $video->clipCandidates()->select('id'),
-            )->pluck('id');
-
-            foreach ($exportIds as $exportId) {
-                $exportDisk->deleteDirectory("exports/{$exportId}");
-            }
-
-            $dir = $video->storage_path !== null ? dirname($video->storage_path) : '';
-            if ($dir === '' || $dir === '.' || $dir === 'videos') {
-                $dir = "videos/url-{$video->id}";
-            }
-            $ingestDisk->deleteDirectory($dir);
-
-            $video->delete();
+            $cleanup->deleteVideo($video);
         }
 
         $this->info("Deleted {$n} videos.");

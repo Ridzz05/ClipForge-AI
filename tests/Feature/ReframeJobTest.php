@@ -142,6 +142,20 @@ class ReframeJobTest extends TestCase
             fn ($job) => $job->exportId === $export->id);
     }
 
+    public function test_square_ratio_renders_1080_square_and_ass_matches(): void
+    {
+        $export = $this->makeApprovedExport();
+        $export->update(['aspect_ratio' => '1:1', 'caption_animation' => 'fade', 'caption_effect' => 'box']);
+
+        $this->runJob($export);
+
+        $filter = $this->capturedFfmpegArgs[array_search('-vf', $this->capturedFfmpegArgs, true) + 1];
+        $this->assertStringContainsString('scale=1080:1080', $filter);
+        $ass = $this->capturedAss["exports/{$export->id}/captions.ass"];
+        $this->assertStringContainsString('PlayResY: 1080', $ass);
+        $this->assertStringContainsString('\\fad(', $ass);
+    }
+
     public function test_ffmpeg_invoked_with_argument_array(): void
     {
         $export = $this->makeApprovedExport();

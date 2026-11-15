@@ -1,0 +1,25 @@
+# Web front untuk dev Windows: Caddy + pool php-cgi (php -S single-thread memblok
+# semua halaman saat satu request lambat, mis. stream video).
+# Dijalankan oleh deploy/serve-web.ps1, yang mengisi CLIPFORGE_ROOT dan CGI_UPSTREAMS.
+{
+	admin off
+	auto_https off
+}
+
+http://127.0.0.1:8000 {
+	root * {$CLIPFORGE_ROOT}/public
+	encode zstd gzip
+
+	request_body {
+		max_size 2100MB
+	}
+
+	php_fastcgi {$CGI_UPSTREAMS} {
+		lb_policy least_conn
+		dial_timeout 5s
+		read_timeout 600s
+		write_timeout 600s
+	}
+
+	file_server
+}

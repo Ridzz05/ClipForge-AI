@@ -55,6 +55,21 @@ class CaptionRendererTest extends TestCase
         $this->assertStringContainsString('&H0000FFFF', $ass);
     }
 
+    public function test_play_res_follows_render_size_and_animation_tags_are_emitted(): void
+    {
+        $ass = $this->renderer->renderAss($this->words, 'default', 1080, 1080, '', 0, null, null, null, null, 'fade');
+        $this->assertStringContainsString('PlayResY: 1080', $ass);
+        $this->assertStringContainsString('\\fad(', $ass);
+    }
+
+    public function test_effect_box_uses_opaque_box_border_style(): void
+    {
+        $box = $this->renderer->renderAss($this->words, 'default', 1080, 1920, '', 0, null, null, null, null, 'off', 'box');
+        $none = $this->renderer->renderAss($this->words, 'default', 1080, 1920, '', 0, null, null, null, null, 'off', 'none');
+        $this->assertNotSame($box, $none);
+        $this->assertMatchesRegularExpression('/^Style: Default,.*,3,\d+,\d+,\d+,\d+,\d+,\d+,\d+$/m', $box);
+    }
+
     public function test_caption_text_cannot_inject_ass_override_tags(): void
     {
         // Transcript is untrusted; a word containing ASS override syntax must be

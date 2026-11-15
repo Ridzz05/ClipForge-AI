@@ -14,8 +14,8 @@
         width: 100%; min-height: 120px;
         display: flex; align-items: center; justify-content: center;
         padding: var(--s-3);
-        border: 1.5px dashed var(--border-ctl); border-radius: var(--r);
-        background: var(--card); overflow: hidden;
+        border: 0; border-radius: var(--r-md);
+        background: var(--paper-2); box-shadow: var(--shadow-inset); overflow: hidden;
     }
     .bk-logo-frame img {
         max-width: 100%; max-height: 120px; width: auto; height: auto;
@@ -38,7 +38,7 @@
     </div>
 
     <div class="bk-layout">
-        <div class="panel tape rise" style="--i:0">
+        <div class="panel rise" style="--i:0">
             <div class="section-head">
                 <h2>Identitas &amp; default render</h2>
                 <span class="mono muted">{{ $this->logoPath ? 'logo aktif' : 'tanpa logo' }}</span>
@@ -118,7 +118,7 @@
                         <span wire:loading wire:target="save"><span class="spinner" aria-hidden="true"></span>Menyimpan…</span>
                     </button>
                     @if($logo)
-                        <span class="tag tag-dashed">Logo baru menunggu simpan</span>
+                        <span class="tag tag-quiet">Logo baru menunggu simpan</span>
                     @endif
                 </div>
             </form>

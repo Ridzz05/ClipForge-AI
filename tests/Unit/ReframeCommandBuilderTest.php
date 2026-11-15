@@ -51,7 +51,7 @@ class ReframeCommandBuilderTest extends TestCase
         $args = $this->build();
         $filter = $args[array_search('-vf', $args, true) + 1];
 
-        $this->assertStringContainsString('crop=608:1080:656:0', $filter);
+        $this->assertStringContainsString('crop=608:1080:656:(in_h-out_h)/2', $filter);
         $this->assertStringContainsString('scale=1080:1920', $filter);
         $this->assertStringContainsString('subtitles=', $filter);
     }
