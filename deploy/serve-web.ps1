@@ -2,7 +2,7 @@
 # Pakai: powershell -File deploy/serve-web.ps1 [-Workers 8]
 # Env: CLIPFORGE_CADDY (path caddy.exe, default ~/.clipforge/caddy/caddy.exe),
 #      CLIPFORGE_PHP_CGI (default php-cgi.exe di folder php.exe).
-param([int]$Workers = 8, [int]$BasePort = 9101)
+param([int]$Workers = 8, [int]$BasePort = 9101, [switch]$NoCache)
 
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path -replace '\\', '/'
@@ -11,6 +11,21 @@ $phpCgi = if ($env:CLIPFORGE_PHP_CGI) { $env:CLIPFORGE_PHP_CGI } else { Join-Pat
 
 foreach ($bin in @($caddy, $phpCgi)) {
     if (-not (Test-Path $bin)) { throw "Tidak ditemukan: $bin" }
+}
+
+# Cache config/routes/views so each php-cgi cold start skips re-parsing them.
+# Skip with -NoCache after editing .env, routes, or config files.
+# ponytail: stale cache after .env edits is the known ceiling; -NoCache is the upgrade path.
+if (-not $NoCache) {
+    $php = Join-Path (Split-Path $phpCgi) 'php.exe'
+    Push-Location $root
+    try {
+        & $php artisan config:cache | Out-Null
+        & $php artisan route:cache  | Out-Null
+        & $php artisan view:cache   | Out-Null
+        Write-Host "Cache config/route/view: siap"
+    }
+    finally { Pop-Location }
 }
 
 $env:PHP_FCGI_MAX_REQUESTS = '0'
