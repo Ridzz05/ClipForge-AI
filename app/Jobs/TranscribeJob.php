@@ -33,9 +33,18 @@ class TranscribeJob implements ShouldQueue
 
     public int $backoff = 30;
 
+    /**
+     * Hard kill bound for a stuck stage, read by the worker from the payload.
+     * Assigned in the constructor so the queued payload carries a real value
+     * (the class default null told the worker to fall back to its 60s default).
+     */
+    public int $timeout;
+
     public function __construct(
         public readonly int $videoId,
-    ) {}
+    ) {
+        $this->timeout = $this->timeout();
+    }
 
     /** Hard timeout has a safety buffer over the transcribe budget (resource exhaustion guard). */
     public function timeout(): int
